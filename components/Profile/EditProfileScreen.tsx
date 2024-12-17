@@ -1,22 +1,38 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, StyleSheet, Text, TouchableOpacity, Image } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons'; // Import Icon from react-native-vector-icons/Ionicons
-import { launchImageLibrary } from 'react-native-image-picker'; // Import Image Picker
+import {
+  View,
+  TextInput,
+  Button,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  Image,
+} from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { launchImageLibrary } from 'react-native-image-picker';
 
 const EditProfileScreen: React.FC = () => {
-  // Initial saved values (you can replace these with actual values from a database or API)
   const [name, setName] = useState<string>('John Doe');
   const [age, setAge] = useState<string>('30');
   const [email, setEmail] = useState<string>('johndoe@example.com');
   const [mobile, setMobile] = useState<string>('1234567890');
-  const [imageUri, setImageUri] = useState<string | null>(null); // State for the profile image
-
-  const [editing, setEditing] = useState<boolean>(false); // State to track if we are in edit mode
+  const [password, setPassword] = useState<string>('••••••••••');  // Initialize an empty password
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [editableFields, setEditableFields] = useState({
+    name: false,
+    age: false,
+    email: false,
+    mobile: false,
+    password: false,
+  });
 
   const handleSave = () => {
-    // Save the profile updates here
     console.log('Profile updated:', { name, age, email, mobile, imageUri });
-    setEditing(false); // Exit edit mode after saving
+    setEditableFields({ name: false, age: false, email: false, mobile: false,password: false, });
+  };
+
+  const enableEditing = (field: string) => {
+    setEditableFields((prev) => ({ ...prev, [field]: true }));
   };
 
   const pickImage = () => {
@@ -25,8 +41,8 @@ const EditProfileScreen: React.FC = () => {
         console.log('User cancelled image picker');
       } else if (response.errorCode) {
         console.log('ImagePicker Error: ', response.errorMessage);
-      } else {
-        setImageUri(response.assets?.[0].uri || null); // Update image URI
+      } else if (response.assets && response.assets.length > 0) {
+        setImageUri(response.assets[0].uri || null);
       }
     });
   };
@@ -39,27 +55,29 @@ const EditProfileScreen: React.FC = () => {
       <View style={styles.imageContainer}>
         <TouchableOpacity onPress={pickImage}>
           <Image
-            source={imageUri ? { uri: imageUri } : require('./assets/default-avatar.png')} // Default image if none selected
+            source={{ uri: imageUri || 'https://via.placeholder.com/100' }}
             style={styles.profileImage}
           />
+          <Icon
+            name="create-outline"
+            size={25}
+            color="white"
+            style={styles.editIcon}
+          />
         </TouchableOpacity>
-        {editing && (
-          <Icon name="create-outline" size={25} color="#4CAF50" style={styles.editIcon} />
-        )}
       </View>
 
-      {/* Input Fields */}
+      {/* Input Fields with Edit Icon */}
       <View style={styles.inputContainer}>
         <Icon name="person-outline" size={20} color="gray" style={styles.icon} />
         <TextInput
           style={styles.input}
-          placeholder="Enter name"
           value={name}
           onChangeText={setName}
-          editable={editing}
+          editable={editableFields.name}
         />
-        <TouchableOpacity onPress={handleEdit}>
-          <Icon name="create-outline" size={20} color="gray" style={styles.pencilIcon} />
+        <TouchableOpacity onPress={() => enableEditing('name')}>
+          <Icon name="create-outline" size={20} color="#2196F3" />
         </TouchableOpacity>
       </View>
 
@@ -67,14 +85,13 @@ const EditProfileScreen: React.FC = () => {
         <Icon name="calendar-outline" size={20} color="gray" style={styles.icon} />
         <TextInput
           style={styles.input}
-          placeholder="Enter age"
-          keyboardType="numeric"
           value={age}
+          keyboardType="numeric"
           onChangeText={setAge}
-          editable={editing}
+          editable={editableFields.age}
         />
-        <TouchableOpacity onPress={handleEdit}>
-          <Icon name="create-outline" size={20} color="gray" style={styles.pencilIcon} />
+        <TouchableOpacity onPress={() => enableEditing('age')}>
+          <Icon name="create-outline" size={20} color="#2196F3" />
         </TouchableOpacity>
       </View>
 
@@ -82,14 +99,26 @@ const EditProfileScreen: React.FC = () => {
         <Icon name="mail-outline" size={20} color="gray" style={styles.icon} />
         <TextInput
           style={styles.input}
-          placeholder="Enter email"
-          keyboardType="email-address"
           value={email}
+          keyboardType="email-address"
           onChangeText={setEmail}
-          editable={editing}
+          editable={editableFields.email}
         />
-        <TouchableOpacity onPress={handleEdit}>
-          <Icon name="create-outline" size={20} color="gray" style={styles.pencilIcon} />
+        <TouchableOpacity onPress={() => enableEditing('email')}>
+          <Icon name="create-outline" size={20} color="#2196F3" />
+        </TouchableOpacity>
+      </View>
+      <View style={styles.inputContainer}>
+        <Icon name="lock-closed-outline" size={20} color="gray" style={styles.icon} />
+        <TextInput
+          style={styles.input}
+          value={password}
+          onChangeText={setPassword}
+          editable={editableFields.password}
+          secureTextEntry={true}
+        />
+        <TouchableOpacity onPress={() => enableEditing('password')}>
+          <Icon name="create-outline" size={20} color="#2196F3" />
         </TouchableOpacity>
       </View>
 
@@ -97,22 +126,22 @@ const EditProfileScreen: React.FC = () => {
         <Icon name="call-outline" size={20} color="gray" style={styles.icon} />
         <TextInput
           style={styles.input}
-          placeholder="Enter mobile number"
-          keyboardType="phone-pad"
           value={mobile}
+          keyboardType="phone-pad"
           onChangeText={setMobile}
-          editable={editing}
+          editable={editableFields.mobile}
         />
-        <TouchableOpacity onPress={handleEdit}>
-          <Icon name="create-outline" size={20} color="gray" style={styles.pencilIcon} />
+        <TouchableOpacity onPress={() => enableEditing('mobile')}>
+          <Icon name="create-outline" size={20} color="#2196F3" />
         </TouchableOpacity>
       </View>
 
-      {editing ? (
-        <Button title="Save" onPress={handleSave} color="#4CAF50" />
-      ) : (
-        <Button title="Edit" onPress={() => setEditing(true)} color="#2196F3" />
-      )}
+      {/* Save Button */}
+      <View style={styles.buttonContainer}>
+      <TouchableOpacity style={styles.curvedButton} onPress={handleSave}>
+        <Text style={styles.buttonText}>Save</Text>
+      </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -122,41 +151,39 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'white',
     padding: 20,
-    justifyContent: 'center',
+    justifyContent: 'flex-start', // Ensure it starts from the top
   },
   header: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 40, // Reduced the bottom margin to move it up
     textAlign: 'center',
     color: '#333',
   },
   imageContainer: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 40, // Reduced the margin to move the image up
   },
   profileImage: {
     width: 100,
     height: 100,
-    borderRadius: 50, // Circular image
+    borderRadius: 50,
     borderWidth: 2,
     borderColor: '#ddd',
-    marginBottom: 10,
   },
   editIcon: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 5,
+    bottom: 25,
+    right: 25,
+    padding: 10,
+    alignItems: 'center',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
-    marginBottom: 20,
+    marginBottom: 20, // Reduced bottom margin to bring the input up
   },
   input: {
     flex: 1,
@@ -168,6 +195,29 @@ const styles = StyleSheet.create({
   icon: {
     marginRight: 10,
   },
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 80,
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+  },
+  curvedButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 10,
+    borderRadius: 10,
+    width: '50%',
+    alignItems: 'center',
+    position: 'absolute',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  
+  
+  
 });
 
 export default EditProfileScreen;
