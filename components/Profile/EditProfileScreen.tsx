@@ -44,7 +44,7 @@ const EditProfileScreen: React.FC = () => {
       <View style={styles.imageContainer}>
         <TouchableOpacity onPress={pickImage}>
           <Image
-            source={imageUri ? { uri: imageUri } : require('./assets/default-avatar.png')} // Default image if none selected
+            source={imageUri ? { uri: imageUri } : require('../../assets/images/img.png')} // Default image if none selected
             style={styles.profileImage}
           />
         </TouchableOpacity>

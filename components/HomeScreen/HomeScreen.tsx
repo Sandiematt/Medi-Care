@@ -29,7 +29,7 @@ const HomeScreen: React.FC = () => {
        {/* Promotional Banner */}
        <View style={styles.bannerContainer}>
         <Image
-          source={require('../assets/images/img.png')} // Replace with the correct path to your image
+          source={require('../../assets/images/img.png')} // Replace with the correct path to your image
           style={styles.bannerImage}
         />
       </View>
