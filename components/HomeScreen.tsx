@@ -16,7 +16,7 @@ const HomeScreen: React.FC = () => {
         <Icon name="account-circle" size={50} color="#000" style={styles.profileImage} />
       </View>
 
-      {/* Search Bar */}
+      {/* Search Bar */} 
       <View style={styles.searchContainer}>
         <Icon name="search" size={24} color="#A0A0A0" />
         <TextInput
