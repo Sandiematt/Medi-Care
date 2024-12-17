@@ -19,11 +19,6 @@ const EditProfileScreen: React.FC = () => {
     setEditing(false); // Exit edit mode after saving
   };
 
-  const handleEdit = () => {
-    setEditing(true); // Enable editing mode
-  };
-
-  // Function to launch the image picker
   const pickImage = () => {
     launchImageLibrary({ mediaType: 'photo', quality: 1 }, (response) => {
       if (response.didCancel) {
@@ -172,9 +167,6 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginRight: 10,
-  },
-  pencilIcon: {
-    marginLeft: 10,
   },
 });
 
