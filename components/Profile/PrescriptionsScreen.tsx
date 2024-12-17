@@ -35,9 +35,6 @@ const PrescriptionsScreen: React.FC = () => {
           style={styles.avatar}
         />
         <Text style={styles.greeting}>Hello, Jacob!</Text>
-        <TouchableOpacity onPress={() => setIsEditing(!isEditing)}>
-          <Icon name="create-outline" size={24} color="black" />
-        </TouchableOpacity>
       </View>
 
       {/* Button to upload prescriptions */}
@@ -78,7 +75,7 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 18,
     fontWeight: '600',
-    marginLeft: 10,
+    right:120,
   },
   uploadButton: {
     backgroundColor: '#5A9BFF',

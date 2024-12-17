@@ -1,8 +1,30 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { createStackNavigator } from '@react-navigation/stack';
+import EditHealthVitals from './EditHealthVitalsScreen'; // Import the EditHealthVitals screen
+import EditHealthVitalsScreen from './EditHealthVitalsScreen';
 
-const HealthVitalsScreen: React.FC = () => {
+const Stack = createStackNavigator();
+
+const HealthVitalsStackNavigator: React.FC = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerTitleAlign: 'center' }}>
+      <Stack.Screen
+        name="HealthVitalsHome" // Change the name here
+        component={HealthVitalsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="EditHealthVitals"
+        component={EditHealthVitalsScreen}
+        options={{ headerShown: true, title: 'Edit Health Vitals' }}
+      />
+    </Stack.Navigator>
+  );
+};
+
+const HealthVitalsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [isEditing, setIsEditing] = useState<boolean>(false);
 
   return (
@@ -10,11 +32,13 @@ const HealthVitalsScreen: React.FC = () => {
       {/* Header */}
       <View style={styles.header}>
         <Image
-          source={{ uri: 'https://img.freepik.com/premium-vector/man-professional-business-casual-young-avatar-icon-illustration_1277826-623.jpg?semt=ais_hybrid' }} // Replace with user image URL
+          source={{
+            uri: 'https://img.freepik.com/premium-vector/man-professional-business-casual-young-avatar-icon-illustration_1277826-623.jpg?semt=ais_hybrid',
+          }} // Replace with user image URL
           style={styles.avatar}
         />
         <Text style={styles.greeting}>Hello, Jacob!</Text>
-        <TouchableOpacity onPress={() => setIsEditing(!isEditing)}>
+        <TouchableOpacity onPress={() => navigation.navigate('EditHealthVitals')}>
           <Icon name="create-outline" size={24} color="black" />
         </TouchableOpacity>
       </View>
@@ -72,7 +96,9 @@ const HealthVitalsScreen: React.FC = () => {
       {/* Doctor Contact Section */}
       <View style={styles.contactCard}>
         <Image
-          source={{ uri: 'https://img.freepik.com/premium-vector/man-professional-business-casual-young-avatar-icon-illustration_1277826-623.jpg?semt=ais_hybrid' }} // Replace with doctor image URL
+          source={{
+            uri: 'https://img.freepik.com/premium-vector/man-professional-business-casual-young-avatar-icon-illustration_1277826-623.jpg?semt=ais_hybrid',
+          }} // Replace with doctor image URL
           style={styles.contactAvatar}
         />
         <View style={styles.contactDetails}>
@@ -91,6 +117,9 @@ const HealthVitalsScreen: React.FC = () => {
     </ScrollView>
   );
 };
+
+
+
 
 const styles = StyleSheet.create({
   container: {
@@ -214,4 +243,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default HealthVitalsScreen;
+export default HealthVitalsStackNavigator;
