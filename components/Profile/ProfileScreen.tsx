@@ -4,12 +4,12 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { createStackNavigator } from '@react-navigation/stack';
 
 // Directly import screens
-import NotificationScreen from './NotificationScreen';
 import EditProfileScreen from './EditProfileScreen';
 import FavoriteScreen from './FavoriteScreen';
 import AboutScreen from './AboutScreen';
 import HealthVitalsScreen from './HealthVitalsScreen';
 import PrescriptionsScreen from './PrescriptionsScreen';
+
 
 // Stack Navigator
 const Stack = createStackNavigator();
@@ -17,7 +17,6 @@ const Stack = createStackNavigator();
 const ProfileOptionsNavigator = () => (
   <Stack.Navigator screenOptions={{ headerTitleAlign: 'center' }}>
     <Stack.Screen name="ProfileMain" component={ProfileMainScreen} options={{ headerShown: false }} />
-    <Stack.Screen name="Notification" component={NotificationScreen} options={{ headerShown: false }} />
     <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
     <Stack.Screen name="Favorite" component={FavoriteScreen} options={{ headerShown: false }} />
     <Stack.Screen name="About" component={AboutScreen} options={{ headerShown: false }} />
@@ -32,7 +31,7 @@ const ProfileMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       {/* Profile Section */}
       <View style={styles.profileSection}>
         <Image
-          source={{ uri: 'https://via.placeholder.com/100' }}
+          source={{ uri: 'https://img.freepik.com/premium-vector/man-professional-business-casual-young-avatar-icon-illustration_1277826-623.jpg?semt=ais_hybrid' }} // Replace with doctor image URL
           style={styles.profileImage}
         />
         <Text style={styles.name}>Jhalok Deb</Text>
@@ -48,13 +47,13 @@ const ProfileMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
 
         <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('Favorite')}>
-          <Icon name="heart-outline" size={20} color="#6C63FF" />
-          <Text style={styles.optionText}>Favorite</Text>
+          <Icon name="star-outline" size={20} color="#6C63FF" />
+          <Text style={styles.optionText}>Wellness Score</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('HealthVitals')}>
           <Icon name="pulse-outline" size={20} color="#6C63FF" />
-          <Text style={styles.optionText}>Save Health Vitals</Text>
+          <Text style={styles.optionText}>Health Vitals</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('Prescriptions')}>
@@ -87,14 +86,14 @@ const styles = StyleSheet.create({
   profileImage: { width: 100, height: 100, borderRadius: 50 },
   name: { marginTop: 10, fontSize: 18, fontWeight: 'bold' },
   email: { fontSize: 14, color: 'gray' },
-  option: { flexDirection: 'row', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderColor: '#f0f0f0' },
+  option: { flexDirection: 'row', alignItems: 'center', padding: 20,marginTop:1, borderBottomWidth: 1, borderColor: '#f0f0f0' },
   optionText: { marginLeft: 10, fontSize: 16 },
   screenContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   screenText: { fontSize: 20, fontWeight: 'bold' },
   logoutButton: {
     backgroundColor: '#FF6B6B',
     padding: 12,
-    margin: 50,
+    margin: 90,
     borderRadius: 10,
     flexDirection: 'row', 
     alignItems: 'center', 
