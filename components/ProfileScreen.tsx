@@ -9,4 +9,4 @@ const ProfileScreen: React.FC = () => {
   );
 };
 
-export default ProfileScreen;
+export default ProfileScreen; 
