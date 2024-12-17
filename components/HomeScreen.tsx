@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TextInput, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView,Image } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const HomeScreen: React.FC = () => {
@@ -12,22 +12,8 @@ const HomeScreen: React.FC = () => {
             <Text style={styles.helloText}>Hello</Text>
             <Text style={styles.userName}>User</Text>
           </View>
-          {/* Profile Icon */}
         </View>
-        <View>
-          <Icon
-            name="person-outline"
-            size={24}
-            color="#6200EE"
-            style={styles.profileIcon}
-          />
-        </View>
-        <Image
-          source={{
-            uri: 'https://example.com/user-profile-image.png',
-          }}
-          style={styles.profileImage}
-        />
+        <Icon name="account-circle" size={50} color="#000" style={styles.profileImage} />
       </View>
 
       {/* Search Bar */}
@@ -40,29 +26,41 @@ const HomeScreen: React.FC = () => {
         />
       </View>
 
-      {/* Services Section */}
-      <Text style={styles.sectionTitle}>Services</Text>
-      <View style={styles.servicesContainer}>
-        <View style={styles.serviceItem}>
-          <Icon name="person" size={30} color="#4CAF50" />
-        </View>
-        <View style={styles.serviceItem}>
-          <Icon name="local-hospital" size={30} color="#FF9800" />
-        </View>
-        <View style={styles.serviceItem}>
-          <Icon name="note" size={30} color="#03A9F4" />
-        </View>
-        <View style={styles.serviceItem}>
-          <Icon name="coronavirus" size={30} color="#E91E63" />
-        </View>
-      </View>
-
-      {/* Promotional Banner */}
-      <View style={styles.bannerContainer}>
+       {/* Promotional Banner */}
+       <View style={styles.bannerContainer}>
         <Image
           source={require('../assets/images/img.png')} // Replace with the correct path to your image
           style={styles.bannerImage}
         />
+      </View>
+
+      {/* Services Section */}
+      <Text style={styles.sectionTitle}>Services</Text>
+      <View style={styles.servicesContainer}>
+        <View style={styles.serviceItemContainer}>
+          <View style={styles.serviceItem}>
+            <Icon name="person" size={30} color="#4CAF50" />
+          </View>
+          <Text style={styles.serviceLabel}>Personal Care</Text>
+        </View>
+        <View style={styles.serviceItemContainer}>
+          <View style={styles.serviceItem}>
+            <Icon name="local-hospital" size={30} color="#FF9800" />
+          </View>
+          <Text style={styles.serviceLabel}>Hospital</Text>
+        </View>
+        <View style={styles.serviceItemContainer}>
+          <View style={styles.serviceItem}>
+            <Icon name="note" size={30} color="#03A9F4" />
+          </View>
+          <Text style={styles.serviceLabel}>Prescriptions</Text>
+        </View>
+        <View style={styles.serviceItemContainer}>
+          <View style={styles.serviceItem}>
+            <Icon name="coronavirus" size={30} color="#E91E63" />
+          </View>
+          <Text style={styles.serviceLabel}>COVID-19</Text>
+        </View>
       </View>
 
       {/* Upcoming Appointments */}
@@ -89,6 +87,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
     paddingTop: 40,
+    paddingBottom: 80, // Ensures space for the bottom tabs, adjust as necessary
   },
   headerContainer: {
     flexDirection: 'row',
@@ -105,41 +104,51 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 25,
-    fontFamily: 'Poppins-Bold',
+    fontFamily: 'Poppins-SemiBold',
     color: '#000',
   },
-  profileIcon: {
-    marginLeft: 270, // Space between name and icon
-  },
   profileImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    borderRadius: 25,  // Keeps the icon round
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F5F5F5',
     borderRadius: 10,
-    padding: 10,
+    padding: 5,
     marginVertical: 20,
   },
   searchInput: {
     flex: 1,
-    marginLeft: 10,
+    marginLeft: 8,
     fontSize: 16,
     color: '#000',
   },
   sectionTitle: {
     fontSize: 18,
-    fontFamily: 'Poppins-Bold',
+    fontFamily: 'Poppins-SemiBold',
     color: '#000',
-    marginVertical: 10,
+    marginVertical: 0,
+    textAlign: 'left',
   },
   servicesContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginBottom: 20,
+    marginTop: 10,
+  },
+  serviceItemContainer: {
+    alignItems: 'center',
+    width: '23%',
+    marginBottom: 10,
+  },
+  serviceLabel: {
+    fontSize: 12,
+    marginTop: 5,
+    color: '#000',
+    fontFamily: 'Poppins-Normal',
+    textAlign: 'center',
   },
   serviceItem: {
     width: 60,
@@ -152,14 +161,13 @@ const styles = StyleSheet.create({
   bannerContainer: {
     backgroundColor: '#E0F7FA',
     borderRadius: 10,
-    
     marginBottom: 20,
-    alignItems: 'center', // Center the image inside the banner
+    alignItems: 'center',
   },
   bannerImage: {
-    width: 340,
+    width: 350,
     height: 150,
-    borderRadius: 10, // Optional: Rounded corners for the image
+    borderRadius: 10,
   },
   appointmentCard: {
     flexDirection: 'row',
@@ -168,7 +176,7 @@ const styles = StyleSheet.create({
     padding: 15,
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 30,
   },
   dateContainer: {
     backgroundColor: '#0288D1',
@@ -178,7 +186,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 20,
-    fontFamily: 'Poppins-Bold',
+    fontFamily: 'Poppins-SemiBold',
     color: '#FFF',
   },
   dayText: {
