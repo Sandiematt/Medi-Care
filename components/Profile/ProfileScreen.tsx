@@ -63,7 +63,7 @@ const ProfileMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
         <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('About')}>
           <Icon name="information-circle-outline" size={20} color="#6C63FF" />
-          <Text style={styles.optionText}>About DocSwift</Text>
+          <Text style={styles.optionText}>About MediCare</Text>
         </TouchableOpacity>
 
         {/* Logout Button */}

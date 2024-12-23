@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Dimensions, Image, StyleSheet, Modal, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const width = Dimensions.get('window').width;
 const height = Dimensions.get('window').height;
 
 const AboutUs: React.FC = () => {
+    const navigation = useNavigation(); // Initialize navigation inside the component
     const [modalVisible, setModalVisible] = useState<boolean>(false);
     const [selectedImage, setSelectedImage] = useState<any>(null);
+
+    const handleGoBack = () => {
+        navigation.goBack(); // Navigate back to the previous screen
+    };
 
     const handleImagePress = (image: any) => {
         setSelectedImage(image);
@@ -15,9 +22,11 @@ const AboutUs: React.FC = () => {
 
     return (
         <View style={styles.container}>
+            <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+                <Icon name="arrow-back" size={24} color="black" />
+            </TouchableOpacity>
             <View style={styles.header}>
                 <Text style={styles.title}>About Us</Text>
-                <Image style={styles.icon} />
             </View>
 
             <View style={styles.developersSection}>
@@ -38,7 +47,7 @@ const AboutUs: React.FC = () => {
                 </View>
             </View>
             <View style={styles.box}>
-                <ScrollView >
+                <ScrollView contentContainerStyle={styles.scrollViewContent}>
                     <Text style={styles.aboutText}>
                         Meicare is dedicated to improving the healthcare experience by leveraging technology to simplify healthcare management for users. The platform aims to provide an easy-to-use, integrated system for individuals to access healthcare services, track their medical history, receive personalized care recommendations, and ensure seamless communication between patients and healthcare providers. By prioritizing patient-centric care, Meicare strives to empower individuals to take control of their health and well-being.
                     </Text>
@@ -62,31 +71,25 @@ const AboutUs: React.FC = () => {
             )}
         </View>
     );
-}
+};
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: 'white',
     },
+    backButton: {
+        margin: 20,
+    },
     header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
         padding: 10,
-        marginTop: 20,
-        width: width,
+        marginTop: 10,
     },
     title: {
         fontSize: 30,
         color: 'black',
-        left: 110,
         fontFamily: 'Poppins-Bold',
-    },
-    icon: {
-        height: 100,
-        width: 100,
-        marginRight: 20,
     },
     developersSection: {
         width: width,
@@ -98,7 +101,6 @@ const styles = StyleSheet.create({
         marginLeft: 20,
         color: 'black',
         fontFamily: 'Poppins-Bold',
-        alignItems:'center',
     },
     developersList: {
         flexDirection: 'row',

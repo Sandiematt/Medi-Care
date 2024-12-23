@@ -1,8 +1,28 @@
-import React from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView,Image } from 'react-native';
+import React from 'react'; 
+import { View, Text, StyleSheet, TextInput, ScrollView, Image, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { createStackNavigator } from '@react-navigation/stack';
+import { NavigationContainer } from '@react-navigation/native'; // Import NavigationContainer for stack navigation
+import MedicinesScreen from './MedicinesScreen';
+import HospitalScreen from './HospitalScreen';
+import PrescriptionsScreen from './PrescriptionsScreen';
+import SymptomCheckerScreen from './SymptomCheckerScreen';
 
-const HomeScreen: React.FC = () => {
+const Stack = createStackNavigator();
+
+// Home screen options navigator
+const HomeOptionsNavigator = () => (
+  <Stack.Navigator> 
+    <Stack.Screen name="HomeMain" component={HomeMainScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="Medicines" component={MedicinesScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="Hospital" component={HospitalScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="Symptom" component={SymptomCheckerScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="Prescriptions" component={PrescriptionsScreen} options={{ headerShown: false }} />
+  </Stack.Navigator>
+);
+
+// Main home screen component
+const HomeMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   return (
     <ScrollView style={styles.container}>
       {/* Header Section */}
@@ -16,7 +36,7 @@ const HomeScreen: React.FC = () => {
         <Icon name="account-circle" size={50} color="#000" style={styles.profileImage} />
       </View>
 
-      {/* Search Bar */} 
+      {/* Search Bar */}
       <View style={styles.searchContainer}>
         <Icon name="search" size={24} color="#A0A0A0" />
         <TextInput
@@ -26,8 +46,8 @@ const HomeScreen: React.FC = () => {
         />
       </View>
 
-       {/* Promotional Banner */}
-       <View style={styles.bannerContainer}>
+      {/* Promotional Banner */}
+      <View style={styles.bannerContainer}>
         <Image
           source={require('../../assets/images/img.png')} // Replace with the correct path to your image
           style={styles.bannerImage}
@@ -37,30 +57,37 @@ const HomeScreen: React.FC = () => {
       {/* Services Section */}
       <Text style={styles.sectionTitle}>Services</Text>
       <View style={styles.servicesContainer}>
-        <View style={styles.serviceItemContainer}>
+        {/* Medicines Service */}
+        <TouchableOpacity style={styles.serviceItemContainer} onPress={() => navigation.navigate('Medicines')}>
           <View style={styles.serviceItem}>
-            <Icon name="person" size={30} color="#4CAF50" />
+            <Icon name="medical-services" size={30} color="#4CAF50" />
           </View>
-          <Text style={styles.serviceLabel}>Personal Care</Text>
-        </View>
-        <View style={styles.serviceItemContainer}>
+          <Text style={styles.serviceLabel}>Medicines</Text>
+        </TouchableOpacity>
+
+        {/* Hospital Service */}
+        <TouchableOpacity style={styles.serviceItemContainer} onPress={() => navigation.navigate('Hospital')}>
           <View style={styles.serviceItem}>
             <Icon name="local-hospital" size={30} color="#FF9800" />
           </View>
           <Text style={styles.serviceLabel}>Hospital</Text>
-        </View>
-        <View style={styles.serviceItemContainer}>
+        </TouchableOpacity>
+
+        {/* Prescriptions Service */}
+        <TouchableOpacity style={styles.serviceItemContainer} onPress={() => navigation.navigate('Prescriptions')}>
           <View style={styles.serviceItem}>
             <Icon name="note" size={30} color="#03A9F4" />
           </View>
           <Text style={styles.serviceLabel}>Prescriptions</Text>
-        </View>
-        <View style={styles.serviceItemContainer}>
+        </TouchableOpacity>
+
+        {/* Symptom Checker Service */}
+        <TouchableOpacity style={styles.serviceItemContainer} onPress={() => navigation.navigate('Symptom')}>
           <View style={styles.serviceItem}>
-            <Icon name="coronavirus" size={30} color="#E91E63" />
+            <Icon name="healing" size={30} color="#E91E63" />
           </View>
-          <Text style={styles.serviceLabel}>COVID-19</Text>
-        </View>
+          <Text style={styles.serviceLabel}>Symptom Checker</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Upcoming Appointments */}
@@ -80,6 +107,13 @@ const HomeScreen: React.FC = () => {
     </ScrollView>
   );
 };
+
+// Main home screen navigation setup
+const HomeScreen: React.FC = () => {
+  return <HomeOptionsNavigator />;
+};
+
+
 
 const styles = StyleSheet.create({
   container: {
@@ -108,7 +142,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   profileImage: {
-    borderRadius: 25,  // Keeps the icon round
+    borderRadius: 25, // Keeps the icon round
   },
   searchContainer: {
     flexDirection: 'row',
