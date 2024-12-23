@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native'; // Import navigation hook
 
 const HealthVitalsScreen: React.FC = () => {
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -14,12 +15,11 @@ const HealthVitalsScreen: React.FC = () => {
     <ScrollView contentContainerStyle={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Image
-          source={{ uri: 'https://img.freepik.com/premium-vector/man-professional-business-casual-young-avatar-icon-illustration_1277826-623.jpg?semt=ais_hybrid' }} // Replace with user image URL
-          style={styles.avatar}
-        />
+        <TouchableOpacity onPress={handleGoBack}>
+          <Icon name="arrow-back" size={24} color="black" />
+        </TouchableOpacity>
         <Text style={styles.greeting}>Hello, Jacob!</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('EditHealthVitals')}>
+        <TouchableOpacity onPress={() => setIsEditing(!isEditing)}>
           <Icon name="create-outline" size={24} color="black" />
         </TouchableOpacity>
       </View>
@@ -98,9 +98,6 @@ const HealthVitalsScreen: React.FC = () => {
     </ScrollView>
   );
 };
-
-
-
 
 const styles = StyleSheet.create({
   container: {
@@ -224,4 +221,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default HealthVitalsStackNavigator;
+export default HealthVitalsScreen;
