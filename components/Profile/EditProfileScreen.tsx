@@ -2,21 +2,22 @@ import React, { useState } from 'react';
 import {
   View,
   TextInput,
-  Button,
-  StyleSheet,
-  Text,
   TouchableOpacity,
   Image,
+  StyleSheet,
+  Text,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { launchImageLibrary } from 'react-native-image-picker';
+import { useNavigation } from '@react-navigation/native'; // Import navigation hook
 
 const EditProfileScreen: React.FC = () => {
+  const navigation = useNavigation(); // Initialize navigation
   const [name, setName] = useState<string>('John Doe');
   const [age, setAge] = useState<string>('30');
   const [email, setEmail] = useState<string>('johndoe@example.com');
   const [mobile, setMobile] = useState<string>('1234567890');
-  const [password, setPassword] = useState<string>('••••••••••');  // Initialize an empty password
+  const [password, setPassword] = useState<string>('••••••••••'); 
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [editableFields, setEditableFields] = useState({
     name: false,
@@ -28,7 +29,7 @@ const EditProfileScreen: React.FC = () => {
 
   const handleSave = () => {
     console.log('Profile updated:', { name, age, email, mobile, imageUri });
-    setEditableFields({ name: false, age: false, email: false, mobile: false,password: false, });
+    setEditableFields({ name: false, age: false, email: false, mobile: false, password: false });
   };
 
   const enableEditing = (field: string) => {
@@ -47,8 +48,19 @@ const EditProfileScreen: React.FC = () => {
     });
   };
 
+  const handleGoBack = () => {
+    navigation.goBack(); // Navigate back to the previous screen
+  };
+
   return (
     <View style={styles.container}>
+      {/* Back Icon */}
+      <View style={styles.backIconContainer}>
+        <TouchableOpacity onPress={handleGoBack}>
+          <Icon name="arrow-back" size={30} color="#333" />
+        </TouchableOpacity>
+      </View>
+
       <Text style={styles.header}>Edit Profile</Text>
 
       {/* Profile Image Section */}
@@ -108,6 +120,7 @@ const EditProfileScreen: React.FC = () => {
           <Icon name="create-outline" size={20} color="#2196F3" />
         </TouchableOpacity>
       </View>
+
       <View style={styles.inputContainer}>
         <Icon name="lock-closed-outline" size={20} color="gray" style={styles.icon} />
         <TextInput
@@ -138,9 +151,9 @@ const EditProfileScreen: React.FC = () => {
 
       {/* Save Button */}
       <View style={styles.buttonContainer}>
-      <TouchableOpacity style={styles.curvedButton} onPress={handleSave}>
-        <Text style={styles.buttonText}>Save</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.curvedButton} onPress={handleSave}>
+          <Text style={styles.buttonText}>Save</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -151,18 +164,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'white',
     padding: 20,
-    justifyContent: 'flex-start', // Ensure it starts from the top
+    justifyContent: 'flex-start',
+  },
+  backIconContainer: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    zIndex: 1,
   },
   header: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 40, // Reduced the bottom margin to move it up
+    marginBottom: 40,
     textAlign: 'center',
     color: '#333',
   },
   imageContainer: {
     alignItems: 'center',
-    marginBottom: 40, // Reduced the margin to move the image up
+    marginBottom: 40,
   },
   profileImage: {
     width: 100,
@@ -183,7 +202,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
-    marginBottom: 20, // Reduced bottom margin to bring the input up
+    marginBottom: 20,
   },
   input: {
     flex: 1,
@@ -196,11 +215,8 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   buttonContainer: {
-    position: 'absolute',
-    bottom: 80,
-    left: 20,
-    right: 20,
     alignItems: 'center',
+    marginTop: 20,
   },
   curvedButton: {
     backgroundColor: '#4CAF50',
@@ -208,16 +224,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     width: '50%',
     alignItems: 'center',
-    position: 'absolute',
   },
   buttonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  
-  
-  
 });
 
 export default EditProfileScreen;

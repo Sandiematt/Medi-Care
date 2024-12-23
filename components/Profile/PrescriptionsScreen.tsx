@@ -2,24 +2,35 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Button, Image, FlatList, TouchableOpacity, ScrollView } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native'; // Import navigation hook
+
+interface Prescription {
+  id: string;
+  imageUri: string;
+}
 
 const PrescriptionsScreen: React.FC = () => {
-  const [prescriptions, setPrescriptions] = useState<any[]>([]);
-  const [isEditing, setIsEditing] = useState(false);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const navigation = useNavigation(); // Initialize the navigation hook
+
+  const handleGoBack = () => {
+    navigation.goBack(); // Navigate back to the previous screen
+  };
 
   const pickImage = () => {
     launchImageLibrary({ mediaType: 'photo' }, (response) => {
-      if (response.assets) {
-        const newPrescription = {
-          id: Math.random().toString(),  // You can use a more reliable ID method
-          imageUri: response.assets[0].uri,
+      if (response.assets && response.assets[0].uri) {
+        const newPrescription: Prescription = {
+          id: Math.random().toString(),
+          imageUri: response.assets[0].uri || '', // Default to an empty string if undefined
         };
         setPrescriptions((prevPrescriptions) => [...prevPrescriptions, newPrescription]);
       }
     });
   };
+  
 
-  const renderItem = ({ item }: any) => (
+  const renderItem = ({ item }: { item: Prescription }) => (
     <View style={styles.card}>
       <Image source={{ uri: item.imageUri }} style={styles.image} />
       <Text style={styles.cardText}>Prescription {item.id}</Text>
@@ -30,11 +41,18 @@ const PrescriptionsScreen: React.FC = () => {
     <ScrollView contentContainerStyle={styles.container}>
       {/* Header */}
       <View style={styles.header}>
+        <TouchableOpacity onPress={handleGoBack}>
+          <Icon name="arrow-back" size={24} color="black" />
+        </TouchableOpacity>
+        <Text style={styles.greeting}>Hello, Jacob!</Text>
         <Image
           source={{ uri: 'https://img.freepik.com/premium-vector/man-professional-business-casual-young-avatar-icon-illustration_1277826-623.jpg?semt=ais_hybrid' }} // Replace with user image URL
           style={styles.avatar}
         />
         <Text style={styles.greeting}>Hello, Jacob!</Text>
+        <TouchableOpacity onPress={() => setIsEditing(!isEditing)}>
+          <Icon name="create-outline" size={24} color="black" />
+        </TouchableOpacity>
       </View>
 
       {/* Button to upload prescriptions */}

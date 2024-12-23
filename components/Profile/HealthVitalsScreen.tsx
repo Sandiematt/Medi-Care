@@ -1,40 +1,21 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { createStackNavigator } from '@react-navigation/stack';
-import EditHealthVitals from './EditHealthVitalsScreen'; // Import the EditHealthVitals screen
-import EditHealthVitalsScreen from './EditHealthVitalsScreen';
 
-const Stack = createStackNavigator();
-
-const HealthVitalsStackNavigator: React.FC = () => {
-  return (
-    <Stack.Navigator screenOptions={{ headerTitleAlign: 'center' }}>
-      <Stack.Screen
-        name="HealthVitalsHome" // Change the name here
-        component={HealthVitalsScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="EditHealthVitals"
-        component={EditHealthVitalsScreen}
-        options={{ headerShown: true, title: 'Edit Health Vitals' }}
-      />
-    </Stack.Navigator>
-  );
-};
-
-const HealthVitalsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+const HealthVitalsScreen: React.FC = () => {
   const [isEditing, setIsEditing] = useState<boolean>(false);
+  const navigation = useNavigation(); // Initialize the navigation hook
+
+  const handleGoBack = () => {
+    navigation.goBack(); // Navigate back to the previous screen
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Image
-          source={{
-            uri: 'https://img.freepik.com/premium-vector/man-professional-business-casual-young-avatar-icon-illustration_1277826-623.jpg?semt=ais_hybrid',
-          }} // Replace with user image URL
+          source={{ uri: 'https://img.freepik.com/premium-vector/man-professional-business-casual-young-avatar-icon-illustration_1277826-623.jpg?semt=ais_hybrid' }} // Replace with user image URL
           style={styles.avatar}
         />
         <Text style={styles.greeting}>Hello, Jacob!</Text>
