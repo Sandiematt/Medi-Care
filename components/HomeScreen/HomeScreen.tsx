@@ -10,7 +10,7 @@ const HomeScreen: React.FC = () => {
         <View style={styles.nameContainer}>
           <View>
             <Text style={styles.helloText}>Hello</Text>
-            <Text style={styles.userName}>User</Text>
+            <Text style={styles.userName}>User,</Text>
           </View>
         </View>
         <Icon name="account-circle" size={50} color="#000" style={styles.profileImage} />

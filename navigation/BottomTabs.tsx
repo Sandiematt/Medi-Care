@@ -3,8 +3,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from '../components/HomeScreen/HomeScreen';
 import ProfileScreen from '../components/Profile/ProfileScreen';
 import ReminderScreen from '../components/Reminder/ReminderScreen';
-import SettingsScreen from '../components/settings';
 import Icon from 'react-native-vector-icons/MaterialIcons'; // Import icons
+import PillIdentifierScreen from '../components/Medicine/PillIdentifierScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -22,8 +22,8 @@ const BottomTabs: React.FC = () => {
             iconName = 'person';
           } else if (route.name === 'Reminders') {
             iconName = 'notifications';
-          } else if (route.name === 'Settings') {
-            iconName = 'settings';
+          } else if (route.name === 'Medicine') {
+            iconName = 'medication';
           }
 
           return <Icon name={iconName!} size={size} color={color} />;
@@ -34,9 +34,9 @@ const BottomTabs: React.FC = () => {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }}/>
+      <Tab.Screen name="Medicine" component={PillIdentifierScreen} options={{ headerShown: false }}/>
       <Tab.Screen name="Reminders" component={ReminderScreen}options={{ headerShown: false }} />
-      <Tab.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }}/>
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }}/>
     </Tab.Navigator>
   );
 };
