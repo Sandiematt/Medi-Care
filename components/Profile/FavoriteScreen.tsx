@@ -79,7 +79,7 @@ const FavoriteScreen: React.FC = () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleGoBack}>
-          <Icon name="arrow-back" size={26} color="black" />
+          <Icon name="chevron-back" size={26} color="black" />
         </TouchableOpacity>
         <Text style={styles.greeting}>Wellness Score</Text>
         <Image

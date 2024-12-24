@@ -23,7 +23,7 @@ const AboutUs: React.FC = () => {
     return (
         <View style={styles.container}>
             <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
-                <Icon name="arrow-back" size={24} color="black" />
+                <Icon name="chevron-back" size={24} color="black" />
             </TouchableOpacity>
             <View style={styles.header}>
                 <Text style={styles.title}>About Us</Text>
