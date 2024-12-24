@@ -16,7 +16,7 @@ const HealthVitalsScreen: React.FC = () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleGoBack}>
-          <Icon name="arrow-back" size={24} color="black" />
+          <Icon name="chevron-back" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.greeting}>Hello, Jacob!</Text>
         <TouchableOpacity onPress={() => setIsEditing(!isEditing)}>
