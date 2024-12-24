@@ -81,7 +81,7 @@ const EditProfileScreen: React.FC = () => {
 
       {/* Input Fields with Edit Icon */}
       <View style={styles.inputContainer}>
-        <Icon name="person-outline" size={20} color="gray" style={styles.icon} />
+        <Icon name="person-outline" size={20} color="#199A8E" style={styles.icon} />
         <TextInput
           style={styles.input}
           value={name}
@@ -89,12 +89,12 @@ const EditProfileScreen: React.FC = () => {
           editable={editableFields.name}
         />
         <TouchableOpacity onPress={() => enableEditing('name')}>
-          <Icon name="create-outline" size={20} color="#2196F3" />
+          <Icon name="create-outline" size={20} color="gray" />
         </TouchableOpacity>
       </View>
 
       <View style={styles.inputContainer}>
-        <Icon name="calendar-outline" size={20} color="gray" style={styles.icon} />
+        <Icon name="calendar-outline" size={20} color="#199A8E" style={styles.icon} />
         <TextInput
           style={styles.input}
           value={age}
@@ -103,12 +103,12 @@ const EditProfileScreen: React.FC = () => {
           editable={editableFields.age}
         />
         <TouchableOpacity onPress={() => enableEditing('age')}>
-          <Icon name="create-outline" size={20} color="#2196F3" />
+          <Icon name="create-outline" size={20} color="gray" />
         </TouchableOpacity>
       </View>
 
       <View style={styles.inputContainer}>
-        <Icon name="mail-outline" size={20} color="gray" style={styles.icon} />
+        <Icon name="mail-outline" size={20} color="#199A8E" style={styles.icon} />
         <TextInput
           style={styles.input}
           value={email}
@@ -117,12 +117,12 @@ const EditProfileScreen: React.FC = () => {
           editable={editableFields.email}
         />
         <TouchableOpacity onPress={() => enableEditing('email')}>
-          <Icon name="create-outline" size={20} color="#2196F3" />
+          <Icon name="create-outline" size={20} color="gray" />
         </TouchableOpacity>
       </View>
 
       <View style={styles.inputContainer}>
-        <Icon name="lock-closed-outline" size={20} color="gray" style={styles.icon} />
+        <Icon name="lock-closed-outline" size={20} color="#199A8E" style={styles.icon} />
         <TextInput
           style={styles.input}
           value={password}
@@ -131,12 +131,12 @@ const EditProfileScreen: React.FC = () => {
           secureTextEntry={true}
         />
         <TouchableOpacity onPress={() => enableEditing('password')}>
-          <Icon name="create-outline" size={20} color="#2196F3" />
+          <Icon name="create-outline" size={20} color="gray" />
         </TouchableOpacity>
       </View>
 
       <View style={styles.inputContainer}>
-        <Icon name="call-outline" size={20} color="gray" style={styles.icon} />
+        <Icon name="call-outline" size={20} color="#199A8E" style={styles.icon} />
         <TextInput
           style={styles.input}
           value={mobile}
@@ -145,7 +145,7 @@ const EditProfileScreen: React.FC = () => {
           editable={editableFields.mobile}
         />
         <TouchableOpacity onPress={() => enableEditing('mobile')}>
-          <Icon name="create-outline" size={20} color="#2196F3" />
+          <Icon name="create-outline" size={20} color="gray" />
         </TouchableOpacity>
       </View>
 
@@ -219,15 +219,15 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   curvedButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#199A8E',
     paddingVertical: 10,
-    borderRadius: 10,
+    borderRadius: 12,
     width: '50%',
     alignItems: 'center',
   },
   buttonText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
   },
 });

@@ -43,15 +43,15 @@ const HospitalScreen = () => {
         <Text style={styles.title}>{item.title}</Text>
         <View style={styles.details}>
           <View style={styles.detailItem}>
-            <Ionicons name="medkit-outline" size={18} color="#2563EB" />
+            <Ionicons name="medkit-outline" size={18} color="#199A8E" />
             <Text style={styles.detailText}>{item.specialty}</Text>
           </View>
           <View style={styles.detailItem}>
-            <Ionicons name="location-outline" size={18} color="#2563EB" />
+            <Ionicons name="location-outline" size={18} color="#199A8E" />
             <Text style={styles.detailText}>{item.address}</Text>
           </View>
           <View style={styles.detailItem}>
-            <Ionicons name="call-outline" size={18} color="#2563EB" />
+            <Ionicons name="call-outline" size={18} color="#199A8E" />
             <Text style={styles.detailText}>{item.phone}</Text>
           </View>
         </View>
@@ -87,7 +87,7 @@ const HospitalScreen = () => {
         <Ionicons 
           name="search-outline" 
           size={20} 
-          color="#2563EB" 
+          color="#199A8E" 
           style={styles.searchIcon}
         />
       </View>
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   },
   image: {
     width: 90,
-    height: 90,
+    height: 120,
     borderRadius: 10,
     marginRight: 16,
   },

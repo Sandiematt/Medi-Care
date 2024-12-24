@@ -49,7 +49,7 @@ const HomeMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       {/* Promotional Banner */}
       <View style={styles.bannerContainer}>
         <Image
-          source={require('../../assets/images/img.png')} // Replace with the correct path to your image
+          source={require('../../assets/images/home.png')} // Replace with the correct path to your image
           style={styles.bannerImage}
         />
       </View>
@@ -199,22 +199,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   bannerImage: {
-    width: 350,
+    width: 370,
     height: 150,
     borderRadius: 10,
   },
   appointmentCard: {
     flexDirection: 'row',
-    backgroundColor: '#03A9F4',
-    borderRadius: 10,
+    backgroundColor: '#24BAAC',
+    borderRadius: 12,
     padding: 15,
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 30,
   },
   dateContainer: {
-    backgroundColor: '#0288D1',
-    borderRadius: 10,
+    backgroundColor: '#199A8E',
+    borderRadius: 12,
     padding: 10,
     alignItems: 'center',
   },

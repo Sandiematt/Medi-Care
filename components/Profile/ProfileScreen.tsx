@@ -41,29 +41,29 @@ const ProfileMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       {/* Options Section */}
       <ScrollView>
         <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('EditProfile')}>
-          <Icon name="person-outline" size={20} color="#6C63FF" />
+          <Icon name="person-outline" size={20} color="#199A8E" />
           <Text style={styles.optionText}>Edit Profile</Text>
         </TouchableOpacity>
 
 
         <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('Favorite')}>
-          <Icon name="star-outline" size={20} color="#6C63FF" />
+          <Icon name="star-outline" size={20} color="#199A8E" />
           <Text style={styles.optionText}>Wellness Score</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('HealthVitals')}>
-          <Icon name="pulse-outline" size={20} color="#6C63FF" />
+          <Icon name="pulse-outline" size={20} color="#199A8E" />
           <Text style={styles.optionText}>Health Vitals</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('Prescriptions')}>
-          <Icon name="medical-outline" size={20} color="#6C63FF" />
+          <Icon name="medical-outline" size={20} color="#199A8E" />
           <Text style={styles.optionText}>My Prescriptions</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('About')}>
-          <Icon name="information-circle-outline" size={20} color="#6C63FF" />
-          <Text style={styles.optionText}>About DocSwift</Text>
+          <Icon name="information-circle-outline" size={20} color="#199A8E" />
+          <Text style={styles.optionText}>About MediCare</Text>
         </TouchableOpacity>
 
         {/* Logout Button */}

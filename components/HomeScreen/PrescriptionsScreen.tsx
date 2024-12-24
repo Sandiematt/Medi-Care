@@ -86,7 +86,7 @@ const PrescriptionPage: React.FC = () => {
           <Icon name="chevron-back" size={26} color="#333" />
         </TouchableOpacity>
       </View>
-      <Text style={styles.locationText}>📍 Bengaluru, Karnataka</Text>
+      <Text style={styles.locationText}>Prescriptions</Text>
 
       <Text style={styles.sectionTitle}>Pharmacy Nearby</Text>
 
@@ -165,8 +165,16 @@ const PrescriptionPage: React.FC = () => {
               onChangeText={setTempLink}
             />
             <View style={styles.modalButtons}>
-              <Button title="Cancel" onPress={() => setIsModalVisible(false)} />
-              <Button title="Add" onPress={handleSaveLink} />
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: '#199A8E' }]}
+                onPress={() => setIsModalVisible(false)}>
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: '#199A8E' }]}
+                onPress={handleSaveLink}>
+                <Text style={styles.modalButtonText}>Add</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -189,11 +197,11 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   locationText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     position: 'absolute',
     top: 20,
-    left: 60,
+    right:140,
   },
   sectionTitle: {
     fontSize: 20,
@@ -270,7 +278,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   continueButton: {
-    backgroundColor: '#007BFF',
+    backgroundColor: '#199A8E',
     borderRadius: 10,
     padding: 15,
     alignItems: 'center',
@@ -313,6 +321,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
+  },
+  modalButton: {
+    flex: 1,
+    marginHorizontal: 5,
+    borderRadius: 10,
+    padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  modalButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

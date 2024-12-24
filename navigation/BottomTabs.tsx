@@ -28,7 +28,7 @@ const BottomTabs: React.FC = () => {
 
           return <Icon name={iconName!} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#6200EE',
+        tabBarActiveTintColor: '#199A8E',
         tabBarInactiveTintColor: 'gray',
         tabBarStyle: { backgroundColor: '#FFFFFF' },
       })}

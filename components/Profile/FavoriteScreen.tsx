@@ -47,7 +47,7 @@ const WellnessScoreCalculator: React.FC<WellnessScoreProps> = ({ heartRate, bloo
             cy="75"
             r={circleRadius}
             fill="transparent"
-            stroke="#ff4d4d"
+            stroke="#199A8E"
             strokeWidth="10"
             strokeDasharray={circumference}
             strokeDashoffset={circumference - progress}
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   card: {
-    backgroundColor: '#FCE5FC',
+    backgroundColor: '#F5F8FF',
     borderRadius: 12,
     padding: 20,
     marginBottom: 20,

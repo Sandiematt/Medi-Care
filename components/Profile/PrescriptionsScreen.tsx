@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#5C6BC0',
+    color: '#199A8E',
   },
   text: {
     fontSize: 18,
