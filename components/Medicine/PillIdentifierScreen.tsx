@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Dropdown } from 'react-native-element-dropdown'; // Dropdown component
 import { launchCamera } from 'react-native-image-picker'; // Image picker for camera
+import TextRecognition from '@react-native-ml-kit/text-recognition'; // Firebase ML Kit for OCR
 import Icon from 'react-native-vector-icons/FontAwesome'; // Camera icon
 
 const colorData = [
@@ -33,42 +34,30 @@ const PillIdentifierScreen: React.FC = () => {
   const [imprint, setImprint] = useState('');
   const [color, setColor] = useState('None');
   const [shape, setShape] = useState('None');
-  const [results, setResults] = useState([
-    {
-      id: '1',
-      name: 'Diphedryl',
-      strength: '25 mg',
-      imprint: '44 329',
-    },
-    {
-      id: '2',
-      name: 'Diphenhydramine',
-      strength: '50 mg',
-      imprint: '25 L479',
-    },
-    {
-      id: '3',
-      name: 'Clindamycin',
-      strength: '300 mg',
-      imprint: '44 107 44 107',
-    },
-  ]);
+  const [ocrResult, setOcrResult] = useState('');
 
-  const handleSearch = () => {
-    // Placeholder logic for search functionality
-    console.log('Searching for:', imprint, color, shape);
-  };
+  const handleCameraScan = async () => {
+    launchCamera({ mediaType: 'photo' }, async (response) => {
+      if (response.assets && response.assets[0].uri) {
+        const imageUri = response.assets[0].uri;
 
-  const handleCameraScan = () => {
-    launchCamera({ mediaType: 'photo' }, (response) => {
-      if (response.assets) {
-        // Here you can send the image for text or shape recognition.
-        console.log('Camera scan result:', response.assets[0].uri);
+        try {
+          // Perform OCR using Firebase ML Kit
+          const result = await TextRecognition.recognize(imageUri);
+          const recognizedText = result.text || '';
+
+          console.log('OCR Result:', recognizedText);
+          setOcrResult(recognizedText); // Update OCR result to display or use in logic
+          setImprint(recognizedText); // Auto-fill imprint field with recognized text
+        } catch (error) {
+          console.error('OCR Error:', error);
+        }
       } else {
         console.log('User canceled the scan');
       }
     });
   };
+  
 
   return (
     <View style={styles.container}>
@@ -79,7 +68,7 @@ const PillIdentifierScreen: React.FC = () => {
 
       {/* Input Form */}
       <View style={styles.form}>
-        <Text style={styles.label}>Imprint or Pill Name</Text>
+        <Text style={styles.formLabel}>Imprint or Pill Name</Text>
         <TextInput
           style={styles.input}
           placeholder="Enter Imprint or Pill Name"
@@ -89,7 +78,7 @@ const PillIdentifierScreen: React.FC = () => {
         />
 
         {/* Color Dropdown */}
-        <Text style={styles.label}>Pill Color</Text>
+        <Text style={styles.formLabel}>Pill Color</Text>
         <Dropdown
           style={styles.dropdown}
           data={colorData}
@@ -107,7 +96,7 @@ const PillIdentifierScreen: React.FC = () => {
         />
 
         {/* Shape Dropdown */}
-        <Text style={styles.label}>Pill Shape</Text>
+        <Text style={styles.formLabel}>Pill Shape</Text>
         <Dropdown
           style={styles.dropdown}
           data={shapeData}
@@ -126,7 +115,7 @@ const PillIdentifierScreen: React.FC = () => {
           placeholder="Select Shape"
         />
 
-        <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+        <TouchableOpacity style={styles.searchButton} onPress={() => console.log('Search Logic Here')}>
           <Text style={styles.searchButtonText}>Search</Text>
         </TouchableOpacity>
       </View>
@@ -134,7 +123,7 @@ const PillIdentifierScreen: React.FC = () => {
       {/* 'OR' Text */}
       <Text style={styles.orText}>OR</Text>
 
-      {/* Camera Scan Button - Separate from the form */}
+      {/* Camera Scan Button */}
       <TouchableOpacity style={styles.scanButton} onPress={handleCameraScan}>
         <Icon name="camera" size={30} color="#FFFFFF" />
         <Text style={styles.scanButtonText}>Scan Pill</Text>
@@ -165,7 +154,7 @@ const styles = StyleSheet.create({
     elevation: 4,
     borderWidth: 1,
   },
-  label: {
+  formLabel: {
     fontSize: 14,
     fontFamily: 'Poppins-SemiBold', // Use Poppins-SemiBold font
     color: '#000',
@@ -243,6 +232,16 @@ const styles = StyleSheet.create({
     marginRight: 12,
     backgroundColor: '#D3D3D3',
   },
+  resultContainer: {
+    marginTop: 20, // Add space above the container
+    padding: 15, // Add padding inside the container
+    backgroundColor: '#F5F5F5', // Light gray background color
+    borderRadius: 8, // Rounded corners
+    borderWidth: 1, // Border thickness
+    borderColor: '#D3D3D3', // Light gray border color
+  },
+
+  
 });
 
-export default PillIdentifierScreen;
+export default PillIdentifierScreen; 
