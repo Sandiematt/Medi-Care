@@ -5,35 +5,14 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  ScrollView,
 } from 'react-native';
-import { Dropdown } from 'react-native-element-dropdown'; // Dropdown component
 import { launchCamera } from 'react-native-image-picker'; // Image picker for camera
 import TextRecognition from '@react-native-ml-kit/text-recognition'; // Firebase ML Kit for OCR
 import Icon from 'react-native-vector-icons/FontAwesome'; // Camera icon
 
-const colorData = [
-  { label: 'None Selected', value: 'None', color: '#D3D3D3' },
-  { label: 'Orange', value: 'Orange', color: '#FFA500' },
-  { label: 'White', value: 'White', color: '#FFFFFF' },
-  { label: 'Yellow', value: 'Yellow', color: '#FFFF00' },
-  { label: 'Green', value: 'Green', color: '#00FF00' },
-  { label: 'Blue', value: 'Blue', color: '#0000FF' },
-  { label: 'Pink', value: 'Pink', color: '#FFC0CB' },
-];
-
-const shapeData = [
-  { label: 'None Selected', value: 'None', shape: null },
-  { label: 'Round', value: 'Round', shape: { borderRadius: 20, width: 40, height: 40 } },
-  { label: 'Oval', value: 'Oval', shape: { borderRadius: 20, width: 50, height: 30 } },
-  { label: 'Square', value: 'Square', shape: { width: 40, height: 40 } },
-  { label: 'Rectangle', value: 'Rectangle', shape: { width: 60, height: 30 } },
-  { label: 'Diamond', value: 'Diamond', shape: { transform: [{ rotate: '45deg' }], width: 30, height: 30 } },
-];
-
-const PillIdentifierScreen: React.FC = () => {
+const PillIdentifierScreen = () => {
   const [imprint, setImprint] = useState('');
-  const [color, setColor] = useState('None');
-  const [shape, setShape] = useState('None');
   const [ocrResult, setOcrResult] = useState('');
 
   const handleCameraScan = async () => {
@@ -42,13 +21,12 @@ const PillIdentifierScreen: React.FC = () => {
         const imageUri = response.assets[0].uri;
 
         try {
-          // Perform OCR using Firebase ML Kit
           const result = await TextRecognition.recognize(imageUri);
           const recognizedText = result.text || '';
 
           console.log('OCR Result:', recognizedText);
-          setOcrResult(recognizedText); // Update OCR result to display or use in logic
-          setImprint(recognizedText); // Auto-fill imprint field with recognized text
+          setOcrResult(recognizedText);
+          setImprint(recognizedText);
         } catch (error) {
           console.error('OCR Error:', error);
         }
@@ -57,18 +35,19 @@ const PillIdentifierScreen: React.FC = () => {
       }
     });
   };
-  
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerText}>FIND PILL</Text>
+        <Icon  style={styles.medkiticon} name="medkit" size={40} color="#6200EE" /> 
+        <Text style={styles.headerText}>Pill Identifier</Text>
       </View>
 
-      {/* Input Form */}
-      <View style={styles.form}>
-        <Text style={styles.formLabel}>Imprint or Pill Name</Text>
+      {/* Input Form Section */}
+      <View style={styles.sectionCard}>
+        <Text style={styles.sectionTitle}>Enter Pill Details</Text>
+      
         <TextInput
           style={styles.input}
           placeholder="Enter Imprint or Pill Name"
@@ -76,172 +55,176 @@ const PillIdentifierScreen: React.FC = () => {
           value={imprint}
           onChangeText={setImprint}
         />
-
-        {/* Color Dropdown */}
-        <Text style={styles.formLabel}>Pill Color</Text>
-        <Dropdown
-          style={styles.dropdown}
-          data={colorData}
-          labelField="label"
-          valueField="value"
-          value={color}
-          onChange={(item) => setColor(item.value)}
-          renderItem={(item) => (
-            <View style={styles.dropdownItem}>
-              <View style={[styles.colorCircle, { backgroundColor: item.color }]} />
-              <Text style={styles.dropdownText}>{item.label}</Text>
-            </View>
-          )}
-          placeholder="Select Color"
-        />
-
-        {/* Shape Dropdown */}
-        <Text style={styles.formLabel}>Pill Shape</Text>
-        <Dropdown
-          style={styles.dropdown}
-          data={shapeData}
-          labelField="label"
-          valueField="value"
-          value={shape}
-          onChange={(item) => setShape(item.value)}
-          renderItem={(item) => (
-            <View style={styles.dropdownItem}>
-              {item.shape ? (
-                <View style={[styles.shape, item.shape, { backgroundColor: '#D3D3D3' }]} />
-              ) : null}
-              <Text style={styles.dropdownText}>{item.label}</Text>
-            </View>
-          )}
-          placeholder="Select Shape"
-        />
-
         <TouchableOpacity style={styles.searchButton} onPress={() => console.log('Search Logic Here')}>
-          <Text style={styles.searchButtonText}>Search</Text>
+          <Icon name="search" size={20} color="#FFF" style={styles.icon} />
+          <Text style={styles.buttonText}>Search</Text>
         </TouchableOpacity>
       </View>
 
-      {/* 'OR' Text */}
+      {/* OR Divider */}
       <Text style={styles.orText}>OR</Text>
 
-      {/* Camera Scan Button */}
-      <TouchableOpacity style={styles.scanButton} onPress={handleCameraScan}>
-        <Icon name="camera" size={30} color="#FFFFFF" />
-        <Text style={styles.scanButtonText}>Scan Pill</Text>
-      </TouchableOpacity>
-    </View>
+      {/* Camera Scan Section */}
+      <View style={styles.sectionCard}>
+        <Text style={styles.sectionTitle}>Scan Pill Using Camera</Text>
+        <TouchableOpacity style={styles.scanButton} onPress={handleCameraScan}>
+          <Icon name="camera" size={24} color="#FFF" style={styles.icon} />
+          <Text style={styles.buttonText}>Scan Now</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Instructions for Camera Scan */}
+      <View style={styles.instructionCard}>
+        <Text style={styles.instructionTitle}>Step-by-Step Instructions</Text>
+        <View style={styles.stepsContainer}>
+          <Text style={styles.instructionText}>1. Hold your phone steady and point it at the pill.</Text>
+          <Text style={styles.instructionText}>2. Make sure the pill is centered within the camera frame.</Text>
+          <Text style={styles.instructionText}>3. Ensure the imprint on the pill is clearly visible.</Text>
+          <Text style={styles.instructionText}>4. Tap the "Scan Now" button to capture the image.</Text>
+          <Text style={styles.instructionText}>5. Wait for the text recognition to process and display the result.</Text>
+        </View>
+      </View>
+
+      {/* OCR Result Section */}
+      {ocrResult ? (
+        <View style={styles.resultContainer}>
+          <Text style={styles.resultTitle}>OCR Result</Text>
+          <Text style={styles.resultText}>{ocrResult}</Text>
+        </View>
+      ) : null}
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F9FAFB',
     padding: 16,
   },
   header: {
+    flexDirection: 'row',  // Align icon and text in a row
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
+    justifyContent: 'center',  // Center the content
+  },
+  medkiticon: {
+    bottom:4,  // Add space between the icon and text
   },
   headerText: {
     fontSize: 28,
-    fontFamily: 'Poppins-Bold', // Use Poppins-Bold font
-    color: '#000',
+    fontFamily: 'Poppins-Bold',
+    color: '#333',
+    marginLeft: 10,  // Add space between the icon and text
   },
-  form: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+  sectionCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
     padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
     elevation: 4,
-    borderWidth: 1,
   },
-  formLabel: {
+  sectionTitle: {
+    fontSize: 18,
+    fontFamily: 'Poppins-Bold',
+    color: '#555',
+    marginBottom: 12,
+  },
+  label: {
     fontSize: 14,
-    fontFamily: 'Poppins-SemiBold', // Use Poppins-SemiBold font
-    color: '#000',
+    fontFamily: 'Poppins-Normal',
+    color: '#555',
     marginBottom: 8,
   },
   input: {
     backgroundColor: '#F1F1F1',
     borderRadius: 8,
     padding: 12,
+    color: '#333',
+    fontFamily: 'Poppins-Normal',
     marginBottom: 16,
-    color: '#000',
-    fontFamily: 'Poppins-SemiBold', // Use Poppins-SemiBold font
-  },
-  dropdown: {
-    backgroundColor: '#F1F1F1',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  dropdownItem: {
-    flexDirection: 'row',
-    
-    padding: 8,
-    justifyContent: 'center', // This ensures proper spacing between the shape and text
-  },
-  colorCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  dropdownText: {
-    fontSize: 16,
-    fontFamily: 'Poppins-SemiBold', // Use Poppins-SemiBold font
-    color: '#000',
   },
   searchButton: {
     backgroundColor: '#6200EE',
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
+    flexDirection: 'row',
     justifyContent: 'center',
-  },
-  searchButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontFamily: 'Poppins-Bold', // Use Poppins-Bold font
-  },
-  orText: {
-    fontSize: 18,
-    fontFamily: 'Poppins-SemiBold', // Use Poppins-SemiBold font
-    color: '#000',
-    textAlign: 'center',
-    marginVertical: 16,
   },
   scanButton: {
-    backgroundColor: '#FF5733',
+    backgroundColor: '#24BAAC',
     borderRadius: 8,
-    paddingVertical: 50,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
+    paddingVertical: 12,
   },
-  scanButtonText: {
-    color: '#FFFFFF',
+  buttonText: {
+    color: '#FFF',
     fontSize: 16,
-    fontFamily: 'Poppins-SemiBold', // Use Poppins-SemiBold font
+    fontFamily: 'Poppins-Bold',
     marginLeft: 8,
   },
-  shape: {
-    width: 40,
-    height: 40,
-    marginRight: 12,
-    backgroundColor: '#D3D3D3',
+  orText: {
+    fontSize: 16,
+    fontFamily: 'Poppins-Normal',
+    color: '#777',
+    textAlign: 'center',
+    marginVertical: 12,
   },
   resultContainer: {
-    marginTop: 20, // Add space above the container
-    padding: 15, // Add padding inside the container
-    backgroundColor: '#F5F5F5', // Light gray background color
-    borderRadius: 8, // Rounded corners
-    borderWidth: 1, // Border thickness
-    borderColor: '#D3D3D3', // Light gray border color
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
   },
-
-  
+  resultTitle: {
+    fontSize: 16,
+    fontFamily: 'Poppins-Bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  resultText: {
+    fontSize: 14,
+    fontFamily: 'Poppins-Normal',
+    color: '#555',
+  },
+  icon: {
+    marginRight: 1,
+    bottom: 2,
+  },
+  instructionCard: {
+    backgroundColor: '#F1F1F1',  // Light Gray background for better contrast
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
+  },
+  instructionTitle: {
+    fontSize: 18,
+    fontFamily: 'Poppins-Bold',
+    color: '#24BAAC',  // Cyan Green color for the title
+    marginBottom: 12,
+  },
+  stepsContainer: {
+    marginLeft: 10,
+  },
+  instructionText: {
+    fontSize: 14,
+    fontFamily: 'Poppins-Normal',
+    color: '#24BAAC',  // Cyan Green color for instructions
+    marginVertical: 5,
+  },
 });
 
-export default PillIdentifierScreen; 
+export default PillIdentifierScreen;
