@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 
 const NewReminderScreen: React.FC = () => {
@@ -20,7 +20,7 @@ const NewReminderScreen: React.FC = () => {
   const handleDayToggle = (day: string) => {
     setDays((prevDays) => ({
       ...prevDays,
-      [day]: !prevDays[day],  // Toggle the selected state of the day
+      [day]: !prevDays[day],
     }));
   };
 
@@ -35,6 +35,56 @@ const NewReminderScreen: React.FC = () => {
   const removeTime = (index: number) => {
     const updatedTimes = times.filter((_, i) => i !== index);
     setTimes(updatedTimes);
+  };
+
+  const handleSubmit = async () => {
+    const selectedDays = Object.keys(days).filter((day) => days[day]);
+    if (!name || !description || selectedDays.length === 0 || times.length === 0) {
+      Alert.alert('Error', 'Please fill all the required fields.');
+      return;
+    }
+
+    const reminderData = {
+      name,
+      description,
+      days: selectedDays,
+      times,
+      totalDoses,
+    };
+
+    try {
+      const response = await fetch('http://10.0.2.2:5000/addReminder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(reminderData),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        Alert.alert('Success', 'Reminder added successfully.');
+        setName('');
+        setDescription('');
+        setDays({
+          Mon: false,
+          Tue: false,
+          Wed: false,
+          Thu: false,
+          Fri: false,
+          Sat: false,
+          Sun: false,
+        });
+        setTimes([{ time: '12:00', dose: 1 }, { time: '24:00', dose: 1 }]);
+        setTotalDoses(30);
+      } else {
+        Alert.alert('Error', result.message || 'Failed to add reminder.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An error occurred while adding the reminder.');
+      console.error(error);
+    }
   };
 
   return (
@@ -52,23 +102,22 @@ const NewReminderScreen: React.FC = () => {
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Description</Text>
         <TextInput
-          style={styles.descriptionInput}  // Apply separate style for description
+          style={styles.descriptionInput}
           value={description}
           onChangeText={setDescription}
           placeholder="Enter reminder description"
-          multiline={true}  // Allow multiple lines for description
+          multiline={true}
         />
       </View>
 
-      {/* Days Container */}
       <View style={styles.daysSelectionContainer}>
         <Text style={styles.label}>Select Days</Text>
         <View style={styles.daysContainer}>
           {Object.keys(days).map((day) => (
             <TouchableOpacity
               key={day}
-              style={[styles.dayBox, days[day] && styles.selectedDayBox]}  // Highlight selected day
-              onPress={() => handleDayToggle(day)}  // Toggle the selection of the day
+              style={[styles.dayBox, days[day] && styles.selectedDayBox]}
+              onPress={() => handleDayToggle(day)}
             >
               <Text style={styles.dayText}>{day}</Text>
             </TouchableOpacity>
@@ -76,7 +125,6 @@ const NewReminderScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Time and Dose Selection */}
       <View style={styles.timesContainer}>
         {times.map((time, index) => (
           <View key={index} style={styles.timeBox}>
@@ -106,7 +154,6 @@ const NewReminderScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Total Doses */}
       <View style={styles.totalDosesContainer}>
         <Text style={styles.label}>Total Doses</Text>
         <View style={styles.totalDosesBox}>
@@ -120,8 +167,7 @@ const NewReminderScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Add Reminder Button */}
-      <TouchableOpacity style={styles.addButton}>
+      <TouchableOpacity style={styles.addButton} onPress={handleSubmit}>
         <View style={styles.addButtonContent}>
           <Text style={styles.addButtonText}>Add Reminder</Text>
           <Icon style={styles.addButtonText1} name="check" size={15} color="#fff" />
@@ -154,7 +200,7 @@ const styles = StyleSheet.create({
     padding: 12,
     color: '#000',
     fontFamily: 'Poppins-Normal',
-    height: 50,  // Adjust height for the input box (Name)
+    height: 50,
   },
   descriptionInput: {
     borderWidth: 1,
@@ -163,8 +209,8 @@ const styles = StyleSheet.create({
     padding: 12,
     color: '#000',
     fontFamily: 'Poppins-Normal',
-    height: 100,  // Increase height for the description input box
-    textAlignVertical: 'top',  // Align text to the top for better readability
+    height: 100,
+    textAlignVertical: 'top',
   },
   daysSelectionContainer: {
     marginBottom: 20,
