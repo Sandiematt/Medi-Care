@@ -1,5 +1,6 @@
-require('dotenv').config({ path: 'E:/Medi_Care/.env' }); 
+require('dotenv').config({ path: 'D:\MediCare\.env' }); 
 const express = require('express');
+require('dotenv').config();
 const { MongoClient } = require('mongodb');
 const { ObjectId } = require('mongodb');
 
@@ -25,11 +26,53 @@ const connectDB = async () => {
 const main = async () => {
   const client = await connectDB();
   const db = client.db();  
-  const remindersCollection = db.collection('reminders');  // Specify collection name
+  const remindersCollection = db.collection('reminders');
+  const usersCollection = db.collection('users');  // Specify collection name
 
   // Default route
   app.get('/', (req, res) => {
     res.send('API is running...');
+  });
+
+  app.post('/login', async (req, res) => {
+    try {
+      const { name, password } = req.body;
+      const user = await usersCollection.findOne({ name });
+      
+      if (!user) return res.status(404).json({ error: 'User not found' });
+      
+      if (user.password.toString() !== password) {
+        return res.status(404).json({ error: 'Incorrect Password' });
+      }
+  
+      // Include the name in the response
+      res.status(200).json({ 
+        message: 'Login successful', 
+        isAdmin: user.isadmin, 
+        name: user.name // Include name
+      });
+    } catch (error) {
+      console.error('Error during login:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // User registration endpoint
+  app.post('/register', async (req, res) => {
+    try {
+      const { name, email, contact, password } = req.body;
+      const existingUser = await usersCollection.findOne({ name });
+      if (existingUser) return res.status(400).json({ error: 'User already exists' });
+      
+      // Insert new user
+      const result = await usersCollection.insertOne({
+        name, name, email, contact, password, isadmin: false
+      });
+      res.status(201).json({ message: 'User registered successfully', userId: result.insertedId });
+    } catch (error) {
+      console.error('Error during registration:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
   });
 
   // Add Reminder API
