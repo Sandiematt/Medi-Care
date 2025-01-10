@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { createStackNavigator } from '@react-navigation/stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Directly import screens
 import EditProfileScreen from './EditProfileScreen';
@@ -9,6 +10,7 @@ import FavoriteScreen from './FavoriteScreen';
 import AboutScreen from './AboutScreen';
 import HealthVitalsScreen from './HealthVitalsScreen';
 import PrescriptionsScreen from './PrescriptionsScreen';
+
 
 
 // Stack Navigator
@@ -66,11 +68,22 @@ const ProfileMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           <Text style={styles.optionText}>About MediCare</Text>
         </TouchableOpacity>
 
-        {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={() => {}}>
+
+        <TouchableOpacity style={styles.logoutButton} onPress={async () => {
+          try {
+            await AsyncStorage.removeItem('userToken'); 
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Login' }], 
+            });
+          } catch (error) {
+            console.error('Error during logout:', error);
+          }
+        }}>
           <Icon name="log-out-outline" size={16} color="#fff" />
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
+
       </ScrollView>
     </View>
   );
