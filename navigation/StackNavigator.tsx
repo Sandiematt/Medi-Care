@@ -1,41 +1,37 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import SignUp from '../components/Login/Signup';  // Adjust the path to your SignUp screen
-import Login from '../components/Login/Login';   // Adjust the path to your Login screen
-import BottomTabs from './BottomTabs';  // BottomTabs is the main screen after login
+import { CommonActions } from '@react-navigation/native';
+import SignUp from '../components/Login/Signup'; // Adjust path as needed
+import Login from '../components/Login/Login';   // Adjust path as needed
+import BottomTabs from './BottomTabs';          // Main screen after login
 
 const Stack = createStackNavigator();
 
 const StackNavigator: React.FC = () => {
   return (
     <Stack.Navigator
-      initialRouteName="Login" // Start with Login screen
+      initialRouteName="Login"
       screenOptions={{
-        headerShown: false, // Hide header for all screens by default
+        headerShown: false,
       }}
     >
-      {/* SignUp Screen */}
-      <Stack.Screen
-        name="SignUp"
-        component={SignUp}
-      />
-
-      {/* Login Screen */}
+      <Stack.Screen name="SignUp" component={SignUp} />
       <Stack.Screen name="Login">
         {(props) => (
           <Login
             {...props}
-            onLoginSuccess={() => {}}
+            onLoginSuccess={() => {
+              props.navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: 'Main' }],
+                })
+              );
+            }}
           />
         )}
       </Stack.Screen>
-
-      {/* Main Screen (BottomTabs) */}
-      <Stack.Screen
-        name="Main"
-        component={BottomTabs}
-        options={{ headerShown: false }}
-      />
+      <Stack.Screen name="Main" component={BottomTabs} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 };

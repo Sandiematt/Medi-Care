@@ -1,4 +1,4 @@
-require('dotenv').config({ path: 'D:\MediCare\.env' }); 
+require('dotenv').config({ path: 'E:\\Medi_Care\\.env' }); 
 const express = require('express');
 require('dotenv').config();
 const { MongoClient } = require('mongodb');
@@ -12,7 +12,7 @@ app.use(express.json());
 // MongoDB connection function
 const connectDB = async () => {
   try {
-    const client = new MongoClient(process.env.MONGO_URI);  // Use URI from .env
+    const client = new MongoClient(process.env.MONGO_URI);  
     await client.connect();
     console.log('MongoDB connected successfully');
     return client;

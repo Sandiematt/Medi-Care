@@ -58,24 +58,32 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess }) => {
       setError('Name and Password are required.');
       return;
     }
-
+  
     try {
       const response = await axios.post('http://10.0.2.2:5000/login', { name, password });
       const user: User = response.data;
-
+  
       if (user.name) {
         await AsyncStorage.setItem('name', user.name);
       } else {
         console.error('Name not found in response');
       }
-
+  
+      // Call the callback to notify that login was successful
       onLoginSuccess();
-      navigation.navigate('Main');
+  
+      // Reset the navigation stack and navigate to 'Main' screen
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
+  
     } catch (err) {
       console.error('Login error:', err);
       setError('Login failed. Please check your credentials.');
     }
   };
+  
 
   const gotoRegister = () => {
     navigation.navigate('SignUp');
