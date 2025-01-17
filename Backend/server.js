@@ -28,6 +28,7 @@ const main = async () => {
   const db = client.db();  
   const remindersCollection = db.collection('reminders');
   const usersCollection = db.collection('users');  // Specify collection name
+  const inventoryCollection=db.collection('inventory');
 
   // Default route
   app.get('/', (req, res) => {

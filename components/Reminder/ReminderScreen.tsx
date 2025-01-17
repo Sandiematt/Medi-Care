@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, Button, RefreshControl } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { createStackNavigator } from '@react-navigation/stack'; 
-import { NavigationContainer } from '@react-navigation/native'; 
 import NewReminderScreen from './NewReminderScreen';
 import notifee from '@notifee/react-native';
 import { TriggerType } from '@notifee/react-native';
+import InventoryScreen from './InventoryScreen';
 
 // Create a Stack Navigator
 const Stack = createStackNavigator();
@@ -15,6 +15,8 @@ const ReminderApp = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="ReminderMain" component={ReminderMainScreen} />
       <Stack.Screen name="NewReminder" component={NewReminderScreen} />
+      <Stack.Screen name="Inventory" component={InventoryScreen} />
+
     </Stack.Navigator>
   );
 };
@@ -240,8 +242,8 @@ const scheduleNotification = async (triggerTime) => {
       {/* Inventory Section */}
       <View style={styles.inventoryHeader}>
         <Text style={styles.header}>Inventory</Text>
-        <TouchableOpacity style={styles.seeAllButton}>
-          <Text style={styles.seeAllButtonText}>SEE ALL</Text>
+        <TouchableOpacity style={styles.seeAllButton}  onPress={() => navigation.navigate('Inventory')}>
+          <Text style={styles.seeAllButtonText} >SEE ALL</Text>
         </TouchableOpacity>
       </View>
 

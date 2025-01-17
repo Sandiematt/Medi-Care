@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,225 +6,562 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Dimensions,
+  Animated,
+  Easing,
 } from 'react-native';
-import { launchCamera } from 'react-native-image-picker'; // Image picker for camera
-import TextRecognition from '@react-native-ml-kit/text-recognition'; // Firebase ML Kit for OCR
-import Icon from 'react-native-vector-icons/FontAwesome'; // Camera icon
+import { launchImageLibrary } from 'react-native-image-picker';
+import TextRecognition from '@react-native-ml-kit/text-recognition';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import LinearGradient from 'react-native-linear-gradient';
+
+const { width } = Dimensions.get('window');
 
 const PillIdentifierScreen = () => {
   const [imprint, setImprint] = useState('');
   const [ocrResult, setOcrResult] = useState('');
+  
+  // Animation values using useRef
+  const headerAnimation = useRef(new Animated.Value(0)).current;
+  const searchAnimation = useRef(new Animated.Value(0)).current;
+  const cameraAnimation = useRef(new Animated.Value(0)).current;
+  const instructionsAnimation = useRef(new Animated.Value(0)).current;
+  const searchButtonScale = useRef(new Animated.Value(1)).current;
+  const searchBorderAnimation = useRef(new Animated.Value(0)).current;
+  const floatingAnimation = useRef(new Animated.Value(0)).current;
+  
+  // Create tip animations using useRef
+  const tipAnimations = useRef(
+    [...Array(5)].map(() => new Animated.Value(0))
+  ).current;
 
-  const handleCameraScan = async () => {
-    launchCamera({ mediaType: 'photo' }, async (response) => {
-      if (response.assets && response.assets[0].uri) {
+  useEffect(() => {
+    // Combine all animations into a single stagger
+    const allAnimations = [
+      Animated.timing(headerAnimation, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.back(1.5)),
+      }),
+      Animated.timing(cameraAnimation, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.back(1.5)),
+      }),
+      Animated.timing(instructionsAnimation, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.back(1.5)),
+      }),
+      ...tipAnimations.map((anim, index) =>
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        })
+      ),
+    ];
+
+    // Start entrance animations
+    Animated.stagger(150, allAnimations).start();
+
+    // Start floating animation
+    const floatingLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatingAnimation, {
+          toValue: 1,
+          duration: 1500,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatingAnimation, {
+          toValue: 0,
+          duration: 1500,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    floatingLoop.start();
+
+    // Cleanup animations on unmount
+    return () => {
+      floatingLoop.stop();
+      allAnimations.forEach(anim => anim.stop());
+    };
+  }, []);
+
+  const handlePressIn = useCallback((scaleAnim: Animated.Value) => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const handlePressOut = useCallback((scaleAnim: Animated.Value) => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const handleFileUpload = () => {
+    const options = {
+      mediaType: 'photo',
+      quality: 1,
+      includeBase64: false,
+    };
+
+    launchImageLibrary(options, async (response) => {
+      if (response.didCancel) {
+        console.log('User cancelled image picker');
+        return;
+      }
+
+      if (response.errorMessage) {
+        console.log('Image Picker Error:', response.errorMessage);
+        return;
+      }
+
+      if (response.assets && response.assets[0]) {
         const imageUri = response.assets[0].uri;
+        console.log('Image URI:', imageUri);
 
         try {
           const result = await TextRecognition.recognize(imageUri);
           const recognizedText = result.text || '';
-
-          console.log('OCR Result:', recognizedText);
+          console.log('Recognized Text:', recognizedText);
           setOcrResult(recognizedText);
           setImprint(recognizedText);
         } catch (error) {
           console.error('OCR Error:', error);
         }
-      } else {
-        console.log('User canceled the scan');
       }
     });
   };
 
+  const floatingTranslateY = floatingAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -10],
+  });
+
   return (
     <ScrollView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Icon  style={styles.medkiticon} name="medkit" size={40} color="#6200EE" /> 
-        <Text style={styles.headerText}>Pill Identifier</Text>
+      {/* Gradient Header */}
+      <Animated.View style={{
+        opacity: headerAnimation,
+        transform: [
+          { translateY: headerAnimation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [-50, 0],
+            })
+          }
+        ],
+      }}>
+        <LinearGradient
+          colors={['#4F46E5', '#6366F1']}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 1}}
+          style={styles.headerGradient}
+        >
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <Icon name="pill" size={36} color="#FFFFFF" />
+              <Text style={styles.headerText}>Pill Identifier</Text>
+            </View>
+            <Text style={styles.headerSubtext}>Upload or search for medication details</Text>
+          </View>
+        </LinearGradient>
+      </Animated.View>
+
+      <View style={styles.mainContent}>
+        {/* Search Section */}
+<View style={styles.searchCard}>
+  <View style={styles.searchInputContainer}>
+    <View style={styles.searchContainer}>
+      <Icon name="magnify" size={24} color="#A5B4FC" style={styles.searchIcon} />
+      <TextInput
+        style={styles.input}
+        placeholder="Enter pill imprint or name"
+        placeholderTextColor="#94A3B8"
+        value={imprint}
+        onChangeText={setImprint}
+      />
+    </View>
+  </View>
+  <TouchableOpacity 
+    style={styles.searchButton}
+    onPress={() => {/* Add your search function here */}}
+    activeOpacity={0.8}
+  >
+    <LinearGradient
+      colors={['#4F46E5', '#6366F1']}
+      start={{x: 0, y: 0}}
+      end={{x: 1, y: 1}}
+      style={styles.buttonGradient}
+    >
+      <Text style={styles.buttonText}>Search Database</Text>
+      <Icon name="arrow-right" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+    </LinearGradient>
+  </TouchableOpacity>
+</View>
+
+        {/* Camera Section */}
+        <Animated.View style={[
+          styles.cameraCard,
+          {
+            opacity: cameraAnimation,
+            transform: [
+              { translateY: cameraAnimation.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [50, 0],
+                })
+              }
+            ],
+          }
+        ]}>
+          <TouchableOpacity
+            onPress={handleFileUpload}
+            style={styles.cameraButton}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={['rgba(99, 102, 241, 0.1)', 'rgba(79, 70,229, 0.1)']}
+              style={styles.cameraGradient}
+            >
+              <Animated.View style={[
+                styles.cameraIconContainer,
+                {transform: [{translateY: floatingTranslateY}]}
+              ]}>
+                <TouchableOpacity 
+                  onPress={handleFileUpload}
+                  activeOpacity={0.7}
+                >
+                  <Icon name="file-upload" size={48} color="#4F46E5" />
+                </TouchableOpacity>
+              </Animated.View>
+              <Text style={styles.cameraText}>Scan Your Pill</Text>
+              <Text style={styles.cameraSubtext}>
+                Position pill in frame for best results
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Instructions Section */}
+        <Animated.View style={[
+          styles.instructionCard,
+          {
+            opacity: instructionsAnimation,
+            transform: [
+              { translateY: instructionsAnimation.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [50, 0],
+                })
+              }
+            ],
+          }
+        ]}>
+          <View style={styles.cardHeader}>
+            <Icon name="lightbulb-outline" size={24} color="#4F46E5" />
+            <Text style={styles.cardTitle}>Scanning Tips</Text>
+          </View>
+          {[
+            'Place pill on dark background',
+            'Ensure good lighting conditions',
+            'Hold camera 4-6 inches away',
+            'Center the imprint in frame',
+            'Keep device steady while scanning',
+          ].map((tip, index) => (
+            <Animated.View
+              key={index}
+              style={[
+                styles.tipRow,
+                {
+                  opacity: tipAnimations[index],
+                  transform: [
+                    { translateX: tipAnimations[index].interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-50, 0],
+                      })
+                    }
+                  ],
+                }
+              ]}
+            >
+              <View style={styles.tipNumber}>
+                <Text style={styles.tipNumberText}>{index + 1}</Text>
+              </View>
+              <Text style={styles.tipText}>{tip}</Text>
+            </Animated.View>
+          ))}
+        </Animated.View>
+
+        {/* Results Section */}
+        {ocrResult && (
+          <Animated.View
+            entering={Animated.spring({
+              duration: 500,
+              useNativeDriver: true,
+            })}
+            style={styles.resultCard}
+          >
+            <LinearGradient
+              colors={['rgba(99, 102, 241, 0.1)', 'rgba(79, 70, 229, 0.1)']}
+              style={styles.resultGradient}
+            >
+              <View style={styles.resultHeader}>
+                <Icon name="text-recognition" size={24} color="#4F46E5" />
+                <Text style={styles.resultTitle}>Scan Results</Text>
+              </View>
+              <View style={styles.resultContent}>
+                <Text style={styles.resultText}>{ocrResult}</Text>
+              </View>
+            </LinearGradient>
+          </Animated.View>
+        )}
       </View>
-
-      {/* Input Form Section */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Enter Pill Details</Text>
-      
-        <TextInput
-          style={styles.input}
-          placeholder="Enter Imprint or Pill Name"
-          placeholderTextColor="#BEBEBE"
-          value={imprint}
-          onChangeText={setImprint}
-        />
-        <TouchableOpacity style={styles.searchButton} onPress={() => console.log('Search Logic Here')}>
-          <Icon name="search" size={20} color="#FFF" style={styles.icon} />
-          <Text style={styles.buttonText}>Search</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* OR Divider */}
-      <Text style={styles.orText}>OR</Text>
-
-      {/* Camera Scan Section */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Scan Pill Using Camera</Text>
-        <TouchableOpacity style={styles.scanButton} onPress={handleCameraScan}>
-          <Icon name="camera" size={24} color="#FFF" style={styles.icon} />
-          <Text style={styles.buttonText}>Scan Now</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Instructions for Camera Scan */}
-      <View style={styles.instructionCard}>
-        <Text style={styles.instructionTitle}>Step-by-Step Instructions</Text>
-        <View style={styles.stepsContainer}>
-          <Text style={styles.instructionText}>1. Hold your phone steady and point it at the pill.</Text>
-          <Text style={styles.instructionText}>2. Make sure the pill is centered within the camera frame.</Text>
-          <Text style={styles.instructionText}>3. Ensure the imprint on the pill is clearly visible.</Text>
-          <Text style={styles.instructionText}>4. Tap the "Scan Now" button to capture the image.</Text>
-          <Text style={styles.instructionText}>5. Wait for the text recognition to process and display the result.</Text>
-        </View>
-      </View>
-
-      {/* OCR Result Section */}
-      {ocrResult ? (
-        <View style={styles.resultContainer}>
-          <Text style={styles.resultTitle}>OCR Result</Text>
-          <Text style={styles.resultText}>{ocrResult}</Text>
-        </View>
-      ) : null}
     </ScrollView>
   );
 };
-
 const styles = StyleSheet.create({
+  // Main Container
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
-    padding: 16,
+    backgroundColor: '#F8FAFC',
+  },
+
+  // Header Styles
+  headerGradient: {
+    paddingTop: 48,
+    paddingBottom: 80,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    zIndex: 1,
   },
   header: {
-    flexDirection: 'row',  // Align icon and text in a row
-    alignItems: 'center',
-    marginBottom: 24,
-    justifyContent: 'center',  // Center the content
+    paddingHorizontal: 20,
   },
-  medkiticon: {
-    bottom:4,  // Add space between the icon and text
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   headerText: {
     fontSize: 28,
-    fontFamily: 'Poppins-Bold',
-    color: '#333',
-    marginLeft: 10,  // Add space between the icon and text
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginLeft: 12,
   },
-  sectionCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
+  headerSubtext: {
+    fontSize: 16,
+    color: '#E0E7FF',
+    marginTop: 4,
+  },
+
+  // Main Content
+  mainContent: {
     padding: 16,
+    marginTop: -60,
+    position: 'relative',
+    zIndex: 2,
+  },
+
+  // Search Card Styles
+  searchCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
+    marginBottom: 20,
+  },
+  searchInputContainer: {
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontFamily: 'Poppins-Bold',
-    color: '#555',
-    marginBottom: 12,
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
+    paddingHorizontal: 12,
   },
-  label: {
-    fontSize: 14,
-    fontFamily: 'Poppins-Normal',
-    color: '#555',
-    marginBottom: 8,
+  searchIcon: {
+    marginRight: 8,
   },
   input: {
-    backgroundColor: '#F1F1F1',
-    borderRadius: 8,
-    padding: 12,
-    color: '#333',
-    fontFamily: 'Poppins-Normal',
-    marginBottom: 16,
+    flex: 1,
+    fontSize: 16,
+    color: '#1E293B',
+    paddingVertical: 12,
+    paddingRight: 12,
   },
   searchButton: {
-    backgroundColor: '#6200EE',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  scanButton: {
-    backgroundColor: '#24BAAC',
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-  },
-  buttonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontFamily: 'Poppins-Bold',
-    marginLeft: 8,
-  },
-  orText: {
-    fontSize: 16,
-    fontFamily: 'Poppins-Normal',
-    color: '#777',
-    textAlign: 'center',
-    marginVertical: 12,
-  },
-  resultContainer: {
-    backgroundColor: '#FFF',
     borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
+    overflow: 'hidden',
+  },
+
+  // Camera Card Styles
+  cameraButton: {
+    width: '100%',
+  },
+  cameraCard: {
+    marginBottom: 20,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  cameraGradient: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  cameraIconContainer: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 20,
+    marginBottom: 16,
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 12,
     elevation: 4,
   },
-  resultTitle: {
-    fontSize: 16,
-    fontFamily: 'Poppins-Bold',
-    color: '#333',
+  cameraText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1E293B',
     marginBottom: 8,
   },
-  resultText: {
+  cameraSubtext: {
     fontSize: 14,
-    fontFamily: 'Poppins-Normal',
-    color: '#555',
+    color: '#64748B',
+    textAlign: 'center',
   },
-  icon: {
-    marginRight: 1,
-    bottom: 2,
-  },
+
+  // Instruction Card Styles
   instructionCard: {
-    backgroundColor: '#F1F1F1',  // Light Gray background for better contrast
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    alignItems: 'flex-start',
-    justifyContent: 'flex-start',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
   },
-  instructionTitle: {
-    fontSize: 18,
-    fontFamily: 'Poppins-Bold',
-    color: '#24BAAC',  // Cyan Green color for the title
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginLeft: 12,
+  },
+  tipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 12,
   },
-  stepsContainer: {
-    marginLeft: 10,
+  tipNumber: {
+    width: 28,
+    height: 28,
+    backgroundColor: '#EEF2FF',
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
   },
-  instructionText: {
+  tipNumberText: {
+    color: '#4F46E5',
     fontSize: 14,
-    fontFamily: 'Poppins-Normal',
-    color: '#24BAAC',  // Cyan Green color for instructions
-    marginVertical: 5,
+    fontWeight: '600',
+  },
+  tipText: {
+    flex: 1,
+    fontSize: 15,
+    color: '#475569',
+    lineHeight: 22,
+  },
+
+  // Result Card Styles
+  resultCard: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  resultGradient: {
+    padding: 20,
+  },
+  resultHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  resultTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginLeft: 12,
+  },
+  resultContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+  },
+  resultText: {
+    fontSize: 16,
+    color: '#475569',
+    lineHeight: 24,
+  },
+
+  // Button Styles
+  buttonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  buttonIcon: {
+    marginLeft: 4,
+  },
+  buttonContainer: {
+    marginTop: 16,
+    backgroundColor: '#4F46E5',
+    borderRadius: 12,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
+
 
 export default PillIdentifierScreen;
