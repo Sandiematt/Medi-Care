@@ -22,12 +22,12 @@ interface LoginProps {
 }
 
 interface User {
-  name: string;
+  username: string;
   isAdmin: boolean;
 }
 
 const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess }) => {
-  const [name, setName] = useState<string>('');
+  const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isNameFocused, setIsNameFocused] = useState<boolean>(false);
@@ -39,11 +39,11 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess }) => {
 
   useEffect(() => {
     Animated.timing(nameLabelAnim, {
-      toValue: isNameFocused || name !== '' ? 1 : 0,
+      toValue: isNameFocused || username !== '' ? 1 : 0,
       duration: 200,
       useNativeDriver: false,
     }).start();
-  }, [isNameFocused, name]);
+  }, [isNameFocused, username]);
 
   useEffect(() => {
     Animated.timing(passwordLabelAnim, {
@@ -54,19 +54,19 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess }) => {
   }, [isPasswordFocused, password]);
 
   const handleLogin = async () => {
-    if (!name || !password) {
-      setError('Name and Password are required.');
+    if (!username || !password) {
+      setError('Username and Password are required.');
       return;
     }
   
     try {
-      const response = await axios.post('http://10.0.2.2:5000/login', { name, password });
+      const response = await axios.post('http://10.0.2.2:5000/login', { username, password });
       const user: User = response.data;
   
-      if (user.name) {
-        await AsyncStorage.setItem('name', user.name);
+      if (user.username) {
+        await AsyncStorage.setItem('username', user.username);
       } else {
-        console.error('Name not found in response');
+        console.error('Username not found in response');
       }
   
       // Call the callback to notify that login was successful
@@ -113,7 +113,6 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess }) => {
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.innerrContainer}>
             {/* Logo Section */}
-            {/* Logo Section with Background */}
             <View style={styles.logoBackground}>
               <View style={styles.logoContainer}>
                 <Image source={require('../../assets/images/logo.png')} style={styles.logo} />
@@ -132,16 +131,16 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess }) => {
             <View style={styles.formContainer}>
               <View style={styles.form}>
                 <View style={styles.inputContainer}>
-                  <Animated.Text style={labelStyle(nameLabelAnim)}>Username </Animated.Text>
+                  <Animated.Text style={labelStyle(nameLabelAnim)}>Username</Animated.Text>
                   <TextInput
                     autoCapitalize='none'
                     autoCorrect={false}
                     style={styles.inputText}
-                    placeholder={isNameFocused || name !== '' ? '' : 'Username'}
+                    placeholder={isNameFocused || username !== '' ? '' : 'Username'}
                     placeholderTextColor="#003f5c"
                     onFocus={() => setIsNameFocused(true)}
                     onBlur={() => setIsNameFocused(false)}
-                    onChangeText={setName}
+                    onChangeText={setUsername}
                   />
                   <View style={styles.iconContainer}>
                     <Icon name="person" size={24} color="#24BAAC" />
@@ -178,7 +177,6 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess }) => {
 
             <View style={styles.regBtn}>
               <Text style={styles.hehe}>Don't have an account?  <Text style={styles.regText} onPress={gotoRegister}>Sign Up</Text></Text>
-              
             </View>
           </View>
         </ScrollView>
@@ -186,6 +184,7 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess }) => {
     </SafeAreaView>
   );
 };
+
 
 const styles = StyleSheet.create({
   safeArea: {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   TextInput,
@@ -6,55 +6,108 @@ import {
   Image,
   StyleSheet,
   Text,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { launchImageLibrary } from 'react-native-image-picker';
-import { useNavigation } from '@react-navigation/native'; // Import navigation hook
+import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
 const EditProfileScreen: React.FC = () => {
-  const navigation = useNavigation(); // Initialize navigation
-  const [name, setName] = useState<string>('John Doe');
-  const [age, setAge] = useState<string>('30');
-  const [email, setEmail] = useState<string>('johndoe@example.com');
-  const [mobile, setMobile] = useState<string>('1234567890');
-  const [password, setPassword] = useState<string>('••••••••••'); 
-  const [imageUri, setImageUri] = useState<string | null>(null);
+  const navigation = useNavigation();
+
   const [editableFields, setEditableFields] = useState({
-    name: false,
-    age: false,
+    username: false,
     email: false,
-    mobile: false,
+    contact: false,
+    gender: false,
+    age: false,
     password: false,
   });
 
-  const handleSave = () => {
-    console.log('Profile updated:', { name, age, email, mobile, imageUri });
-    setEditableFields({ name: false, age: false, email: false, mobile: false, password: false });
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    contact: '',
+    gender: '',
+    age: '',
+    password: '',
+  });
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const storedUsername = await AsyncStorage.getItem('username');
+        if (storedUsername) {
+          const response = await axios.get(`http://10.0.2.2:5000/users/${storedUsername}`);
+          setFormData(response.data); // Assuming response.data is an object with user data
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      const storedUsername = await AsyncStorage.getItem('username');
+      if (!storedUsername) {
+        Alert.alert('Error', 'User not logged in');
+        return;
+      }
+
+      const updateData = {};
+      Object.keys(formData).forEach((key) => {
+        if (editableFields[key] && formData[key] !== '') {
+          updateData[key] = formData[key];
+        }
+      });
+
+      if (Object.keys(updateData).length === 0) {
+        Alert.alert('Error', 'No fields to update');
+        return;
+      }
+
+      const response = await axios.put(
+        `http://10.0.2.2:5000/users/${storedUsername}`,
+        updateData,
+        {
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+
+      if (response.data.success) {
+        setEditableFields((prevFields) =>
+          Object.keys(prevFields).reduce(
+            (acc, key) => ({ ...acc, [key]: false }),
+            {}
+          )
+        );
+        Alert.alert('Success', 'Profile updated successfully');
+      } else {
+        throw new Error(response.data.message);
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      Alert.alert(
+        'Error',
+        error.response?.data?.message || 'Failed to update profile'
+      );
+    }
   };
 
   const enableEditing = (field: string) => {
     setEditableFields((prev) => ({ ...prev, [field]: true }));
   };
 
-  const pickImage = () => {
-    launchImageLibrary({ mediaType: 'photo', quality: 1 }, (response) => {
-      if (response.didCancel) {
-        console.log('User cancelled image picker');
-      } else if (response.errorCode) {
-        console.log('ImagePicker Error: ', response.errorMessage);
-      } else if (response.assets && response.assets.length > 0) {
-        setImageUri(response.assets[0].uri || null);
-      }
-    });
-  };
-
   const handleGoBack = () => {
-    navigation.goBack(); // Navigate back to the previous screen
+    navigation.goBack();
   };
 
   return (
     <View style={styles.container}>
-      {/* Back Icon */}
       <View style={styles.backIconContainer}>
         <TouchableOpacity onPress={handleGoBack}>
           <Icon name="chevron-back" size={30} color="#333" />
@@ -63,93 +116,49 @@ const EditProfileScreen: React.FC = () => {
 
       <Text style={styles.header}>Edit Profile</Text>
 
-      {/* Profile Image Section */}
       <View style={styles.imageContainer}>
-        <TouchableOpacity onPress={pickImage}>
-          <Image
-            source={{ uri: imageUri || 'https://via.placeholder.com/100' }}
-            style={styles.profileImage}
-          />
-          <Icon
-            name="create-outline"
-            size={25}
-            color="white"
-            style={styles.editIcon}
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* Input Fields with Edit Icon */}
-      <View style={styles.inputContainer}>
-        <Icon name="person-outline" size={20} color="#199A8E" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          value={name}
-          onChangeText={setName}
-          editable={editableFields.name}
+        <Image
+          source={{ uri: 'https://via.placeholder.com/100' }}
+          style={styles.profileImage}
         />
-        <TouchableOpacity onPress={() => enableEditing('name')}>
-          <Icon name="create-outline" size={20} color="gray" />
-        </TouchableOpacity>
       </View>
 
-      <View style={styles.inputContainer}>
-        <Icon name="calendar-outline" size={20} color="#199A8E" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          value={age}
-          keyboardType="numeric"
-          onChangeText={setAge}
-          editable={editableFields.age}
-        />
-        <TouchableOpacity onPress={() => enableEditing('age')}>
-          <Icon name="create-outline" size={20} color="gray" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.inputContainer}>
-        <Icon name="mail-outline" size={20} color="#199A8E" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          value={email}
-          keyboardType="email-address"
-          onChangeText={setEmail}
-          editable={editableFields.email}
-        />
-        <TouchableOpacity onPress={() => enableEditing('email')}>
-          <Icon name="create-outline" size={20} color="gray" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.inputContainer}>
-        <Icon name="lock-closed-outline" size={20} color="#199A8E" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-          editable={editableFields.password}
-          secureTextEntry={true}
-        />
-        <TouchableOpacity onPress={() => enableEditing('password')}>
-          <Icon name="create-outline" size={20} color="gray" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.inputContainer}>
-        <Icon name="call-outline" size={20} color="#199A8E" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          value={mobile}
-          keyboardType="phone-pad"
-          onChangeText={setMobile}
-          editable={editableFields.mobile}
-        />
-        <TouchableOpacity onPress={() => enableEditing('mobile')}>
-          <Icon name="create-outline" size={20} color="gray" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Save Button */}
+      {Object.keys(formData)
+  .filter((key) => key !== '_id') // Filter out the '_id' field
+  .map((key) => (
+    <View style={styles.inputContainer} key={key}>
+      <Icon
+        name={
+          key === 'username'
+            ? 'person-outline'
+            : key === 'email'
+            ? 'mail-outline'
+            : key === 'contact'
+            ? 'call-outline'
+            : key === 'gender'
+            ? 'female-outline'
+            : key === 'age'
+            ? 'calendar-outline'
+            : 'lock-closed-outline'
+        }
+        size={20}
+        color="#199A8E"
+        style={styles.icon}
+      />
+      <TextInput
+        style={styles.input}
+        value={formData[key]}
+        onChangeText={(value) =>
+          setFormData((prev) => ({ ...prev, [key]: value }))
+        }
+        editable={editableFields[key]}
+        secureTextEntry={key === 'password'}
+      />
+      <TouchableOpacity onPress={() => enableEditing(key)}>
+        <Icon name="create-outline" size={20} color="gray" />
+      </TouchableOpacity>
+    </View>
+  ))}
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.curvedButton} onPress={handleSave}>
           <Text style={styles.buttonText}>Save</Text>
@@ -189,13 +198,6 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     borderWidth: 2,
     borderColor: '#ddd',
-  },
-  editIcon: {
-    position: 'absolute',
-    bottom: 25,
-    right: 25,
-    padding: 10,
-    alignItems: 'center',
   },
   inputContainer: {
     flexDirection: 'row',

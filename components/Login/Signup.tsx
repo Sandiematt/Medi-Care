@@ -1,6 +1,17 @@
 import React, { useState } from 'react';
-import { View, TextInput, Text, StyleSheet, SafeAreaView, KeyboardAvoidingView, TouchableOpacity, Platform, ScrollView } from 'react-native';
+import {
+  View,
+  TextInput,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  TouchableOpacity,
+  Platform,
+  ScrollView,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons'; // Import Ionicons
+import { Picker } from '@react-native-picker/picker'; // Import Picker
 
 interface SignUpProps {
   navigation: {
@@ -9,9 +20,11 @@ interface SignUpProps {
 }
 
 const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
-  const [name, setName] = useState<string>('');
+  const [username, setUsername] = useState<string>(''); // Replaced name with username
   const [email, setEmail] = useState<string>('');
   const [contact, setContact] = useState<string>('');
+  const [age, setAge] = useState<string>(''); // Age field
+  const [gender, setGender] = useState<string>(''); // Gender field
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
@@ -22,8 +35,13 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
       return;
     }
 
-    if (!email || !password || !name || !contact) {
+    if (!email || !password || !username || !contact || !age || !gender) { // Replaced name with username
       setError('Please fill in all fields');
+      return;
+    }
+
+    if (isNaN(Number(age)) || Number(age) <= 0) {
+      setError('Please enter a valid age');
       return;
     }
 
@@ -34,9 +52,11 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name,
+          username, // Replaced name with username
           email,
           contact,
+          age,
+          gender,
           password,
         }),
       });
@@ -74,14 +94,14 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
             <View style={styles.formContainer}>
               <View style={styles.form}>
                 <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Name</Text>
+                  <Text style={styles.label}>Username</Text> {/* Replaced Name with Username */}
                   <TextInput
                     autoCapitalize="words"
                     autoCorrect={false}
                     style={styles.inputText}
                     placeholder="John Doe"
                     placeholderTextColor="#003f5c"
-                    onChangeText={(text) => setName(text)}
+                    onChangeText={(text) => setUsername(text)} // Replaced name with username
                   />
                   <Icon name="person-outline" size={20} color="#003f5c" style={styles.icon} />
                 </View>
@@ -95,7 +115,6 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
                     placeholder="john.doe@example.com"
                     placeholderTextColor="#003f5c"
                     onChangeText={(text) => setEmail(text)}
-                    autoFocus
                   />
                   <Icon name="mail-outline" size={20} color="#003f5c" style={styles.icon} />
                 </View>
@@ -109,6 +128,29 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
                     onChangeText={(text) => setContact(text)}
                   />
                   <Icon name="call-outline" size={20} color="#003f5c" style={styles.icon} />
+                </View>
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Age</Text>
+                  <TextInput
+                    keyboardType="numeric"
+                    style={styles.inputText}
+                    placeholder="Enter your age"
+                    placeholderTextColor="#003f5c"
+                    onChangeText={(text) => setAge(text)}
+                  />
+                  <Icon name="calendar-outline" size={20} color="#003f5c" style={styles.icon} />
+                </View>
+                <View style={styles.pickerContainer}>
+                  <Text style={styles.label}>Gender</Text>
+                  <Picker
+                    selectedValue={gender}
+                    style={styles.picker}
+                    onValueChange={(itemValue) => setGender(itemValue)}
+                  >
+                    <Picker.Item label="Select Gender" value="" />
+                    <Picker.Item label="Male" value="Male" />
+                    <Picker.Item label="Female" value="Female" />
+                  </Picker>
                 </View>
                 <View style={styles.inputContainer}>
                   <Text style={styles.label}>Password</Text>
@@ -143,7 +185,13 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
               </View>
             </View>
             <View style={styles.loginBtn}>
-              <Text style={styles.hehe}>Already have an account? <Text style={styles.loginText} onPress={gotoLogin}>Login</Text></Text>
+            <Text style={styles.hehe}>
+              Already have an account?{' '}
+              <Text style={styles.loginText} onPress={gotoLogin}>
+                Login
+              </Text>
+            </Text>
+
             </View>
           </View>
         </ScrollView>
@@ -194,6 +242,16 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginBottom: 16,
   },
+  pickerContainer: {
+    borderRadius: 10,
+    borderColor: '#ddd',
+  },
+  picker: {
+    height: 60,
+    width: '100%',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+  },
   label: {
     fontSize: 13,
     fontFamily: 'Poppins-SemiBold',
@@ -201,7 +259,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   inputText: {
-    backgroundColor: '#ebecf4',
+    backgroundColor: '#f5f5f5',
     height: 44,
     borderRadius: 12,
     paddingHorizontal: 16,

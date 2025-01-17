@@ -1,30 +1,113 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native'; // Import navigation hook
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import EditHealthVitalsScreen from './EditHealthVitalsScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
+
+const Stack = createStackNavigator<RootStackParamList>();
+const HealthVitalsApp = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="HealthVitalss" component={HealthVitalsScreen} />
+      <Stack.Screen name="Edit" component={EditHealthVitalsScreen} />
+    </Stack.Navigator>
+  );
+};
+
+type RootStackParamList = {
+  HealthVitalss: undefined;
+  Edit: undefined;
+};
 const HealthVitalsScreen: React.FC = () => {
-  const [isEditing, setIsEditing] = useState<boolean>(false);
-  const navigation = useNavigation(); // Initialize the navigation hook
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const [userData, setUserData] = useState<any>(null);
+  const [editableFields, setEditableFields] = useState({
+    username: false,
+    bloodpressure: false,
+    heartrate:false,
+    bloodgroup: false,
+    height: false,
+    weight: false
+  });
+  const [username, setName] = useState('');
+  const [bloodpressure, setBloodPressure] = useState('');
+  const [heartrate, setheartrate] = useState('');
+  const [bloodgroup, setBloodGroup] = useState('');
+  const [height, setHeight] = useState('');
+  const [weight, setWeight] = useState('');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchHealthVitals = async () => {
+      try {
+        const storedUsername = await AsyncStorage.getItem('username');
+        if (!storedUsername) {
+          throw new Error('Username not found in storage.');
+        }
+  
+        const response = await axios.get(`http://10.0.2.2:5000/healthvitals/${storedUsername}`);
+  
+        // Use response data if available, else fallback to defaults
+        const data = response.data || {};
+        setUserData(data);
+        setName(data.username || 'N/A');
+        setBloodPressure(data.bloodpressure || 'N/A');
+        setheartrate(data.heartrate || 'N/A');
+        setBloodGroup(data.bloodgroup || 'N/A');
+        setHeight(data.height || 'N/A');
+        setWeight(data.weight || 'N/A');
+        setError(null);
+      } catch (err) {
+        setUserData(null); // Ensure UI still renders
+        setName('N/A');
+        setBloodPressure('N/A');
+        setheartrate('N/A');
+        setBloodGroup('N/A');
+        setHeight('N/A');
+        setWeight('N/A');
+        setError(null); // Avoid error message, just fallback
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchHealthVitals();
+  }, []);
+  
+
+  if (loading) {
+    return <ActivityIndicator size="large" color="#000" style={{ marginTop: 50 }} />;
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={{ color: 'red', textAlign: 'center' }}>{error}</Text>
+      </View>
+    );
+  }
 
   const handleGoBack = () => {
-    navigation.goBack(); // Navigate back to the previous screen
+    navigation.goBack();
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleGoBack}>
           <Icon name="chevron-back" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.greeting}>Hello, Jacob!</Text>
-        <TouchableOpacity onPress={() => setIsEditing(!isEditing)}>
+        <Text style={styles.greeting}>Hello, {username}!</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Edit')}>
           <Icon name="create-outline" size={24} color="black" />
         </TouchableOpacity>
       </View>
 
-      {/* Heart Health Section */}
       <View style={styles.card}>
         <Text style={styles.title}>Heart Health</Text>
         <View style={styles.infoSection}>
@@ -33,8 +116,10 @@ const HealthVitalsScreen: React.FC = () => {
           </View>
           <View style={styles.details}>
             <Text style={styles.subTitle}>Health</Text>
-            <Text style={styles.description}>Last Diagnosis of Heart: 1 week ago</Text>
-            <TouchableOpacity style={styles.button}>
+            <Text style={styles.description}>
+              Diagnosis of Heart Health
+            </Text>
+            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Edit')}>
               <Text style={styles.buttonText}>Diagnose</Text>
             </TouchableOpacity>
           </View>
@@ -43,56 +128,43 @@ const HealthVitalsScreen: React.FC = () => {
         <View style={styles.vitals}>
           <View style={styles.vitalCard}>
             <Text style={styles.vitalLabel}>Blood Pressure</Text>
-            <Text style={styles.vitalValue}>123 / 80</Text>
+            <Text style={styles.vitalValue}>
+              {bloodpressure || 'N/A'} mmHg
+            </Text>
           </View>
           <View style={styles.vitalCard}>
             <Text style={styles.vitalLabel}>Heart Rate</Text>
-            <Text style={styles.vitalValue}>67 / min</Text>
+            <Text style={styles.vitalValue}>
+              {heartrate || 'N/A'} ms
+            </Text>
           </View>
         </View>
       </View>
 
-      {/* Additional Vitals */}
       <View style={styles.card1}>
         <Text style={styles.title}>Additional Health Data</Text>
         <View style={styles.vitals}>
           <View style={styles.vitalCard}>
             <Icon name="body-outline" size={30} color="#6A1B9A" />
             <Text style={styles.vitalLabel}>Height</Text>
-            <Text style={styles.vitalValue}>5'8"</Text>
+            <Text style={styles.vitalValue}>
+              {height || 'N/A'} cm
+            </Text>
           </View>
           <View style={styles.vitalCard}>
             <Icon name="barbell-outline" size={30} color="#1E88E5" />
             <Text style={styles.vitalLabel}>Weight</Text>
-            <Text style={styles.vitalValue}>70 kg</Text>
+            <Text style={styles.vitalValue}>
+              {weight || 'N/A'} kg
+            </Text>
           </View>
           <View style={styles.vitalCard}>
             <Icon name="water-outline" size={30} color="#D84315" />
             <Text style={styles.vitalLabel}>Blood Group</Text>
-            <Text style={styles.vitalValue}>O+</Text>
+            <Text style={styles.vitalValue}>
+              {bloodgroup || 'N/A'} ve
+            </Text>
           </View>
-        </View>
-      </View>
-
-      {/* Doctor Contact Section */}
-      <View style={styles.contactCard}>
-        <Image
-          source={{
-            uri: 'https://img.freepik.com/premium-vector/man-professional-business-casual-young-avatar-icon-illustration_1277826-623.jpg?semt=ais_hybrid',
-          }} // Replace with doctor image URL
-          style={styles.contactAvatar}
-        />
-        <View style={styles.contactDetails}>
-          <Text style={styles.contactName}>Robert Fox</Text>
-          <Text style={styles.contactRole}>Emergency Contact</Text>
-        </View>
-        <View style={styles.contactActions}>
-          <TouchableOpacity>
-            <Icon name="chatbox-ellipses-outline" size={24} color="#555" />
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <Icon name="call-outline" size={24} color="#555" />
-          </TouchableOpacity>
         </View>
       </View>
     </ScrollView>
@@ -221,4 +293,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default HealthVitalsScreen;
+export default HealthVitalsApp;
