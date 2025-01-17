@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity, Modal, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity, Modal, TouchableWithoutFeedback, Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 
@@ -7,107 +7,165 @@ interface Prescription {
   id: string;
   imageUri: string;
   name: string;
+  date: string;
+  doctor: string;
+  medication: string;
+  dosage: string;
+  duration: string;
 }
+
+const { width } = Dimensions.get('window');
 
 const PrescriptionsScreen: React.FC = () => {
   const navigation = useNavigation();
 
-  const handleGoBack = () => {
-    navigation.goBack();
-  };
-
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>([
+  const [prescriptions] = useState<Prescription[]>([
     {
       id: '1',
-      imageUri: 'https://img.freepik.com/free-vector/formal-a4-doctor-prescription-notepad-paper-template-design_1017-56467.jpg?t=st=1735021328~exp=1735024928~hmac=3c4d26864fb0659f61dec3e33b376da1a5a468bd023a84995d8f4b70659f1a43&w=740',
-      name: 'Prescription 1',
+      imageUri: 'https://img.freepik.com/free-vector/formal-a4-doctor-prescription-notepad-paper-template-design_1017-56467.jpg',
+      name: 'General Checkup Prescription',
+      date: 'Jan 15, 2025',
+      doctor: 'Dr. Sarah Johnson',
+      medication: 'Amoxicillin',
+      dosage: '500mg',
+      duration: '7 days'
     },
     {
       id: '2',
-      imageUri: 'https://img.freepik.com/free-vector/formal-a4-doctor-prescription-notepad-paper-template-design_1017-56467.jpg?t=st=1735021328~exp=1735024928~hmac=3c4d26864fb0659f61dec3e33b376da1a5a468bd023a84995d8f4b70659f1a43&w=740',
-      name: 'Prescription 2',
+      imageUri: 'https://img.freepik.com/free-vector/formal-a4-doctor-prescription-notepad-paper-template-design_1017-56467.jpg',
+      name: 'Follow-up Prescription',
+      date: 'Jan 10, 2025',
+      doctor: 'Dr. Michael Chen',
+      medication: 'Ibuprofen',
+      dosage: '400mg',
+      duration: '5 days'
     },
   ]);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  const deletePrescription = (id: string) => {
-    setPrescriptions((prevPrescriptions) =>
-      prevPrescriptions.filter((prescription) => prescription.id !== id)
-    );
-  };
-
-  const openImageModal = (imageUri: string) => {
-    setSelectedImage(imageUri);
-    setModalVisible(true);
-  };
-
-  const closeImageModal = () => {
-    setModalVisible(false);
-    setSelectedImage(null);
-  };
-
   const renderItem = ({ item }: { item: Prescription }) => (
-    <View style={styles.card}>
-      <Image source={{ uri: item.imageUri }} style={styles.image} />
+    <TouchableOpacity 
+      style={styles.card}
+      onPress={() => setModalVisible(true)}
+      activeOpacity={0.9}
+    >
       <View style={styles.cardContent}>
-        <Text style={styles.cardText}>{item.name}</Text>
-        <View style={styles.icons}>
-          <TouchableOpacity onPress={() => openImageModal(item.imageUri)}>
-            <Icon name="eye" size={24} color="#B3E0B3" style={styles.icon} />
+        <View style={styles.cardTop}>
+          <View style={styles.prescriptionIconContainer}>
+            <Icon name="medical" size={24} color="#4F46E5" />
+          </View>
+          <TouchableOpacity style={styles.moreButton}>
+            <Icon name="ellipsis-horizontal" size={20} color="#64748B" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => deletePrescription(item.id)}>
-            <Icon name="trash" size={24} color="#FFB3B3" />
+        </View>
+
+        <View style={styles.prescriptionInfo}>
+          <Text style={styles.prescriptionName}>{item.name}</Text>
+          
+          <View style={styles.medicationDetails}>
+            <View style={styles.detailBox}>
+              <Icon name="medical-outline" size={16} color="#4F46E5" />
+              <Text style={styles.detailText}>{item.medication}</Text>
+            </View>
+            <View style={styles.detailBox}>
+              <Icon name="timer-outline" size={16} color="#4F46E5" />
+              <Text style={styles.detailText}>{item.dosage}</Text>
+            </View>
+            <View style={styles.detailBox}>
+              <Icon name="calendar-outline" size={16} color="#4F46E5" />
+              <Text style={styles.detailText}>{item.duration}</Text>
+            </View>
+          </View>
+
+          <View style={styles.doctorInfo}>
+            <View style={styles.infoRow}>
+              <Icon name="person" size={16} color="#4F46E5" />
+              <Text style={styles.doctorText}>{item.doctor}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Icon name="time" size={16} color="#4F46E5" />
+              <Text style={styles.dateText}>{item.date}</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.cardActions}>
+          <TouchableOpacity style={styles.actionButton}>
+            <Icon name="download-outline" size={20} color="#4F46E5" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton}>
+            <Icon name="share-social-outline" size={20} color="#4F46E5" />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.actionButton, styles.deleteButton]}>
+            <Icon name="trash-outline" size={20} color="#DC2626" />
           </TouchableOpacity>
         </View>
       </View>
+    </TouchableOpacity>
+  );
+
+  const SummaryBox = ({ icon, title, value }: { icon: string; title: string; value: string }) => (
+    <View style={styles.summaryBox}>
+      <View style={styles.summaryIconContainer}>
+        <Icon name={icon} size={20} color="#4F46E5" />
+      </View>
+      <Text style={styles.summaryValue}>{value}</Text>
+      <Text style={styles.summaryTitle}>{title}</Text>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={handleGoBack} >
-          <Icon name="chevron-back" size={24} color="black" />
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Icon name="chevron-back" size={24} color="#4F46E5" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Prescriptions</Text>
+        <View style={styles.headerTextContainer}>
+          <Text style={styles.headerTitle}>My Prescriptions</Text>
+          <Text style={styles.headerSubtitle}>View your medical prescriptions</Text>
+        </View>
+        <TouchableOpacity style={styles.searchButton}>
+          <Icon name="search-outline" size={24} color="#4F46E5" />
+        </TouchableOpacity>
       </View>
 
-      {/* Greeting Text */}
-      <Image 
-    source={{ uri: 'https://img.freepik.com/free-vector/medical-prescription-concept-illustration_114360-6595.jpg?t=st=1735021181~exp=1735024781~hmac=1a36d63c82fcaaf327cd9ea2ed456e9217a7278d721644c175bc854d0446ae0e&w=740' }} 
-    style={styles.greetingImage} 
-  />
+      <View style={styles.summaryContainer}>
+        <SummaryBox icon="calendar" title="This Month" value="3" />
+        <SummaryBox icon="medical" title="Medications" value="5" />
+        <SummaryBox icon="pulse" title="Next Refill" value="2d" />
+      </View>
 
-      {/* Prescription List */}
-      <FlatList
-        data={prescriptions}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={
-          <View style={styles.listHeader}>
-            <Text style={styles.sectionHeader}>Your Prescriptions</Text>
-          </View>
-        }
-        ListEmptyComponent={<Text style={styles.text}>No prescriptions yet.</Text>}
-        contentContainerStyle={styles.list}
-      />
+      <View style={styles.listContainer}>
+        <View style={styles.listHeader}>
+          <Text style={styles.sectionTitle}>Recent Prescriptions</Text>
+          <TouchableOpacity style={styles.filterButton}>
+            <Icon name="options-outline" size={20} color="#4F46E5" />
+          </TouchableOpacity>
+        </View>
 
-      {/* Modal for Image Preview */}
+        <FlatList
+          data={prescriptions}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.list}
+        />
+      </View>
+
       <Modal
         visible={modalVisible}
         transparent={true}
         animationType="fade"
-        onRequestClose={closeImageModal}
+        onRequestClose={() => setModalVisible(false)}
       >
-        <TouchableWithoutFeedback onPress={closeImageModal}>
-          <View style={styles.modalOverlay}>
+        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+          <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
-              <Image source={{ uri: selectedImage || '' }} style={styles.modalImage} />
-              <TouchableOpacity onPress={closeImageModal} style={styles.closeButton}>
-                <Icon name="close" size={30} color="white" />
+              <Image source={{ uri: prescriptions[0].imageUri }} style={styles.modalImage} resizeMode="contain" />
+              <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                <Icon name="close" size={24} color="#FFF" />
               </TouchableOpacity>
             </View>
           </View>
@@ -120,113 +178,217 @@ const PrescriptionsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF',
-    padding: 20,
+    backgroundColor: '#F8FAFC',
   },
-  headerContainer: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
   backButton: {
-    marginLeft: 10,
-    padding: 5,
-
-    borderRadius: 50,
+    padding: 8,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+  },
+  searchButton: {
+    padding: 8,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+  },
+  headerTextContainer: {
+    flex: 1,
+    marginHorizontal: 15,
   },
   headerTitle: {
-    flex: 1,
-    fontSize: 22,
-    color: 'black',
-    fontWeight: '600',
-    textAlign: 'center',
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1E293B',
   },
-  greetingImage: {
-    width: 300,
-    height: 280,
-    alignItems:'center',
-    left:30, // Adjust according to your design
-    borderRadius: 8,
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#64748B',
+    marginTop: 4,
+  },
+  summaryContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#fff',
+  },
+  summaryBox: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 12,
+    marginHorizontal: 5,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+  },
+  summaryIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#EEF2FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  summaryValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  summaryTitle: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 4,
+  },
+  listContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
   },
   listHeader: {
-    marginBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 15,
   },
-  sectionHeader: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#199A8E',
-  },
-  text: {
+  sectionTitle: {
     fontSize: 18,
-    color: 'gray',
-    textAlign: 'center',
-    marginTop: 20,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  filterButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#EEF2FF',
   },
   list: {
-    top:40,
-    paddingTop: 10,
     paddingBottom: 20,
   },
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 20,
-    padding: 10,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowRadius: 6,
-    shadowOpacity: 0.1,
-    elevation: 3,
-  },
-  image: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    marginRight: 10,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   cardContent: {
+    padding: 16,
+  },
+  cardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    flex: 1,
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  cardText: {
+  prescriptionIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#EEF2FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  moreButton: {
+    padding: 8,
+    borderRadius: 20,
+  },
+  prescriptionInfo: {
+    marginBottom: 12,
+  },
+  prescriptionName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#1E293B',
+    marginBottom: 12,
   },
-  icons: {
+  medicationDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  detailBox: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
-  icon: {
-    marginRight: 15,
+  detailText: {
+    marginLeft: 6,
+    color: '#475569',
+    fontSize: 13,
+    fontWeight: '500',
   },
-  modalOverlay: {
+  doctorInfo: {
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    paddingTop: 12,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  doctorText: {
+    fontSize: 14,
+    color: '#64748B',
+    marginLeft: 8,
+  },
+  dateText: {
+    fontSize: 14,
+    color: '#64748B',
+    marginLeft: 8,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    paddingTop: 12,
+    marginTop: 12,
+  },
+  actionButton: {
+    padding: 8,
+    marginLeft: 12,
+    borderRadius: 8,
+    backgroundColor: '#EEF2FF',
+  },
+  deleteButton: {
+    backgroundColor: '#FEE2E2',
+  },
+  modalContainer: {
     flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   modalContent: {
-    width: '80%',
-    height: '80%',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: width * 0.9,
+    height: width * 1.2,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    overflow: 'hidden',
   },
   modalImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 10,
   },
   closeButton: {
     position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    padding: 10,
-    borderRadius: 50,
+    top: 20,
+    right: 20,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 8,
+    borderRadius: 20,
   },
 });
 

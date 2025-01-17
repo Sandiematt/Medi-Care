@@ -28,53 +28,160 @@ const main = async () => {
   const db = client.db();  
   const remindersCollection = db.collection('reminders');
   const usersCollection = db.collection('users');  // Specify collection name
-  const inventoryCollection=db.collection('inventory');
+  const healthCollection = db.collection('healthvitals');  // Specify collection name
+  const prescriptionSCollection = db.collection('prescriptions');  // Specify collection name
 
   // Default route
   app.get('/', (req, res) => {
     res.send('API is running...');
   });
 
-  app.post('/login', async (req, res) => {
-    try {
-      const { name, password } = req.body;
-      const user = await usersCollection.findOne({ name });
-      
-      if (!user) return res.status(404).json({ error: 'User not found' });
-      
-      if (user.password.toString() !== password) {
-        return res.status(404).json({ error: 'Incorrect Password' });
-      }
-  
-      // Include the name in the response
-      res.status(200).json({ 
-        message: 'Login successful', 
-        isAdmin: user.isadmin, 
-        name: user.name // Include name
-      });
-    } catch (error) {
-      console.error('Error during login:', error);
-      res.status(500).json({ error: 'Internal server error' });
+// User login endpoint
+app.post('/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const user = await usersCollection.findOne({ username });
+    
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    // You should ideally use bcrypt to compare the password securely
+    if (user.password !== password) {
+      return res.status(404).json({ error: 'Incorrect Password' });
     }
-  });
 
-  // User registration endpoint
-  app.post('/register', async (req, res) => {
-    try {
-      const { name, email, contact, password } = req.body;
-      const existingUser = await usersCollection.findOne({ name });
-      if (existingUser) return res.status(400).json({ error: 'User already exists' });
-      
-      // Insert new user
-      const result = await usersCollection.insertOne({
-        name, name, email, contact, password, isadmin: false
-      });
-      res.status(201).json({ message: 'User registered successfully', userId: result.insertedId });
-    } catch (error) {
-      console.error('Error during registration:', error);
-      res.status(500).json({ error: 'Internal server error' });
+    // Include the username in the response
+    res.status(200).json({ 
+      message: 'Login successful', 
+      isAdmin: user.isadmin, 
+      username: user.username // Include username
+    });
+  } catch (error) {
+    console.error('Error during login:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// User registration endpoint
+app.post('/register', async (req, res) => {
+  try {
+    const { username, email, contact, age, gender, password } = req.body;
+    const existingUser = await usersCollection.findOne({ username });
+    if (existingUser) return res.status(400).json({ error: 'User already exists' });
+    
+    // Insert new user
+    const result = await usersCollection.insertOne({
+      username, email, contact, age, gender, password
+    });
+    res.status(201).json({ message: 'User registered successfully', userId: result.insertedId });
+  } catch (error) {
+    console.error('Error during registration:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/users/:username', async (req, res) => {
+  try {
+    const username = req.params.username;
+    const user = await usersCollection.findOne({ username });
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(404).json({ error: 'User not found' });
     }
-  });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+// Update user profile endpoint
+// BACKEND - server.js or routes/users.js
+app.put('/users/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    const updates = req.body;
+    
+    // Remove any undefined or empty fields
+    Object.keys(updates).forEach(key => {
+      if (updates[key] === undefined || updates[key] === '') {
+        delete updates[key];
+      }
+    });
+
+    // Only update if there are valid fields to update
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No valid fields to update'
+      });
+    }
+
+    const updatedUser = await usersCollection.findOneAndUpdate(
+      { username: username },
+      { $set: updates },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: updatedUser
+    });
+
+  } catch (error) {
+    console.error('Server error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error updating profile'
+    });
+  }
+});
+
+// Fetch health vitals for a user
+app.get('/healthvitals/:username', async (req, res) => {
+  try {
+    const username = req.params.username;
+    // Fetch health vitals for the user from the healthvitals collection
+    const healthVitals = await healthCollection.findOne({ username });
+
+    if (healthVitals) {
+      res.status(200).json(healthVitals);
+    } else {
+      res.status(404).json({ error: 'Health vitals not found for this user' });
+    }
+  } catch (error) {
+    console.error('Error fetching health vitals:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/healthvitals/:username', async (req, res) => {
+  try {
+    const username = req.params.username;
+    const healthVitals = req.body;
+
+    // Use findOneAndUpdate to update or insert the health vitals
+    const updatedVitals = await healthCollection.findOneAndUpdate(
+      { username }, // Find by username
+      { $set: healthVitals }, // Update with new health vitals
+      { returnDocument: 'after', upsert: true } // Return the updated document and create if it doesn't exist
+    );
+
+    res.status(200).send({ 
+      message: 'Health vitals saved successfully!', 
+      data: updatedVitals.value // Return the updated or inserted document
+    });
+  } catch (error) {
+    console.error('Error saving health vitals:', error);
+    res.status(500).json({ error: 'Failed to save health vitals' });
+  }
+});
+
 
   // Add Reminder API
   app.post('/addReminder', async (req, res) => {
@@ -194,6 +301,43 @@ const main = async () => {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
+
+
+  // Inventory API
+  // API to fetch inventory items
+app.get('/inventory', async (req, res) => {
+  try {
+    const inventoryItems = await inventoryCollection.find().toArray(); // Fetch all items
+    res.status(200).json(inventoryItems);
+  } catch (error) {
+    console.error('Error fetching inventory:', error.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.get('/stats', async (req, res) => {
+  try {
+    // Fetch total items in the database
+    const totalItems = await inventoryCollection.countDocuments();
+
+    // Count items with low stock (inStock < 5 but > 0)
+    const lowStock = await inventoryCollection.countDocuments({ inStock: { $lt: 5, $gt: 0 } });
+
+    // Count items that are out of stock (inStock === 0)
+    const outOfStock = await inventoryCollection.countDocuments({ inStock: 0 });
+
+    // Return statistics as an object
+    res.status(200).json({
+      totalItems,
+      lowStock,
+      outOfStock,
+    });
+  } catch (error) {
+    console.error('Error fetching inventory stats:', error);
+    res.status(500).json({ message: 'Error fetching inventory stats', error });
+  }
+});
+
 
   app.post('/logout', (req, res) => {
     // For token-based auth, you might blacklist the token (using a database or in-memory storage)
