@@ -3,7 +3,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { CommonActions } from '@react-navigation/native';
 import SignUp from '../components/Login/Signup'; // Adjust path as needed
 import Login from '../components/Login/Login';   // Adjust path as needed
-import BottomTabs from './BottomTabs';          // Main screen after login
+import BottomTabs from './BottomTabs';          // Main screen after login 
 
 const Stack = createStackNavigator();
 

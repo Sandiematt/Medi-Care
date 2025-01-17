@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, Button } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, Button, RefreshControl } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { createStackNavigator } from '@react-navigation/stack'; 
 import { NavigationContainer } from '@react-navigation/native'; 
 import NewReminderScreen from './NewReminderScreen';
+import notifee from '@notifee/react-native';
+import { TriggerType } from '@notifee/react-native';
 
 // Create a Stack Navigator
 const Stack = createStackNavigator();
@@ -22,6 +24,7 @@ const ReminderMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [selectedReminder, setSelectedReminder] = useState<any>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTime, setSelectedTime] = useState<any>(null);
+  const [refreshing, setRefreshing] = useState(false); 
 
   // Mock inventory data
   const inventory = [
@@ -30,6 +33,7 @@ const ReminderMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   ];
 
   const today = new Date().toLocaleString('en-US', { weekday: 'short' }); // e.g., "Mon", "Tue"
+  
 
   const fetchReminders = async () => {
     try {
@@ -44,6 +48,19 @@ const ReminderMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   
         // Update the reminders in state
         setReminders(todaysReminders);
+        // Loop through reminders and schedule notifications
+        todaysReminders.forEach((reminder) => {
+          reminder.times.forEach(async (timeObj) => {
+            if (!timeObj.completed[today]) {
+              const [hour, minute] = timeObj.time.split(':');
+              const triggerTime = new Date();
+              triggerTime.setHours(parseInt(hour), parseInt(minute), 0, 0); // Set the reminder time
+
+              // Schedule notification at the exact time
+              await scheduleNotification(triggerTime);
+            }
+          });
+        });
       } else {
         Alert.alert('Error', 'Failed to fetch reminders.');
       }
@@ -51,6 +68,45 @@ const ReminderMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       Alert.alert('Error', 'An error occurred while fetching reminders.');
       console.error(error);
     }
+  };
+
+  // Schedule a simple notification
+const scheduleNotification = async (triggerTime) => {
+  try {
+    const channelId = await notifee.createChannel({
+      id: 'reminder-channel',
+      name: 'Medication Reminders',
+      sound: 'default',
+    });
+    console.log(triggerTime);
+    await notifee.createTriggerNotification(
+      {
+        title: 'Medication Reminder',
+        body: 'It\'s time to take your medicine.',
+        android: {
+          channelId,
+          smallIcon: 'ic_launcher', // Use a small icon
+          sound: 'default',
+
+        },
+        
+      },
+      {
+        type: TriggerType.TIMESTAMP,  // Use TIMESTAMP trigger type
+        timestamp: triggerTime.getTime(), // Use the calculated timestamp for the reminder
+      }
+    );
+  } catch (error) {
+    console.error('Time Exceded no notifations will be displayed');
+  }
+};
+  
+  
+
+  const refreshHandler = async () => {
+    setRefreshing(true);
+    await fetchReminders(); // Re-fetch the reminders when the user pulls down to refresh
+    setRefreshing(false);
   };
   
 
@@ -119,7 +175,12 @@ const ReminderMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Today's Reminders</Text>
-      <ScrollView contentContainerStyle={styles.scrollViewContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollViewContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={refreshHandler} />
+        }
+      >
         {reminders.map((item, index) => (
           <View key={item._id || index} style={styles.reminderCard}>
             <View style={styles.reminderDetails}>
@@ -132,7 +193,7 @@ const ReminderMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                     style={[
                       styles.time,
                       timeObj.completed && timeObj.completed[today]
-                        ? { textDecorationLine: 'line-through', opacity: 0.5 } // Apply styles for completed times
+                        ? { textDecorationLine: 'line-through', opacity: 0.5 }
                         : {},
                     ]}
                   >
