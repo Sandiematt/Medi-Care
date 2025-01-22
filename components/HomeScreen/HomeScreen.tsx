@@ -1,18 +1,26 @@
-import React from 'react'; 
-import { View, Text, StyleSheet, TextInput, ScrollView, Image, TouchableOpacity } from 'react-native';
+import React from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TextInput, 
+  ScrollView, 
+  Image, 
+  TouchableOpacity,
+  Dimensions 
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { createStackNavigator } from '@react-navigation/stack';
-import { NavigationContainer } from '@react-navigation/native'; // Import NavigationContainer for stack navigation
 import MedicinesScreen from './MedicinesScreen';
 import HospitalScreen from './HospitalScreen';
-import PrescriptionsScreen from './PrescriptionsScreen';
 import SymptomCheckerScreen from './SymptomCheckerScreen';
+import PrescriptionsScreen from './PrescriptionsScreen';
 
 const Stack = createStackNavigator();
+const { width } = Dimensions.get('window');
 
-// Home screen options navigator
 const HomeOptionsNavigator = () => (
-  <Stack.Navigator> 
+  <Stack.Navigator>
     <Stack.Screen name="HomeMain" component={HomeMainScreen} options={{ headerShown: false }} />
     <Stack.Screen name="Medicines" component={MedicinesScreen} options={{ headerShown: false }} />
     <Stack.Screen name="Hospital" component={HospitalScreen} options={{ headerShown: false }} />
@@ -21,229 +29,354 @@ const HomeOptionsNavigator = () => (
   </Stack.Navigator>
 );
 
-// Main home screen component
 const HomeMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const services = [
+    { name: 'Medicines', icon: 'medical-services', color: '#5856D6', route: 'Medicines' },
+    { name: 'Hospital', icon: 'local-hospital', color: '#FF2D55', route: 'Hospital' },
+    { name: 'Prescriptions', icon: 'description', color: '#5856D6', route: 'Prescriptions' },
+    { name: 'Symptom\nChecker', icon: 'healing', color: '#FF9500', route: 'Symptom' },
+  ];
+
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header Section */}
-      <View style={styles.headerContainer}>
-        <View style={styles.nameContainer}>
-          <View>
-            <Text style={styles.helloText}>Hello</Text>
-            <Text style={styles.userName}>User,</Text>
-          </View>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.greeting}>Hello,</Text>
+          <Text style={styles.userName}>John Doe 👋</Text>
         </View>
-        <Icon name="account-circle" size={50} color="#000" style={styles.profileImage} />
+        <TouchableOpacity style={styles.profileButton}>
+          <Image
+            source={require('../../assets/images/sandeep.png')}
+            style={styles.profileImage}
+          />
+          <View style={styles.notificationBadge} />
+        </TouchableOpacity>
       </View>
 
-      {/* Search Bar */}
+      {/* Search Section */}
       <View style={styles.searchContainer}>
-        <Icon name="search" size={24} color="#A0A0A0" />
-        <TextInput
-          placeholder="Search Medical"
-          placeholderTextColor="#A0A0A0"
-          style={styles.searchInput}
-        />
+        <View style={styles.searchInputContainer}>
+          <Icon name="search" size={24} color="#8E8E93" />
+          <TextInput
+            placeholder="Search medical services..."
+            placeholderTextColor="#8E8E93"
+            style={styles.searchInput}
+          />
+        </View>
+        <TouchableOpacity style={styles.filterButton}>
+          <Icon name="tune" size={24} color="#5856D6" />
+        </TouchableOpacity>
       </View>
 
-      {/* Promotional Banner */}
+      {/* Banner Section */}
       <View style={styles.bannerContainer}>
         <Image
-          source={require('../../assets/images/home.png')} // Replace with the correct path to your image
+          source={require('../../assets/images/heart.png')}
           style={styles.bannerImage}
+          resizeMode="cover"
         />
+        <View style={styles.bannerContent}>
+          <Text style={styles.bannerTitle}>Medical Checkup</Text>
+          <Text style={styles.bannerSubtitle}>Get a checkup now and{'\n'}stay healthy!</Text>
+          <TouchableOpacity style={styles.bannerButton}>
+            <Text style={styles.bannerButtonText}>Book Now</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Services Section */}
-      <Text style={styles.sectionTitle}>Services</Text>
-      <View style={styles.servicesContainer}>
-        {/* Medicines Service */}
-        <TouchableOpacity style={styles.serviceItemContainer} onPress={() => navigation.navigate('Medicines')}>
-          <View style={styles.serviceItem}>
-            <Icon name="medical-services" size={30} color="#4CAF50" />
-          </View>
-          <Text style={styles.serviceLabel}>Medicines</Text>
-        </TouchableOpacity>
-
-        {/* Hospital Service */}
-        <TouchableOpacity style={styles.serviceItemContainer} onPress={() => navigation.navigate('Hospital')}>
-          <View style={styles.serviceItem}>
-            <Icon name="local-hospital" size={30} color="#FF9800" />
-          </View>
-          <Text style={styles.serviceLabel}>Hospital</Text>
-        </TouchableOpacity>
-
-        {/* Prescriptions Service */}
-        <TouchableOpacity style={styles.serviceItemContainer} onPress={() => navigation.navigate('Prescriptions')}>
-          <View style={styles.serviceItem}>
-            <Icon name="note" size={30} color="#03A9F4" />
-          </View>
-          <Text style={styles.serviceLabel}>Prescriptions</Text>
-        </TouchableOpacity>
-
-        {/* Symptom Checker Service */}
-        <TouchableOpacity style={styles.serviceItemContainer} onPress={() => navigation.navigate('Symptom')}>
-          <View style={styles.serviceItem}>
-            <Icon name="healing" size={30} color="#E91E63" />
-          </View>
-          <Text style={styles.serviceLabel}>Symptom Checker</Text>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Our Services</Text>
+        <TouchableOpacity>
+          <Text style={styles.sectionLink}>See All</Text>
         </TouchableOpacity>
       </View>
 
+      <View style={styles.servicesGrid}>
+        {services.map((service, index) => (
+          <TouchableOpacity 
+            key={index}
+            style={styles.serviceCard}
+            onPress={() => navigation.navigate(service.route)}
+          >
+            <View style={[styles.serviceIcon, { backgroundColor: `${service.color}15` }]}>
+              <Icon name={service.icon} size={28} color={service.color} />
+            </View>
+            <Text style={styles.serviceText}>{service.name}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       {/* Upcoming Appointments */}
-      <Text style={styles.sectionTitle}>Upcoming Medicines</Text>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Upcoming Schedule</Text>
+        <TouchableOpacity>
+          <Text style={styles.sectionLink}>See All</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.appointmentCard}>
-        <View style={styles.dateContainer}>
-          <Text style={styles.dateText}>12</Text>
-          <Text style={styles.dayText}>Tue</Text>
+        <View style={styles.appointmentHeader}>
+          <View style={styles.doctorInfo}>
+            <Image
+              source={require('../../assets/images/liver.png')}
+              style={styles.doctorImage}
+            />
+            <View style={styles.doctorDetails}>
+              <Text style={styles.doctorName}>Dr. Sarah Connor</Text>
+              <Text style={styles.doctorSpecialty}>Cardiologist</Text>
+            </View>
+          </View>
+          <Icon name="more-vert" size={24} color="#8E8E93" />
         </View>
-        <View style={styles.detailsContainer}>
-          <Text style={styles.appointmentDoctor}>Dr. Mim Ankht</Text>
-          <Text style={styles.appointmentDetails}>Depression</Text>
-          <Text style={styles.appointmentTime}>09:30 AM</Text>
+        
+        <View style={styles.appointmentDivider} />
+        
+        <View style={styles.appointmentFooter}>
+          <View style={styles.appointmentInfo}>
+            <Icon name="event" size={20} color="#5856D6" />
+            <Text style={styles.appointmentText}>Monday, June 12</Text>
+          </View>
+          <View style={styles.appointmentInfo}>
+            <Icon name="access-time" size={20} color="#5856D6" />
+            <Text style={styles.appointmentText}>10:00 AM</Text>
+          </View>
         </View>
-        <Icon name="more-vert" size={24} color="#000" />
       </View>
     </ScrollView>
   );
 };
 
-// Main home screen navigation setup
 const HomeScreen: React.FC = () => {
   return <HomeOptionsNavigator />;
 };
-
-
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingTop: 40,
-    paddingBottom: 80, // Ensures space for the bottom tabs, adjust as necessary
   },
-  headerContainer: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 24,
   },
-  nameContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  helloText: {
+  greeting: {
     fontSize: 16,
-    color: '#000',
+    color: '#8E8E93',
+    marginBottom: 4,
   },
   userName: {
-    fontSize: 25,
-    fontFamily: 'Poppins-SemiBold',
-    color: '#000',
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1C1C1E',
+  },
+  profileButton: {
+    position: 'relative',
   },
   profileImage: {
-    borderRadius: 25, // Keeps the icon round
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F2F2F7',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#FF3B30',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 10,
-    padding: 5,
-    marginVertical: 20,
+    paddingHorizontal: 24,
+    gap: 12,
+    marginBottom: 24,
+  },
+  searchInputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F2F2F7',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 48,
   },
   searchInput: {
     flex: 1,
     marginLeft: 8,
     fontSize: 16,
-    color: '#000',
+    color: '#1C1C1E',
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontFamily: 'Poppins-SemiBold',
-    color: '#000',
-    marginVertical: 0,
-    textAlign: 'left',
-  },
-  servicesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-    marginTop: 10,
-  },
-  serviceItemContainer: {
-    alignItems: 'center',
-    width: '23%',
-    marginBottom: 10,
-  },
-  serviceLabel: {
-    fontSize: 12,
-    marginTop: 5,
-    color: '#000',
-    fontFamily: 'Poppins-Normal',
-    textAlign: 'center',
-  },
-  serviceItem: {
-    width: 60,
-    height: 60,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 10,
+  filterButton: {
+    width: 48,
+    height: 48,
+    backgroundColor: '#F2F2F7',
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   bannerContainer: {
-    backgroundColor: '#E0F7FA',
-    borderRadius: 10,
-    marginBottom: 20,
-    alignItems: 'center',
+    marginHorizontal: 24,
+    height: 160,
+    backgroundColor: '#5856D6',
+    borderRadius: 24,
+    overflow: 'hidden',
+    marginBottom: 24,
   },
   bannerImage: {
-    width: 370,
-    height: 150,
-    borderRadius: 10,
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+  },
+  bannerContent: {
+    padding: 24,
+    height: '100%',
+    justifyContent: 'center',
+  },
+  bannerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 8,
+  },
+  bannerSubtitle: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    opacity: 0.8,
+    marginBottom: 16,
+  },
+  bannerButton: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  bannerButtonText: {
+    color: '#5856D6',
+    fontWeight: 'bold',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1C1C1E',
+  },
+  sectionLink: {
+    fontSize: 14,
+    color: '#5856D6',
+    fontWeight: '600',
+  },
+  servicesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+    marginBottom: 24,
+  },
+  serviceCard: {
+    width: (width - 80) / 2,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    margin: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  serviceIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  serviceText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1C1C1E',
   },
   appointmentCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 24,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    marginBottom: 24,
+  },
+  appointmentHeader: {
     flexDirection: 'row',
-    backgroundColor: '#24BAAC',
-    borderRadius: 12,
-    padding: 15,
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 30,
-  },
-  dateContainer: {
-    backgroundColor: '#199A8E',
-    borderRadius: 12,
-    padding: 10,
     alignItems: 'center',
   },
-  dateText: {
-    fontSize: 20,
-    fontFamily: 'Poppins-SemiBold',
-    color: '#FFF',
+  doctorInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  dayText: {
-    fontSize: 12,
-    color: '#FFF',
+  doctorImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 12,
   },
-  detailsContainer: {
-    flex: 1,
-    marginLeft: 10,
+  doctorDetails: {
+    justifyContent: 'center',
   },
-  appointmentDoctor: {
+  doctorName: {
     fontSize: 16,
-    fontFamily: 'Poppins-Bold',
-    color: '#FFF',
+    fontWeight: '600',
+    color: '#1C1C1E',
+    marginBottom: 4,
   },
-  appointmentDetails: {
+  doctorSpecialty: {
     fontSize: 14,
-    color: '#FFF',
+    color: '#8E8E93',
   },
-  appointmentTime: {
-    fontSize: 12,
-    color: '#FFF',
-    marginTop: 5,
+  appointmentDivider: {
+    height: 1,
+    backgroundColor: '#F2F2F7',
+    marginVertical: 16,
+  },
+  appointmentFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  appointmentInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  appointmentText: {
+    fontSize: 14,
+    color: '#1C1C1E',
+    marginLeft: 8,
   },
 });
 

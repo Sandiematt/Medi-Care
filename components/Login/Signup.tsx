@@ -9,9 +9,10 @@ import {
   TouchableOpacity,
   Platform,
   ScrollView,
+  Dimensions,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons'; // Import Ionicons
-import { Picker } from '@react-native-picker/picker'; // Import Picker
+import Icon from 'react-native-vector-icons/Ionicons';
+import { Picker } from '@react-native-picker/picker';
 
 interface SignUpProps {
   navigation: {
@@ -20,11 +21,11 @@ interface SignUpProps {
 }
 
 const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
-  const [username, setUsername] = useState<string>(''); // Replaced name with username
+  const [username, setUsername] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [contact, setContact] = useState<string>('');
-  const [age, setAge] = useState<string>(''); // Age field
-  const [gender, setGender] = useState<string>(''); // Gender field
+  const [age, setAge] = useState<string>('');
+  const [gender, setGender] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
@@ -74,124 +75,133 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
     }
   };
 
-  const gotoLogin = () => {
-    navigation.navigate('Login'); // Navigate to Login screen
-  };
+  const renderInput = (
+    label: string,
+    value: string,
+    onChangeText: (text: string) => void,
+    iconName: string,
+    placeholder: string,
+    secureTextEntry?: boolean,
+    keyboardType?: any
+  ) => (
+    <View style={styles.inputContainer}>
+      <View style={styles.iconContainer}>
+        <Icon name={iconName} size={20} color="#5856D6" />
+      </View>
+      <View style={styles.inputWrapper}>
+        <Text style={styles.label}>{label}</Text>
+        <TextInput
+          style={styles.input}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor="#A0A0A0"
+          secureTextEntry={secureTextEntry}
+          keyboardType={keyboardType}
+          autoCapitalize="none"
+        />
+      </View>
+    </View>
+  );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+        style={styles.keyboardView}
       >
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <View style={styles.innerContainer}>
-            <View style={styles.header}>
-              <Text style={styles.title}>Create a New Account</Text>
-              <Text style={styles.subheader}>Fill in the details below to get started</Text>
-            </View>
-            <View style={styles.formContainer}>
-              <View style={styles.form}>
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Username</Text> {/* Replaced Name with Username */}
-                  <TextInput
-                    autoCapitalize="words"
-                    autoCorrect={false}
-                    style={styles.inputText}
-                    placeholder="John Doe"
-                    placeholderTextColor="#003f5c"
-                    onChangeText={(text) => setUsername(text)} // Replaced name with username
-                  />
-                  <Icon name="person-outline" size={20} color="#003f5c" style={styles.icon} />
-                </View>
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Email</Text>
-                  <TextInput
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    keyboardType="email-address"
-                    style={styles.inputText}
-                    placeholder="john.doe@example.com"
-                    placeholderTextColor="#003f5c"
-                    onChangeText={(text) => setEmail(text)}
-                  />
-                  <Icon name="mail-outline" size={20} color="#003f5c" style={styles.icon} />
-                </View>
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Contact</Text>
-                  <TextInput
-                    keyboardType="phone-pad"
-                    style={styles.inputText}
-                    placeholder="+91894567890"
-                    placeholderTextColor="#003f5c"
-                    onChangeText={(text) => setContact(text)}
-                  />
-                  <Icon name="call-outline" size={20} color="#003f5c" style={styles.icon} />
-                </View>
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Age</Text>
-                  <TextInput
-                    keyboardType="numeric"
-                    style={styles.inputText}
-                    placeholder="Enter your age"
-                    placeholderTextColor="#003f5c"
-                    onChangeText={(text) => setAge(text)}
-                  />
-                  <Icon name="calendar-outline" size={20} color="#003f5c" style={styles.icon} />
-                </View>
-                <View style={styles.pickerContainer}>
-                  <Text style={styles.label}>Gender</Text>
+        <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>Join our community today</Text>
+          </View>
+
+          <View style={styles.formContainer}>
+            {renderInput(
+              'Username',
+              username,
+              setUsername,
+              'person-outline',
+              'Enter your username'
+            )}
+            {renderInput(
+              'Email',
+              email,
+              setEmail,
+              'mail-outline',
+              'Enter your email',
+              false,
+              'email-address'
+            )}
+            {renderInput(
+              'Contact',
+              contact,
+              setContact,
+              'call-outline',
+              'Enter your phone number',
+              false,
+              'phone-pad'
+            )}
+            {renderInput(
+              'Age',
+              age,
+              setAge,
+              'calendar-outline',
+              'Enter your age',
+              false,
+              'numeric'
+            )}
+
+            <View style={styles.pickerOuterContainer}>
+              <View style={styles.iconContainer}>
+                <Icon name="people-outline" size={20} color="#5856D6" />
+              </View>
+              <View style={styles.pickerContainer}>
+                <Text style={styles.label}>Gender</Text>
+                <View style={styles.pickerWrapper}>
                   <Picker
                     selectedValue={gender}
                     style={styles.picker}
                     onValueChange={(itemValue) => setGender(itemValue)}
                   >
-                    <Picker.Item label="Select Gender" value="" />
-                    <Picker.Item label="Male" value="Male" />
-                    <Picker.Item label="Female" value="Female" />
+                    <Picker.Item label="Select Gender" value="" color="#A0A0A0" />
+                    <Picker.Item label="Male" value="Male" color="#000000" />
+                    <Picker.Item label="Female" value="Female" color="#000000" />
                   </Picker>
-                </View>
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Password</Text>
-                  <TextInput
-                    secureTextEntry
-                    style={styles.inputText}
-                    placeholder="•••••••••••••••"
-                    placeholderTextColor="#003f5c"
-                    onChangeText={(text) => setPassword(text)}
-                  />
-                  <Icon name="lock-closed-outline" size={20} color="#003f5c" style={styles.icon} />
-                </View>
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Confirm Password</Text>
-                  <TextInput
-                    secureTextEntry
-                    style={styles.inputText}
-                    placeholder="•••••••••••••••"
-                    placeholderTextColor="#003f5c"
-                    onChangeText={(text) => setConfirmPassword(text)}
-                  />
-                  <Icon name="lock-closed-outline" size={20} color="#003f5c" style={styles.icon} />
-                </View>
-                {error ? <Text style={styles.errorText}>{error}</Text> : null}
-                <View style={styles.formAction}>
-                  <TouchableOpacity onPress={handleSignUp}>
-                    <View style={styles.btn}>
-                      <Text style={styles.btnText}>Sign Up</Text>
-                    </View>
-                  </TouchableOpacity>
                 </View>
               </View>
             </View>
-            <View style={styles.loginBtn}>
-            <Text style={styles.hehe}>
-              Already have an account?{' '}
-              <Text style={styles.loginText} onPress={gotoLogin}>
-                Login
-              </Text>
-            </Text>
 
+            {renderInput(
+              'Password',
+              password,
+              setPassword,
+              'lock-closed-outline',
+              '••••••••',
+              true
+            )}
+            {renderInput(
+              'Confirm Password',
+              confirmPassword,
+              setConfirmPassword,
+              'lock-closed-outline',
+              '••••••••',
+              true
+            )}
+
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+            <TouchableOpacity style={styles.signupButton} onPress={handleSignUp}>
+              <Text style={styles.buttonText}>Sign Up</Text>
+            </TouchableOpacity>
+
+            <View style={styles.loginContainer}>
+              <Text style={styles.loginText}>
+                Already have an account?{' '}
+                <Text style={styles.loginLink} onPress={() => navigation.navigate('Login')}>
+                  Login
+                </Text>
+              </Text>
             </View>
           </View>
         </ScrollView>
@@ -201,111 +211,135 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
   container: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
-  scrollContainer: {
-    flexGrow: 1,
-  },
-  innerContainer: {
+  keyboardView: {
     flex: 1,
-    padding: 24,
   },
   header: {
+    backgroundColor: '#5856D6',
+    paddingVertical: 40,
+    paddingHorizontal: 24,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
     alignItems: 'center',
-    marginTop: 5,
-  },
-  title: {
-    fontSize: 25,
-    fontFamily: 'Poppins-Bold',
-    color: 'black',
-    marginBottom: 6,
-    textAlign: 'center',
-  },
-  subheader: {
-    fontSize: 14,
-    fontFamily: 'Poppins-Normal',
-    color: '#003f5c',
     marginBottom: 20,
   },
-  formContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  form: {
-    marginBottom: 0,
-  },
-  inputContainer: {
-    marginBottom: 16,
-  },
-  pickerContainer: {
-    borderRadius: 10,
-    borderColor: '#ddd',
-  },
-  picker: {
-    height: 60,
-    width: '100%',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-  },
-  label: {
-    fontSize: 13,
-    fontFamily: 'Poppins-SemiBold',
-    color: '#003f5c',
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
-  inputText: {
-    backgroundColor: '#f5f5f5',
-    height: 44,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 15,
-    fontFamily: 'Poppins-Normal',
-    color: '#222',
-  },
-  icon: {
-    position: 'absolute',
-    right: 16,
-    top: '65%',
-    transform: [{ translateY: -10 }],
-  },
-  btn: {
-    backgroundColor: '#24BAAC',
-    borderRadius: 50,
-    alignSelf: 'center',
-    paddingVertical: 10,
-    width: 150,
-  },
-  formAction: {
-    marginVertical: 24,
-  },
-  btnText: {
+  subtitle: {
     fontSize: 16,
-    color: '#fff',
-    textAlign: 'center',
-    fontFamily: 'Poppins-Bold',
-    top: 2,
+    color: '#FFFFFF',
+    opacity: 0.9,
   },
-  loginBtn: {
+  formContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+  },
+  inputContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    overflow: 'hidden',
+  },
+  iconContainer: {
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+  },
+  inputWrapper: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingRight: 16,
+  },
+  label: {
+    fontSize: 12,
+    color: '#5856D6',
+    marginBottom: 4,
+    fontWeight: '600',
+  },
+  input: {
+    fontSize: 16,
+    color: '#1A1A1A',
+    padding: 0,
+    height: 24,
+  },
+  pickerOuterContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    overflow: 'hidden',
+  },
+  pickerContainer: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingRight: 16,
+  },
+  pickerWrapper: {
+    height: 24,
+    justifyContent: 'center',
+  },
+  picker: {
+    margin: 0,
+    height: 24,
+    fontSize: 16,
+    color: '#1A1A1A',
+  },
+  signupButton: {
+    backgroundColor: '#5856D6',
+    borderRadius: 12,
+    paddingVertical: 16,
+    marginTop: 24,
+    marginBottom: 16,
+    shadowColor: '#5856D6',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 8,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  loginContainer: {
+    alignItems: 'center',
+    marginTop: 16,
   },
   loginText: {
-    fontSize: 15,
-    fontFamily: 'Poppins-SemiBold',
-    textDecorationLine: 'underline',
+    fontSize: 14,
+    color: '#718096',
+  },
+  loginLink: {
+    color: '#5856D6',
+    fontWeight: 'bold',
   },
   errorText: {
-    color: 'red',
+    color: '#DC2626',
     textAlign: 'center',
-    marginBottom: 10,
-    fontFamily: 'Poppins-Normal',
+    marginTop: 8,
+    fontSize: 14,
   },
-  hehe: { fontSize: 13, fontFamily: 'Poppins-Normal' },
 });
 
 export default SignUp;

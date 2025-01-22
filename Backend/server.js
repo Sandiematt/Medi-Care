@@ -30,6 +30,7 @@ const main = async () => {
   const usersCollection = db.collection('users');  // Specify collection name
   const healthCollection = db.collection('healthvitals');  // Specify collection name
   const prescriptionSCollection = db.collection('prescriptions');  // Specify collection name
+  const inventoryCollection=db.collection('inventory');
 
   // Default route
   app.get('/', (req, res) => {
