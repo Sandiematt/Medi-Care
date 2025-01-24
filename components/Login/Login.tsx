@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   TextInput,
@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
   Image,
+  Animated,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
@@ -20,10 +21,111 @@ interface LoginProps {
   onLoginSuccess: () => void;
 }
 
-interface User {
-  username: string;
-  isAdmin: boolean;
+interface FloatingLabelInputProps {
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  iconName: string;
+  secureTextEntry?: boolean;
+  isPasswordInput?: boolean;
+  isPasswordVisible?: boolean;
+  onTogglePasswordVisibility?: () => void;
 }
+
+const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
+  label,
+  value,
+  onChangeText,
+  iconName,
+  secureTextEntry,
+  isPasswordInput,
+  isPasswordVisible,
+  onTogglePasswordVisibility,
+}) => {
+  const animatedValue = useRef(new Animated.Value(value ? 1 : 0)).current;
+  const [isFocused, setIsFocused] = useState(false);
+
+  const handleFocus = () => {
+    setIsFocused(true);
+    Animated.timing(animatedValue, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    if (!value) {
+      Animated.timing(animatedValue, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
+    }
+  };
+
+  const labelStyle = {
+    position: 'absolute',
+    left: 30,
+    top: animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: [20, 0],
+    }),
+    fontSize: animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: [16, 12],
+    }),
+    color: animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['#A0A0A0', '#199A8E'],
+    }),
+  };
+
+  return (
+    <View style={styles.inputContainer}>
+      <Animated.Text style={[styles.floatingLabel, labelStyle]}>
+        {label}
+      </Animated.Text>
+      <View style={styles.inputRow}>
+        <View style={styles.iconContainer}>
+          <Icon name={iconName} size={20} color={isFocused ? '#199A8E' : '#A0A0A0'} />
+        </View>
+        <TextInput
+          style={[
+            styles.input,
+            isPasswordInput && { paddingRight: 40 },
+            isFocused && styles.inputFocused,
+          ]}
+          value={value}
+          onChangeText={onChangeText}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          secureTextEntry={secureTextEntry}
+          autoCapitalize="none"
+        />
+        {isPasswordInput && (
+          <TouchableOpacity
+            style={styles.eyeIcon}
+            onPress={onTogglePasswordVisibility}
+          >
+            <Icon
+              name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color="#199A8E"
+            />
+          </TouchableOpacity>
+        )}
+      </View>
+      <Animated.View 
+        style={[
+          styles.inputUnderline,
+          isFocused && styles.inputUnderlineFocused
+        ]} 
+      />
+    </View>
+  );
+};
 
 const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess }) => {
   const [username, setUsername] = useState<string>('');
@@ -38,8 +140,11 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess }) => {
     }
 
     try {
-      const response = await axios.post('http://10.0.2.2:5000/login', { username, password });
-      const user: User = response.data;
+      const response = await axios.post('http://10.0.2.2:5000/login', {
+        username,
+        password,
+      });
+      const user = response.data;
 
       if (user.username) {
         await AsyncStorage.setItem('username', user.username);
@@ -50,53 +155,11 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess }) => {
         index: 0,
         routes: [{ name: 'Main' }],
       });
-
     } catch (err) {
       console.error('Login error:', err);
       setError('Invalid username or password');
     }
   };
-
-  const renderInput = (
-    label: string,
-    value: string,
-    onChangeText: (text: string) => void,
-    iconName: string,
-    placeholder: string,
-    isPassword: boolean = false
-  ) => (
-    <View style={styles.inputContainer}>
-      <View style={styles.iconContainer}>
-        <Icon name={iconName} size={20} color="#5856D6" />
-      </View>
-      <View style={styles.inputWrapper}>
-        <Text style={styles.label}>{label}</Text>
-        <View style={styles.inputRow}>
-          <TextInput
-            style={[styles.input, isPassword && { paddingRight: 40 }]}
-            value={value}
-            onChangeText={onChangeText}
-            placeholder={placeholder}
-            placeholderTextColor="#A0A0A0"
-            secureTextEntry={isPassword && !isPasswordVisible}
-            autoCapitalize="none"
-          />
-          {isPassword && (
-            <TouchableOpacity 
-              style={styles.eyeIcon} 
-              onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-            >
-              <Icon 
-                name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'} 
-                size={20} 
-                color="#5856D6" 
-              />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-    </View>
-  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -107,8 +170,8 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess }) => {
         <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <Image 
-                source={require('../../assets/images/logo.png')} 
+              <Image
+                source={require('../../assets/images/logo.png')}
                 style={styles.logo}
               />
             </View>
@@ -118,22 +181,25 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess }) => {
             <Text style={styles.title}>Welcome Back!</Text>
             <Text style={styles.subtitle}>Sign in to continue</Text>
 
-            {renderInput(
-              'Username',
-              username,
-              setUsername,
-              'person-outline',
-              'Enter your username'
-            )}
+            <FloatingLabelInput
+              label="Username"
+              value={username}
+              onChangeText={setUsername}
+              iconName="person-outline"
+            />
 
-            {renderInput(
-              'Password',
-              password,
-              setPassword,
-              'lock-closed-outline',
-              'Enter your password',
-              true
-            )}
+            <FloatingLabelInput
+              label="Password"
+              value={password}
+              onChangeText={setPassword}
+              iconName="lock-closed-outline"
+              secureTextEntry={!isPasswordVisible}
+              isPasswordInput
+              isPasswordVisible={isPasswordVisible}
+              onTogglePasswordVisibility={() =>
+                setIsPasswordVisible(!isPasswordVisible)
+              }
+            />
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -144,8 +210,8 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess }) => {
             <View style={styles.signupContainer}>
               <Text style={styles.signupText}>
                 Don't have an account?{' '}
-                <Text 
-                  style={styles.signupLink} 
+                <Text
+                  style={styles.signupLink}
                   onPress={() => navigation.navigate('SignUp')}
                 >
                   Sign Up
@@ -168,7 +234,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    backgroundColor: '#5856D6',
+    backgroundColor: '#199A8E',
     height: 260,
     justifyContent: 'center',
     alignItems: 'center',
@@ -214,58 +280,57 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    overflow: 'hidden',
+    marginBottom: 24,
+    height: 60,
+    justifyContent: 'flex-end',
   },
   iconContainer: {
-    width: 50,
-    height: 50,
+    width: 24,
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
-  },
-  inputWrapper: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingRight: 16,
+    marginRight: 8,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    height: 40,
   },
-  label: {
-    fontSize: 12,
-    color: '#5856D6',
-    marginBottom: 4,
-    fontWeight: '600',
+  floatingLabel: {
+    position: 'absolute',
+    backgroundColor: 'transparent',
+    fontWeight: '500',
   },
   input: {
     flex: 1,
     fontSize: 16,
     color: '#1A1A1A',
     padding: 0,
-    height: 24,
+    height: '100%',
+  },
+  inputFocused: {
+    color: '#199A8E',
+  },
+  inputUnderline: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+    marginTop: 4,
+  },
+  inputUnderlineFocused: {
+    height: 2,
+    backgroundColor: '#199A8E',
   },
   eyeIcon: {
-    position: 'absolute',
-    right: 0,
-    height: '100%',
+    padding: 8,
     justifyContent: 'center',
-    paddingHorizontal: 8,
   },
   loginButton: {
-    backgroundColor: '#5856D6',
+    backgroundColor: '#199A8E',
     borderRadius: 12,
     paddingVertical: 16,
     marginTop: 32,
     marginBottom: 16,
-    shadowColor: '#5856D6',
+    shadowColor: '#199A8E',
     shadowOffset: {
       width: 0,
       height: 4,
@@ -289,7 +354,7 @@ const styles = StyleSheet.create({
     color: '#718096',
   },
   signupLink: {
-    color: '#5856D6',
+    color: '#199A8E',
     fontWeight: 'bold',
   },
   errorText: {

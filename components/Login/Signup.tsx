@@ -86,7 +86,7 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
   ) => (
     <View style={styles.inputContainer}>
       <View style={styles.iconContainer}>
-        <Icon name={iconName} size={20} color="#5856D6" />
+        <Icon name={iconName} size={20} color="#199A8E" />
       </View>
       <View style={styles.inputWrapper}>
         <Text style={styles.label}>{label}</Text>
@@ -154,7 +154,7 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
 
             <View style={styles.pickerOuterContainer}>
               <View style={styles.iconContainer}>
-                <Icon name="people-outline" size={20} color="#5856D6" />
+                <Icon name="people-outline" size={20} color="#199A8E" />
               </View>
               <View style={styles.pickerContainer}>
                 <Text style={styles.label}>Gender</Text>
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    backgroundColor: '#5856D6',
+    backgroundColor: '#199A8E',
     paddingVertical: 40,
     paddingHorizontal: 24,
     borderBottomLeftRadius: 30,
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 12,
-    color: '#5856D6',
+    color: '#199A8E',
     marginBottom: 4,
     fontWeight: '600',
   },
@@ -302,12 +302,12 @@ const styles = StyleSheet.create({
     color: '#1A1A1A',
   },
   signupButton: {
-    backgroundColor: '#5856D6',
+    backgroundColor: '#199A8E',
     borderRadius: 12,
     paddingVertical: 16,
     marginTop: 24,
     marginBottom: 16,
-    shadowColor: '#5856D6',
+    shadowColor: '#199A8E',
     shadowOffset: {
       width: 0,
       height: 4,
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
     color: '#718096',
   },
   loginLink: {
-    color: '#5856D6',
+    color: '#199A8E',
     fontWeight: 'bold',
   },
   errorText: {

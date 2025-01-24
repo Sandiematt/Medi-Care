@@ -163,7 +163,7 @@ const PillIdentifierScreen = () => {
         ],
       }}>
         <LinearGradient
-          colors={['#4F46E5', '#6366F1']}
+          colors={['#199A8E', '#199A8E']}
           start={{x: 0, y: 0}}
           end={{x: 1, y: 1}}
           style={styles.headerGradient}
@@ -199,7 +199,7 @@ const PillIdentifierScreen = () => {
     activeOpacity={0.8}
   >
     <LinearGradient
-      colors={['#4F46E5', '#6366F1']}
+      colors={['#199A8E', '#199A8E']}
       start={{x: 0, y: 0}}
       end={{x: 1, y: 1}}
       style={styles.buttonGradient}
@@ -230,7 +230,7 @@ const PillIdentifierScreen = () => {
             activeOpacity={0.8}
           >
             <LinearGradient
-              colors={['rgba(99, 102, 241, 0.1)', 'rgba(79, 70,229, 0.1)']}
+              colors={['rgba(241, 242, 248, 0.1)', 'rgba(242, 243, 242, 0.1)']}
               style={styles.cameraGradient}
             >
               <Animated.View style={[
@@ -241,10 +241,10 @@ const PillIdentifierScreen = () => {
                   onPress={handleFileUpload}
                   activeOpacity={0.7}
                 >
-                  <Icon name="file-upload" size={48} color="#4F46E5" />
+                  <Icon name="file-upload" size={48} color="#199A8E" />
                 </TouchableOpacity>
               </Animated.View>
-              <Text style={styles.cameraText}>Scan Your Pill</Text>
+              <Text style={styles.cameraText}>Upload Your Pill</Text>
               <Text style={styles.cameraSubtext}>
                 Position pill in frame for best results
               </Text>
@@ -414,16 +414,7 @@ const styles = StyleSheet.create({
   cameraButton: {
     width: '100%',
   },
-  cameraCard: {
-    marginBottom: 20,
-    borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 8,
-  },
+  
   cameraGradient: {
     padding: 24,
     alignItems: 'center',

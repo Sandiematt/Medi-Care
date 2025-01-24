@@ -12,6 +12,21 @@ import AboutScreen from './AboutScreen';
 import HealthVitalsScreen from './HealthVitalsScreen';
 import PrescriptionsScreen from './PrescriptionsScreen';
 
+const Stack = createStackNavigator();
+
+const ProfileScreenApp = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerTitleAlign: 'center' }}>
+      <Stack.Screen name="ProfileMains" component={ProfileScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Favorite" component={FavoriteScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="About" component={AboutScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="HealthVitals" component={HealthVitalsScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Prescriptions" component={PrescriptionsScreen} options={{ headerShown: false }} />
+    </Stack.Navigator>
+  );
+}
+
 const ProfileScreen = ({ navigation }) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -265,4 +280,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProfileScreen;
+export default ProfileScreenApp;

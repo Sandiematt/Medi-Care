@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, Image, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, Image, ScrollView, SafeAreaView, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
-
 
 const faqData = [
   {
@@ -22,7 +21,6 @@ const faqData = [
     answer: 'Meditation, regular physical activity, and proper sleep can help manage stress levels.',
   },
 ];
-
 
 const diseases = [
   {
@@ -147,183 +145,260 @@ const SymptomCheckerScreen: React.FC = () => {
   };
 
   const renderDisease = ({ item }: any) => (
-    <TouchableOpacity style={styles.card} onPress={() => setSelectedDisease(item)}>
-      <Image source={item.icon} style={styles.icon} />
+    <TouchableOpacity 
+      style={[styles.card, styles.elevation]} 
+      onPress={() => setSelectedDisease(item)}
+    >
+      <View style={styles.iconContainer}>
+        <Image source={item.icon} style={styles.icon} resizeMode="contain" />
+      </View>
       <Text style={styles.cardText}>{item.name}</Text>
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.backIconContainer}>
-        <TouchableOpacity onPress={handleGoBack}>
-          <Icon name="chevron-back" size={30} color="#333" />
+    <SafeAreaView style={styles.container}>
+      <View style={styles.headerContainer}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={handleGoBack}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Icon name="chevron-back" size={28} color="#333" />
         </TouchableOpacity>
+        <Text style={styles.headerText}>Medical Help</Text>
       </View>
-      <View style={styles.header}>
-        <Text style={styles.headerText}>Help</Text>
-      </View>
+
       <View style={styles.tabContainer}>
         <TouchableOpacity
           onPress={() => toggleTab('disease')}
           style={[styles.tab, activeTab === 'disease' && styles.activeTab]}>
-          <Text style={activeTab === 'disease' ? styles.activeTabText : styles.tabText}>DISEASE</Text>
+          <Text style={[styles.tabText, activeTab === 'disease' && styles.activeTabText]}>
+            DISEASES
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => toggleTab('faq')}
           style={[styles.tab, activeTab === 'faq' && styles.activeTab]}>
-          <Text style={activeTab === 'faq' ? styles.activeTabText : styles.tabText}>FAQ</Text>
+          <Text style={[styles.tabText, activeTab === 'faq' && styles.activeTabText]}>
+            FAQ
+          </Text>
         </TouchableOpacity>
       </View>
 
-      {activeTab === 'faq' && (
-        <ScrollView style={styles.faqContainer}>
+      {activeTab === 'faq' ? (
+        <ScrollView 
+          style={styles.mainContainer}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.faqContainer}
+        >
           {faqData.map((item, index) => (
-            <View key={index} style={styles.faqItem}>
+            <View key={index} style={[styles.faqItem, styles.elevation]}>
               <Text style={styles.faqQuestion}>{item.question}</Text>
               <Text style={styles.faqAnswer}>{item.answer}</Text>
             </View>
           ))}
         </ScrollView>
-      )}
-
-      {activeTab === 'disease' && (
+      ) : (
         <FlatList
           data={diseases}
           renderItem={renderDisease}
           keyExtractor={(item) => item.id}
           numColumns={2}
           contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
         />
       )}
 
       {selectedDisease && (
-        <View style={styles.detailContainer}>
-          <Text style={styles.detailTitle}>{selectedDisease.name}</Text>
-          <Text style={styles.detailText}>{selectedDisease.details}</Text>
-          <TouchableOpacity onPress={() => setSelectedDisease(null)} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>Close</Text>
-          </TouchableOpacity>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.detailContainer, styles.elevation]}>
+            <View style={styles.detailHeader}>
+              <Text style={styles.detailTitle}>{selectedDisease.name}</Text>
+              <TouchableOpacity 
+                onPress={() => setSelectedDisease(null)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Icon name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView 
+              style={styles.detailScroll}
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={styles.detailText}>{selectedDisease.details}</Text>
+            </ScrollView>
+            <TouchableOpacity 
+              onPress={() => setSelectedDisease(null)} 
+              style={styles.closeButton}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9F9F9',
+    backgroundColor: '#F5F7FA',
   },
-  backIconContainer: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-    zIndex: 1,
+  mainContainer: {
+    flex: 1,
   },
-  header: {
-    padding: 16,
+  headerContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8ECF4',
+  },
+  backButton: {
+    padding: 4,
   },
   headerText: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    color: '#1A1D1E',
+    marginLeft: 12,
+  },
+  elevation: {
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   tabContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginVertical: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    gap: 12,
   },
   tab: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    marginHorizontal: 5,
-    borderRadius: 20,
-    backgroundColor: '#EDEDED',
-    marginTop: 10,
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#F0F2F5',
+    alignItems: 'center',
   },
   activeTab: {
     backgroundColor: '#199A8E',
   },
   tabText: {
-    fontSize: 14,
-    color: '#555',
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#666',
   },
   activeTabText: {
-    fontSize: 14,
     color: '#fff',
   },
   listContainer: {
-    padding: 10,
+    padding: 12,
+    gap: 12,
   },
   card: {
     flex: 1,
-    margin: 8,
-    alignItems: 'center',
+    margin: 6,
     padding: 16,
-    borderRadius: 10,
+    borderRadius: 16,
     backgroundColor: '#FFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    alignItems: 'center',
+    gap: 12,
+  },
+  iconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#F7F9FC',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   icon: {
-    width: 50,
-    height: 50,
-    marginBottom: 8,
+    width: 36,
+    height: 36,
   },
   cardText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#333',
+    color: '#1A1D1E',
+    textAlign: 'center',
+  },
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   detailContainer: {
-    position: 'absolute',
-    top: 140,
-    left: 20,
-    right: 20,
-    padding: 16,
+    width: '100%',
+    maxHeight: '80%',
     backgroundColor: '#FFF',
-    borderRadius: 10,
-    elevation: 5,
-    zIndex: 10,
+    borderRadius: 20,
+    padding: 20,
+  },
+  detailHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   detailTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1A1D1E',
+  },
+  detailScroll: {
+    marginBottom: 16,
   },
   detailText: {
-    fontSize: 14,
-    marginVertical: 10,
+    fontSize: 15,
+    lineHeight: 24,
+    color: '#4A4A4A',
   },
   closeButton: {
-    paddingVertical: 10,
+    padding: 16,
     backgroundColor: '#199A8E',
-    borderRadius: 20,
+    borderRadius: 12,
     alignItems: 'center',
   },
   closeButtonText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '600',
   },
   faqContainer: {
     padding: 16,
   },
   faqItem: {
-    marginBottom: 20,
+    padding: 16,
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    marginBottom: 12,
   },
   faqQuestion: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 10,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A1D1E',
+    marginBottom: 8,
   },
   faqAnswer: {
-    fontSize: 16,
-    marginTop: 5,
-    color: '#555',
+    fontSize: 15,
+    lineHeight: 24,
+    color: '#4A4A4A',
   },
 });
 
