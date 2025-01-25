@@ -1,102 +1,147 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, SafeAreaView, TextInput } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons'; 
+import { 
+  View, 
+  Text, 
+  FlatList, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Image, 
+  SafeAreaView, 
+  TextInput, 
+  StatusBar 
+} from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 
 const HospitalScreen = () => {
   const navigation = useNavigation();
-
   const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  const categories = ['All', 'General', 'Neurology', 'Cardiology', 'Pediatrics'];
 
   const services = [
     {
       id: '1',
-      title: 'General Care',
+      title: 'General Care Center',
       image: 'https://img.freepik.com/free-photo/clean-empty-hospital-ward-ready-receive-patients-reflecting-modern-medical-care_91128-4460.jpg',
       specialty: 'General Medicine',
       address: '123 Health St, City Center',
       phone: '+1234567890',
-      rating: 4.5,
+      category: 'General',
+      description: 'Comprehensive medical care for all age groups',
     },
     {
       id: '2',
-      title: 'Neurology Clinic',
+      title: 'NeuroSync Clinic',
       image: 'https://img.freepik.com/free-photo/clean-empty-hospital-ward-ready-receive-patients-reflecting-modern-medical-care_91128-4460.jpg',
       specialty: 'Neurology',
       address: '456 Neuro Rd, City Center',
       phone: '+0987654321',
+      category: 'Neurology',
+      description: 'Advanced neurological treatments and diagnostics',
     },
     {
       id: '3',
-      title: 'Cardiology Clinic',
+      title: 'HeartCare Institute',
       image: 'https://img.freepik.com/free-photo/clean-empty-hospital-ward-ready-receive-patients-reflecting-modern-medical-care_91128-4460.jpg',
       specialty: 'Cardiology',
       address: '789 Heart Ave, City Center',
       phone: '+1122334455',
+      category: 'Cardiology',
+      description: 'Specialized cardiac care and prevention',
     },
+    {
+      id: '4',
+      title: 'PediaCare Center',
+      image: 'https://img.freepik.com/free-photo/clean-empty-hospital-ward-ready-receive-patients-reflecting-modern-medical-care_91128-4460.jpg',
+      specialty: 'Pediatrics',
+      address: '101 Kids Lane, City Center',
+      phone: '+5566778899',
+      category: 'Pediatrics',
+      description: 'Comprehensive child healthcare services',
+    }
   ];
 
-  const renderItem = ({ item }: { item: { id: string; title: string; image: string; specialty: string; address: string; phone: string; rating?: number; } }) => (
-    <TouchableOpacity style={styles.card}>
-      <Image source={{ uri: item.image }} style={styles.image} />
-      <View style={styles.info}>
-        <Text style={styles.title}>{item.title}</Text>
-        <View style={styles.details}>
-          <View style={styles.detailItem}>
-            <Ionicons name="medkit-outline" size={18} color="#199A8E" />
-            <Text style={styles.detailText}>{item.specialty}</Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Ionicons name="location-outline" size={18} color="#199A8E" />
-            <Text style={styles.detailText}>{item.address}</Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Ionicons name="call-outline" size={18} color="#199A8E" />
-            <Text style={styles.detailText}>{item.phone}</Text>
-          </View>
-        </View>
-      </View>
+  const filteredServices = services.filter(service => 
+    (selectedCategory === 'All' || service.category === selectedCategory) &&
+    service.title.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const renderCategoryChip = (category) => (
+    <TouchableOpacity 
+      key={category}
+      onPress={() => setSelectedCategory(category)}
+      style={[
+        styles.categoryChip, 
+        selectedCategory === category && styles.selectedCategoryChip
+      ]}
+    >
+      <Text style={[
+        styles.categoryChipText, 
+        selectedCategory === category && styles.selectedCategoryChipText
+      ]}>
+        {category}
+      </Text>
     </TouchableOpacity>
   );
 
-  const handleGoBack = () => {
-    navigation.goBack();
-  };
-
-  const filteredServices = services.filter(service =>
-    service.title.toLowerCase().includes(search.toLowerCase())
+  const renderServiceCard = ({ item }) => (
+    <View style={styles.cardContainer}>
+      <Image source={{ uri: item.image }} style={styles.cardImage} />
+      <View style={styles.cardDetails}>
+        <Text style={styles.cardTitle}>{item.title}</Text>
+        <Text style={styles.cardSpecialty}>{item.specialty}</Text>
+        
+        <View style={styles.contactInfo}>
+          <View style={styles.contactItem}>
+            <Ionicons name="location-outline" size={18} color="#4A5568" />
+            <Text style={styles.contactText}>{item.address}</Text>
+          </View>
+          <View style={styles.contactItem}>
+            <Ionicons name="call-outline" size={18} color="#4A5568" />
+            <Text style={styles.contactText}>{item.phone}</Text>
+          </View>
+        </View>
+        
+        <Text style={styles.cardDescription}>{item.description}</Text>
+      </View>
+    </View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.backIconContainer}>
-        <TouchableOpacity onPress={handleGoBack}>
-          <Ionicons name="chevron-back" size={30} color="#333" />
-        </TouchableOpacity>
-      </View>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      
       <View style={styles.header}>
-        <Text style={styles.headerText}>Hospital Services</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color="#2D3748" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Hospital Services</Text>
+        <View style={styles.placeholder} />
       </View>
-      <View style={styles.searchBarContainer}>
+
+      <View style={styles.searchContainer}>
         <TextInput
-          style={styles.searchBar}
-          placeholder="Search for services"
+          style={styles.searchInput}
+          placeholder="Search hospitals..."
+          placeholderTextColor="#A0AEC0"
           value={search}
           onChangeText={setSearch}
         />
-        <Ionicons 
-          name="search-outline" 
-          size={20} 
-          color="#199A8E" 
-          style={styles.searchIcon}
-        />
+        <Ionicons name="search-outline" size={20} style={styles.searchIcon} />
       </View>
-      <Text style={styles.subHeader}>Find the best care near you</Text>
+
+      <View style={styles.categoryContainer}>
+        {categories.map(renderCategoryChip)}
+      </View>
+
       <FlatList
         data={filteredServices}
         keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
+        renderItem={renderServiceCard}
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
   );
@@ -105,97 +150,115 @@ const HospitalScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  backIconContainer: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-    zIndex: 1,
+    backgroundColor: '#FFFFFF',
   },
   header: {
-    paddingVertical: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'white',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
-  headerText: {
+  headerTitle: {
     fontSize: 20,
-    color: 'black',
+    fontWeight: '600',
+    color: '#2D3748',
   },
-  searchBarContainer: {
+  placeholder: {
+    width: 24,
+  },
+  searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
-    marginTop: 20,
-    paddingHorizontal: 16,
+    backgroundColor: '#F7FAFC',
+    borderRadius: 12,
+    marginHorizontal: 20,
+    marginVertical: 15,
+    paddingHorizontal: 15,
+    elevation: 1,
   },
-  searchBar: {
+  searchInput: {
     flex: 1,
     height: 50,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    fontFamily: 'Poppins-Regular',
+    color: '#2D3748',
+    fontSize: 16,
   },
   searchIcon: {
-    position: 'absolute',
-    right: 30,
-    top: 15,
+    color: '#4A5568',
   },
-  subHeader: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#555',
-    fontFamily: 'Poppins-Regular',
-    paddingHorizontal: 16,
-    marginTop: 5,
-  },
-  list: {
-    paddingBottom: 80,
-    paddingHorizontal: 16,
-  },
-  card: {
+  categoryContainer: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+    paddingHorizontal: 20,
+    marginBottom: 15,
   },
-  image: {
-    width: 90,
+  categoryChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    backgroundColor: '#F7FAFC',
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  selectedCategoryChip: {
+    backgroundColor: '#38B2AC',
+  },
+  categoryChipText: {
+    color: '#4A5568',
+    fontWeight: '500',
+  },
+  selectedCategoryChipText: {
+    color: '#FFFFFF',
+  },
+  listContainer: {
+    paddingHorizontal: 20,
+  },
+  cardContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F7FAFC',
+    borderRadius: 15,
+    marginBottom: 15,
+    padding: 15,
+    alignItems: 'center',
+    elevation: 1,
+  },
+  cardImage: {
+    width: 100,
     height: 120,
     borderRadius: 10,
-    marginRight: 16,
+    marginRight: 15,
   },
-  info: {
+  cardDetails: {
     flex: 1,
   },
-  title: {
+  cardTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    fontFamily: 'Poppins-SemiBold',
+    fontWeight: '600',
+    color: '#2D3748',
+    marginBottom: 5,
   },
-  details: {
-    marginTop: 8,
+  cardSpecialty: {
+    fontSize: 16,
+    color: '#4A5568',
+    marginBottom: 10,
   },
-  detailItem: {
+  contactInfo: {
+    marginBottom: 10,
+  },
+  contactItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 5,
   },
-  detailText: {
+  contactText: {
+    marginLeft: 10,
+    color: '#4A5568',
     fontSize: 14,
-    color: '#6B7280',
-    marginLeft: 8,
-    fontFamily: 'Poppins-Regular',
+  },
+  cardDescription: {
+    color: '#718096',
+    fontSize: 14,
   },
 });
 

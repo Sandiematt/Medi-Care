@@ -4,7 +4,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { createStackNavigator } from '@react-navigation/stack'; 
 import NewReminderScreen from './NewReminderScreen';
 import notifee from '@notifee/react-native';
-import { TriggerType } from '@notifee/react-native';
+import { TriggerType, AndroidImportance } from '@notifee/react-native';
 import InventoryScreen from './InventoryScreen';
 
 // Create a Stack Navigator
@@ -73,35 +73,46 @@ const ReminderMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   };
 
   // Schedule a simple notification
-const scheduleNotification = async (triggerTime) => {
-  try {
-    const channelId = await notifee.createChannel({
-      id: 'reminder-channel',
-      name: 'Medication Reminders',
-      sound: 'default',
-    });
-    console.log(triggerTime);
-    await notifee.createTriggerNotification(
-      {
-        title: 'Medication Reminder',
-        body: 'It\'s time to take your medicine.',
-        android: {
-          channelId,
-          smallIcon: 'ic_launcher', // Use a small icon
-          sound: 'default',
-
+  const scheduleNotification = async (triggerTime) => {
+    try {
+      // Request permissions for iOS (optional but recommended)
+      await notifee.requestPermission();
+  
+      // Create a channel (required for Android)
+      const channelId = await notifee.createChannel({
+        id: 'reminder-channel',
+        name: 'Medication Reminders',
+        sound: 'default',
+        importance: AndroidImportance.HIGH, // Ensure high importance for sound and visibility
+      });
+  
+      await notifee.createTriggerNotification(
+        {
+          title: 'Medication Reminder',
+          body: 'It\'s time to take your medicine.',
+          android: {
+            channelId,
+            smallIcon: 'ic_launcher', 
+            sound: 'default',
+            importance: AndroidImportance.HIGH, // Ensure high importance
+            
+            
+          },
+          ios: {
+            sound: 'default', // Ensure sound on iOS
+            critical: true, // Important for iOS sound
+          }
         },
-        
-      },
-      {
-        type: TriggerType.TIMESTAMP,  // Use TIMESTAMP trigger type
-        timestamp: triggerTime.getTime(), // Use the calculated timestamp for the reminder
-      }
-    );
-  } catch (error) {
-    console.error('Time Exceded no notifations will be displayed');
-  }
-};
+        {
+          type: TriggerType.TIMESTAMP,
+          timestamp: triggerTime.getTime(),
+        }
+      );
+    } catch (error) {
+      console.error('Notification scheduling error:', error);
+      Alert.alert('Notification Error', 'Could not schedule medication reminder');
+    }
+  };
   
   
 

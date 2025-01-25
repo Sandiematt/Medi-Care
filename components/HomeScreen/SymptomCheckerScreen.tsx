@@ -1,23 +1,47 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, Image, ScrollView, SafeAreaView, Platform } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  FlatList, 
+  StyleSheet, 
+  Image, 
+  ScrollView, 
+  SafeAreaView, 
+  Platform,
+  Dimensions,
+  LayoutAnimation,
+  UIManager
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const { width } = Dimensions.get('window');
+
 const faqData = [
   {
-    question: '✅ What is a healthy diet?',
+    id: '1',
+    question: 'What is a healthy diet?',
     answer: 'A healthy diet includes a variety of foods like vegetables, fruits, lean proteins, and whole grains.',
   },
   {
-    question: '✅ How often should I exercise?',
+    id: '2',
+    question: 'How often should I exercise?',
     answer: 'At least 30 minutes of moderate-intensity exercise five days a week is recommended.',
   },
   {
-    question: '✅ What are the benefits of drinking water?',
+    id: '3',
+    question: 'What are the benefits of drinking water?',
     answer: 'Water helps keep your body hydrated, supports digestion, and maintains healthy skin.',
   },
   {
-    question: '✅ How can I manage stress?',
+    id: '4',
+    question: 'How can I manage stress?',
     answer: 'Meditation, regular physical activity, and proper sleep can help manage stress levels.',
   },
 ];
@@ -135,6 +159,7 @@ const SymptomCheckerScreen: React.FC = () => {
   const navigation = useNavigation();
   const [selectedDisease, setSelectedDisease] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('disease');
+  const [expandedFAQs, setExpandedFAQs] = useState<string[]>([]);
 
   const handleGoBack = () => {
     navigation.goBack();
@@ -144,95 +169,156 @@ const SymptomCheckerScreen: React.FC = () => {
     setActiveTab(tab);
   };
 
-  const renderDisease = ({ item }: any) => (
-    <TouchableOpacity 
-      style={[styles.card, styles.elevation]} 
-      onPress={() => setSelectedDisease(item)}
-    >
-      <View style={styles.iconContainer}>
-        <Image source={item.icon} style={styles.icon} resizeMode="contain" />
-      </View>
-      <Text style={styles.cardText}>{item.name}</Text>
-    </TouchableOpacity>
-  );
+  const toggleFAQ = (faqId: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedFAQs(current => 
+      current.includes(faqId) 
+        ? current.filter(id => id !== faqId)
+        : [...current, faqId]
+    );
+  };
+
+  const renderFAQContent = () => {
+    return (
+      <FlatList
+        key="faq-list"
+        data={faqData}
+        renderItem={({ item }) => {
+          const isExpanded = expandedFAQs.includes(item.id);
+          
+          return (
+            <TouchableOpacity 
+              style={styles.faqItem}
+              onPress={() => toggleFAQ(item.id)}
+            >
+              <View style={styles.faqHeader}>
+                <Text style={styles.faqQuestion}>{item.question}</Text>
+                <Icon 
+                  name={isExpanded ? 'chevron-up' : 'chevron-down'} 
+                  size={20} 
+                  color="#199A8E" 
+                />
+              </View>
+              
+              {isExpanded && (
+                <View style={styles.faqAnswerContainer}>
+                  <Text style={styles.faqAnswer}>{item.answer}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        }}
+        keyExtractor={(item) => `faq-${item.id}`}
+        contentContainerStyle={styles.faqListContainer}
+        showsVerticalScrollIndicator={false}
+      />
+    );
+  };
+
+  const renderDiseaseContent = () => {
+    return (
+      <FlatList
+        key="disease-grid"
+        data={diseases}
+        renderItem={({ item }) => (
+          <TouchableOpacity 
+            style={styles.diseaseCard} 
+            onPress={() => setSelectedDisease(item)}
+          >
+            <View style={styles.diseaseIconContainer}>
+              <Image 
+                source={item.icon} 
+                style={styles.diseaseIcon} 
+                resizeMode="contain" 
+              />
+            </View>
+            <Text style={styles.diseaseCardText}>{item.name}</Text>
+          </TouchableOpacity>
+        )}
+        keyExtractor={(item) => `disease-${item.id}`}
+        numColumns={2}
+        contentContainerStyle={styles.diseaseList}
+        showsVerticalScrollIndicator={false}
+      />
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.headerContainer}>
+      {/* Header */}
+      <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton} 
           onPress={handleGoBack}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Icon name="chevron-back" size={28} color="#333" />
+          <Icon name="chevron-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerText}>Medical Help</Text>
+        <Text style={styles.headerTitle}>Medical Guide</Text>
       </View>
 
+      {/* Tabs */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
           onPress={() => toggleTab('disease')}
-          style={[styles.tab, activeTab === 'disease' && styles.activeTab]}>
-          <Text style={[styles.tabText, activeTab === 'disease' && styles.activeTabText]}>
-            DISEASES
+          style={[
+            styles.tab, 
+            activeTab === 'disease' && styles.activeTab
+          ]}
+        >
+          <Text style={[
+            styles.tabText, 
+            activeTab === 'disease' && styles.activeTabText
+          ]}>
+            Diseases
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => toggleTab('faq')}
-          style={[styles.tab, activeTab === 'faq' && styles.activeTab]}>
-          <Text style={[styles.tabText, activeTab === 'faq' && styles.activeTabText]}>
+          style={[
+            styles.tab, 
+            activeTab === 'faq' && styles.activeTab
+          ]}
+        >
+          <Text style={[
+            styles.tabText, 
+            activeTab === 'faq' && styles.activeTabText
+          ]}>
             FAQ
           </Text>
         </TouchableOpacity>
       </View>
 
-      {activeTab === 'faq' ? (
-        <ScrollView 
-          style={styles.mainContainer}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.faqContainer}
-        >
-          {faqData.map((item, index) => (
-            <View key={index} style={[styles.faqItem, styles.elevation]}>
-              <Text style={styles.faqQuestion}>{item.question}</Text>
-              <Text style={styles.faqAnswer}>{item.answer}</Text>
-            </View>
-          ))}
-        </ScrollView>
-      ) : (
-        <FlatList
-          data={diseases}
-          renderItem={renderDisease}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          contentContainerStyle={styles.listContainer}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+      {/* Content */}
+      {activeTab === 'faq' ? renderFAQContent() : renderDiseaseContent()}
 
+      {/* Disease Details Modal */}
       {selectedDisease && (
         <View style={styles.modalOverlay}>
-          <View style={[styles.detailContainer, styles.elevation]}>
-            <View style={styles.detailHeader}>
-              <Text style={styles.detailTitle}>{selectedDisease.name}</Text>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{selectedDisease.name}</Text>
               <TouchableOpacity 
                 onPress={() => setSelectedDisease(null)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.modalCloseButton}
               >
-                <Icon name="close" size={24} color="#333" />
+                <Icon name="close" color="#333" size={24} />
               </TouchableOpacity>
             </View>
+            
             <ScrollView 
-              style={styles.detailScroll}
+              style={styles.modalScrollView}
               showsVerticalScrollIndicator={false}
             >
-              <Text style={styles.detailText}>{selectedDisease.details}</Text>
+              <Text style={styles.modalDescription}>
+                {selectedDisease.details}
+              </Text>
             </ScrollView>
+            
             <TouchableOpacity 
               onPress={() => setSelectedDisease(null)} 
-              style={styles.closeButton}
+              style={styles.modalFooterButton}
             >
-              <Text style={styles.closeButtonText}>Close</Text>
+              <Text style={styles.modalFooterButtonText}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -240,101 +326,122 @@ const SymptomCheckerScreen: React.FC = () => {
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: '#F4F7FF',
   },
-  mainContainer: {
-    flex: 1,
-  },
-  headerContainer: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8ECF4',
+    backgroundColor: 'transparent',
   },
   backButton: {
-    padding: 4,
+    marginRight: 12,
   },
-  headerText: {
-    fontSize: 20,
+  headerTitle: {
+    fontSize: 22,
     fontWeight: '700',
-    color: '#1A1D1E',
-    marginLeft: 12,
-  },
-  elevation: {
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    color: '#1E2433',
   },
   tabContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     paddingVertical: 16,
     paddingHorizontal: 20,
-    gap: 12,
   },
   tab: {
     flex: 1,
     paddingVertical: 12,
+    marginHorizontal: 8,
     borderRadius: 12,
-    backgroundColor: '#F0F2F5',
+    backgroundColor: '#E9F0FF',
     alignItems: 'center',
   },
   activeTab: {
     backgroundColor: '#199A8E',
   },
   tabText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#666',
+    color: '#5A6475',
   },
   activeTabText: {
-    color: '#fff',
+    color: '#FFFFFF',
   },
-  listContainer: {
-    padding: 12,
-    gap: 12,
-  },
-  card: {
+  content: {
     flex: 1,
-    margin: 6,
+    paddingHorizontal: 16,
+  },
+  diseaseList: {
+    paddingTop: 16,
+  },
+  diseaseCard: {
+    flex: 1,
+    margin: 8,
     padding: 16,
     borderRadius: 16,
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
-    gap: 12,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#F7F9FC',
+  diseaseIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F4F7FF',
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 12,
   },
-  icon: {
-    width: 36,
-    height: 36,
+  diseaseIcon: {
+    width: 48,
+    height: 48,
   },
-  cardText: {
-    fontSize: 15,
+  diseaseCardText: {
+    fontSize: 16,
     fontWeight: '600',
-    color: '#1A1D1E',
+    color: '#1E2433',
     textAlign: 'center',
+  },
+  faqItem: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  faqCheckContainer: {
+    marginRight: 12,
+    backgroundColor: '#E9F0FF',
+    borderRadius: 20,
+    padding: 6,
+  },
+  faqTextContainer: {
+    flex: 1,
+  },
+  faqQuestion: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1E2433',
+    marginBottom: 6,
+  },
+  faqAnswer: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: '#5A6475',
   },
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -343,62 +450,84 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  detailContainer: {
-    width: '100%',
+  modalContainer: {
+    width: width * 0.9,
     maxHeight: '80%',
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 20,
+    overflow: 'hidden',
   },
-  detailHeader: {
+  modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E9F0FF',
   },
-  detailTitle: {
+  modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1A1D1E',
+    color: '#1E2433',
   },
-  detailScroll: {
-    marginBottom: 16,
+  modalCloseButton: {
+    padding: 8,
   },
-  detailText: {
+  modalScrollView: {
+    padding: 16,
+  },
+  modalDescription: {
     fontSize: 15,
     lineHeight: 24,
-    color: '#4A4A4A',
+    color: '#5A6475',
   },
-  closeButton: {
-    padding: 16,
+  modalFooterButton: {
     backgroundColor: '#199A8E',
-    borderRadius: 12,
+    paddingVertical: 16,
     alignItems: 'center',
   },
-  closeButtonText: {
-    color: '#fff',
+  modalFooterButtonText: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
-  faqContainer: {
+  faqListContainer: {
     padding: 16,
   },
   faqItem: {
-    padding: 16,
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     marginBottom: 12,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  faqHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   faqQuestion: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#1A1D1E',
-    marginBottom: 8,
+    fontWeight: '600',
+    color: '#1E2433',
+    flex: 1,
+    marginRight: 10,
+  },
+  faqAnswerContainer: {
+    padding: 16,
+    backgroundColor: '#F9F9F9',
   },
   faqAnswer: {
-    fontSize: 15,
-    lineHeight: 24,
-    color: '#4A4A4A',
+    fontSize: 14,
+    color: '#5A6475',
+    lineHeight: 22,
   },
 });
 
