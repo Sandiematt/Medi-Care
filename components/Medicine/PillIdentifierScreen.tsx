@@ -13,11 +13,40 @@ import {
 import { launchImageLibrary } from 'react-native-image-picker';
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { createStackNavigator } from '@react-navigation/stack';
 import LinearGradient from 'react-native-linear-gradient';
+import PillDisplayScreen from './PillDisplayScreen';
+
+const Stack = createStackNavigator<RootStackParamList>();
+
+// Define navigation types
+type RootStackParamList = {
+  PillIdentifier: undefined;
+  PillDisplay: undefined;
+};
+
+const PillIdentifierApp = () => {
+  return (
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false // Hide the default header
+        }}
+      >
+        <Stack.Screen 
+          name="PillIdentifier" 
+          component={PillIdentifierScreen}
+        />
+        <Stack.Screen 
+          name="PillDisplay" 
+          component={PillDisplayScreen}
+        />
+      </Stack.Navigator>
+  );
+};
 
 const { width } = Dimensions.get('window');
 
-const PillIdentifierScreen = () => {
+const PillIdentifierScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [imprint, setImprint] = useState('');
   const [ocrResult, setOcrResult] = useState('');
   
@@ -195,7 +224,7 @@ const PillIdentifierScreen = () => {
   </View>
   <TouchableOpacity 
     style={styles.searchButton}
-    onPress={() => {/* Add your search function here */}}
+    onPress={() => {navigation.navigate('PillDisplay')}}
     activeOpacity={0.8}
   >
     <LinearGradient
@@ -555,4 +584,4 @@ const styles = StyleSheet.create({
 });
 
 
-export default PillIdentifierScreen;
+export default PillIdentifierApp;

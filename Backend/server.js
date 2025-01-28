@@ -340,7 +340,9 @@ app.get('/stats', async (req, res) => {
 });
 
 
-  app.post('/logout', (req, res) => {
+
+
+app.post('/logout', (req, res) => {
     // For token-based auth, you might blacklist the token (using a database or in-memory storage)
     res.status(200).json({ message: 'User logged out successfully' });
   });

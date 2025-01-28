@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { createStackNavigator } from '@react-navigation/stack';
-import MedicinesScreen from './MedicinesScreen';
+import InventoryScreen from '../Reminder/InventoryScreen';
 import HospitalScreen from './HospitalScreen';
 import SymptomCheckerScreen from './SymptomCheckerScreen';
 import PrescriptionsScreen from './PrescriptionsScreen';
@@ -22,7 +22,7 @@ const { width } = Dimensions.get('window');
 const HomeOptionsNavigator = () => (
   <Stack.Navigator>
     <Stack.Screen name="HomeMain" component={HomeMainScreen} options={{ headerShown: false }} />
-    <Stack.Screen name="Medicines" component={MedicinesScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="Medicines" component={InventoryScreen} options={{ headerShown: false }} />
     <Stack.Screen name="Hospital" component={HospitalScreen} options={{ headerShown: false }} />
     <Stack.Screen name="Symptom" component={SymptomCheckerScreen} options={{ headerShown: false }} />
     <Stack.Screen name="Prescriptions" component={PrescriptionsScreen} options={{ headerShown: false }} />

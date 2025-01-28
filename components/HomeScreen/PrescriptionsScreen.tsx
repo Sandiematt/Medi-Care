@@ -8,7 +8,6 @@ import {
   ScrollView,
   Modal,
   TextInput,
-  Button,
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';

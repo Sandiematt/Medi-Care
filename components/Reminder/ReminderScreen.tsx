@@ -16,26 +16,43 @@ const ReminderApp = () => {
       <Stack.Screen name="ReminderMain" component={ReminderMainScreen} />
       <Stack.Screen name="NewReminder" component={NewReminderScreen} />
       <Stack.Screen name="Inventory" component={InventoryScreen} />
-
     </Stack.Navigator>
   );
 };
 
-const ReminderMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const [reminders, setReminders] = useState<any[]>([]);
-  const [selectedReminder, setSelectedReminder] = useState<any>(null);
+const ReminderMainScreen = ({ navigation }) => {
+  const [reminders, setReminders] = useState([]);
+  const [selectedReminder, setSelectedReminder] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedTime, setSelectedTime] = useState<any>(null);
-  const [refreshing, setRefreshing] = useState(false); 
+  const [selectedTime, setSelectedTime] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [inventoryStats, setInventoryStats] = useState({
+    lowStock: 0,
+    outOfStock: 0
+  });
+  const [lowStockItems, setLowStockItems] = useState([]);
 
-  // Mock inventory data
-  const inventory = [
-    { name: 'Lisinopril', count: 5, color: 'red' },
-    { name: 'Metformin', count: 23, color: 'blue' },
-  ];
+  const today = new Date().toLocaleString('en-US', { weekday: 'short' });
 
-  const today = new Date().toLocaleString('en-US', { weekday: 'short' }); // e.g., "Mon", "Tue"
-  
+  const fetchInventoryData = async () => {
+    try {
+      // Fetch inventory stats
+      const statsResponse = await fetch('http://10.0.2.2:5000/stats');
+      const statsData = await statsResponse.json();
+      setInventoryStats(statsData);
+
+      // Fetch all inventory items
+      const inventoryResponse = await fetch('http://10.0.2.2:5000/inventory');
+      const inventoryData = await inventoryResponse.json();
+      
+      // Filter low stock items (items with stock less than 5 but greater than 0)
+      const lowStockItems = inventoryData.filter(item => item.inStock < 5 && item.inStock > 0);
+      setLowStockItems(lowStockItems);
+    } catch (error) {
+      console.error('Error fetching inventory data:', error);
+      Alert.alert('Error', 'Failed to fetch inventory data');
+    }
+  };
 
   const fetchReminders = async () => {
     try {
@@ -43,22 +60,15 @@ const ReminderMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       const data = await response.json();
   
       if (response.ok) {
-        const today = new Date().toLocaleString('en-US', { weekday: 'short' }); // e.g., "Mon", "Tue", "Wed"
-        
-        // Filter reminders based on the current day
         const todaysReminders = data.filter((reminder) => reminder.days.includes(today));
-  
-        // Update the reminders in state
         setReminders(todaysReminders);
-        // Loop through reminders and schedule notifications
+        
         todaysReminders.forEach((reminder) => {
           reminder.times.forEach(async (timeObj) => {
             if (!timeObj.completed[today]) {
               const [hour, minute] = timeObj.time.split(':');
               const triggerTime = new Date();
-              triggerTime.setHours(parseInt(hour), parseInt(minute), 0, 0); // Set the reminder time
-
-              // Schedule notification at the exact time
+              triggerTime.setHours(parseInt(hour), parseInt(minute), 0, 0);
               await scheduleNotification(triggerTime);
             }
           });
@@ -72,18 +82,15 @@ const ReminderMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     }
   };
 
-  // Schedule a simple notification
   const scheduleNotification = async (triggerTime) => {
     try {
-      // Request permissions for iOS (optional but recommended)
       await notifee.requestPermission();
   
-      // Create a channel (required for Android)
       const channelId = await notifee.createChannel({
         id: 'reminder-channel',
         name: 'Medication Reminders',
         sound: 'default',
-        importance: AndroidImportance.HIGH, // Ensure high importance for sound and visibility
+        importance: AndroidImportance.HIGH,
       });
   
       await notifee.createTriggerNotification(
@@ -92,15 +99,13 @@ const ReminderMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           body: 'It\'s time to take your medicine.',
           android: {
             channelId,
-            smallIcon: 'ic_launcher', 
+            smallIcon: 'ic_launcher',
             sound: 'default',
-            importance: AndroidImportance.HIGH, // Ensure high importance
-            
-            
+            importance: AndroidImportance.HIGH,
           },
           ios: {
-            sound: 'default', // Ensure sound on iOS
-            critical: true, // Important for iOS sound
+            sound: 'default',
+            critical: true,
           }
         },
         {
@@ -113,18 +118,16 @@ const ReminderMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       Alert.alert('Notification Error', 'Could not schedule medication reminder');
     }
   };
-  
-  
 
   const refreshHandler = async () => {
     setRefreshing(true);
-    await fetchReminders(); // Re-fetch the reminders when the user pulls down to refresh
+    await Promise.all([fetchReminders(), fetchInventoryData()]);
     setRefreshing(false);
   };
-  
 
   useEffect(() => {
     fetchReminders();
+    fetchInventoryData();
   }, []);
 
   const handleTickClick = (reminder) => {
@@ -135,8 +138,6 @@ const ReminderMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const handleRemoveTime = async (time, day) => {
     if (selectedReminder) {
       try {
-        const today = new Date().toLocaleString('en-US', { weekday: 'short' });
-  
         const response = await fetch(`http://10.0.2.2:5000/reminders/${selectedReminder._id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -149,7 +150,6 @@ const ReminderMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         const data = await response.json();
   
         if (response.ok) {
-          // Update UI for today: Mark the time as completed for today without removing it
           setReminders((prevReminders) =>
             prevReminders.map((r) =>
               r._id === selectedReminder._id
@@ -161,7 +161,7 @@ const ReminderMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                           ...t,
                           completed: {
                             ...t.completed,
-                            [today]: true, // Mark it as completed for today, without removing the time
+                            [today]: true,
                           },
                         };
                       }
@@ -182,8 +182,6 @@ const ReminderMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       }
     }
   };
-  
-  
 
   return (
     <View style={styles.container}>
@@ -226,48 +224,76 @@ const ReminderMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       </ScrollView>
 
       <Modal
-  animationType="slide"
-  transparent={true}
-  visible={modalVisible}
-  onRequestClose={() => setModalVisible(false)}
->
-  <View style={styles.modalContainer}>
-    <View style={styles.modalContent}>
-      <Text style={styles.modalHeader}>Select a Time to Remove</Text>
-      {selectedReminder?.times
-        .filter((timeObj) => !(timeObj.completed && timeObj.completed[today])) // Filter out completed times
-        .map((timeObj, index) => (
-          <TouchableOpacity
-            key={index}
-            onPress={() => handleRemoveTime(timeObj)}
-            style={styles.modalOption}
-          >
-            <Text style={styles.modalOptionText}>{timeObj.time}</Text>
-          </TouchableOpacity>
-        ))}
-      <Button title="Close" onPress={() => setModalVisible(false)} />
-    </View>
-  </View>
-</Modal>
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalHeader}>Select a Time to Remove</Text>
+            {selectedReminder?.times
+              .filter((timeObj) => !(timeObj.completed && timeObj.completed[today]))
+              .map((timeObj, index) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => handleRemoveTime(timeObj)}
+                  style={styles.modalOption}
+                >
+                  <Text style={styles.modalOptionText}>{timeObj.time}</Text>
+                </TouchableOpacity>
+              ))}
+            <Button title="Close" onPress={() => setModalVisible(false)} />
+          </View>
+        </View>
+      </Modal>
 
       {/* Inventory Section */}
       <View style={styles.inventoryHeader}>
-        <Text style={styles.header}>Inventory</Text>
-        <TouchableOpacity style={styles.seeAllButton}  onPress={() => navigation.navigate('Inventory')}>
-          <Text style={styles.seeAllButtonText} >SEE ALL</Text>
+        <View style={styles.headerRow}>
+          <Icon name="alert-circle-outline" size={24} color="#FF6B6B" />
+          <Text style={styles.header}>Low Stock Alerts</Text>
+        </View>
+        <TouchableOpacity 
+          style={styles.seeAllButton} 
+          onPress={() => navigation.navigate('Inventory')}
+        >
+          <Text style={styles.seeAllButtonText}>View All</Text>
+          <Icon name="chevron-right" size={20} color="#4A90E2" />
         </TouchableOpacity>
       </View>
 
-      {/* Inventory Items */}
+      {/* Low Stock Items - Max 2 cards side by side */}
       <View style={styles.inventoryContainer}>
-        {inventory.map((item, index) => (
-          <View key={index} style={styles.inventoryCard}>
-            <Text style={styles.inventoryName}>{item.name}</Text>
-            <Text style={{ color: item.color, fontSize: 14, fontFamily: 'Poppins-Normal' }}>
-              {item.count} remaining
-            </Text>
+        {lowStockItems.length === 0 ? (
+          <View style={styles.noAlertsContainer}>
+            <Icon name="check-circle-outline" size={40} color="#4CAF50" />
+            <Text style={styles.noAlertsText}>All items are well stocked</Text>
           </View>
-        ))}
+        ) : (
+          <View style={styles.cardsRow}>
+            {lowStockItems.slice(0, 2).map((item, index) => (
+              <TouchableOpacity 
+                key={index} 
+                style={styles.inventoryCard}
+                onPress={() => navigation.navigate('Inventory')}
+              >
+                <View style={styles.cardHeader}>
+                  <View style={styles.stockIndicator}>
+                    <Text style={styles.stockCount}>{item.inStock}</Text>
+                  </View>
+                  <Text style={styles.inventoryName} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                </View>
+                <View style={styles.cardFooter}>
+                  <Icon name="alert-circle" size={16} color="#FF6B6B" />
+                  <Text style={styles.lowStockText}>Low Stock</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
 
       <View style={styles.addButtonContainer}>
@@ -281,7 +307,6 @@ const ReminderMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     </View>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
@@ -347,51 +372,107 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 20,
+    marginBottom: 15,
+    paddingHorizontal: 5,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  header: {
+    fontSize: 20,
+    fontFamily: 'Poppins-Bold',
+    color: '#2D3748',
   },
   seeAllButton: {
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 5,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#DDDDDD',
-    elevation: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   seeAllButtonText: {
-    fontSize: 16,
-    fontFamily: 'Poppins-Bold',
-    color: '#333',
+    fontSize: 14,
+    fontFamily: 'Poppins-SemiBold',
+    color: '#4A90E2',
   },
   inventoryContainer: {
+    marginBottom: 20,
+  },
+  cardsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
+    gap: 12,
   },
   inventoryCard: {
-    width: '48%',
-    backgroundColor: '#F7F8FA',
-    padding: 15,
-    borderRadius: 10,
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  stockIndicator: {
+    backgroundColor: '#FFF3F3',
+    borderRadius: 8,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  inventoryName: {
+  stockCount: {
     fontSize: 16,
     fontFamily: 'Poppins-Bold',
-    marginBottom: 5,
+    color: '#FF6B6B',
   },
+  inventoryName: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'Poppins-SemiBold',
+    color: '#2D3748',
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  lowStockText: {
+    fontSize: 14,
+    fontFamily: 'Poppins-Medium',
+    color: '#FF6B6B',
+  },
+  noAlertsContainer: {
+    backgroundColor: '#F7FFF7',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    gap: 8,
+  },
+  noAlertsText: {
+    fontSize: 16,
+    fontFamily: 'Poppins-Medium',
+    color: '#4CAF50',
+    textAlign: 'center',
+  },
+
   addButtonContainer: {
     alignItems: 'center',
     marginVertical: 20,
   },
   addButton: {
     backgroundColor: '#E0F7FA',
-    
     borderRadius: 8,
     paddingVertical: 18,
     paddingHorizontal: 100,
     alignItems: 'center',
-    
   },
   addButtonText: {
     fontSize: 18,
@@ -401,7 +482,6 @@ const styles = StyleSheet.create({
   scrollViewContent: {
     paddingBottom: 20,
   },
-
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
