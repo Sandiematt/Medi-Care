@@ -29,7 +29,7 @@ const main = async () => {
   const remindersCollection = db.collection('reminders');
   const usersCollection = db.collection('users');  // Specify collection name
   const healthCollection = db.collection('healthvitals');  // Specify collection name
-  const prescriptionSCollection = db.collection('prescriptions');  // Specify collection name
+  const prescriptionsCollection = db.collection('prescriptions');  // Specify collection name
   const inventoryCollection=db.collection('inventory');
 
   // Default route
@@ -340,6 +340,117 @@ app.get('/stats', async (req, res) => {
 });
 
 
+
+
+app.get('/prescriptions/:username', async (req, res) => {
+  try {
+    const username = req.params.username;
+    
+    // Assuming prescriptions are stored in a collection of prescriptions, 
+    // each document includes a reference to the username or user ID.
+    const prescriptions = await prescriptionsCollection.find({ username }).toArray();
+
+    if (prescriptions.length > 0) {
+      // Send the prescriptions data as a response
+      res.status(200).json(prescriptions);
+    } else {
+      res.status(404).json({ error: 'No prescriptions found for this user' });
+    }
+  } catch (error) {
+    console.error('Error fetching prescriptions:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
+// Add a new prescription
+app.post('/prescriptions', async (req, res) => {
+  const { username, name, date, doctor, hospital, medication, description, image } = req.body;
+  
+
+  try {
+    const newPrescription = {
+      username,
+      name,
+      date,
+      doctor,
+      hospital,
+      medication,
+      description,
+      image, // Optional field
+    };
+
+    // Insert new prescription into MongoDB
+    const result = await prescriptionsCollection.insertOne(newPrescription);
+
+    // Return the inserted prescription with its generated _id
+    res.status(201).json({
+      message: 'Prescription added successfully',
+      prescription: {
+        _id: result.insertedId,
+        ...newPrescription,
+      },
+    });
+  } catch (error) {
+    console.error('Error adding prescription:', error);
+    res.status(500).json({ error: 'Failed to add prescription' });
+  }
+});
+
+//delte
+app.delete('/prescriptions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Ensure id is a valid ObjectId
+    const objectId = new ObjectId(id);
+    
+    const result = await prescriptionsCollection.deleteOne({ _id: objectId });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: 'Prescription not found' });
+    }
+
+    res.json({ message: 'Prescription deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting prescription:', error);
+    res.status(500).json({ error: 'Failed to delete prescription' });
+  }
+});
+
+
+app.post('/inventory', async (req, res) => {
+  try {
+    const { name, price, stock, type } = req.body;
+
+    // Validate required fields
+    if (!name || !price || !stock || !type) {
+      return res.status(400).json({ 
+        message: 'All fields are required (name, price, stock, type)' 
+      });
+    }
+
+    // Create new inventory item
+    const newItem = {
+      name,
+      price: parseFloat(price),
+      inStock: parseInt(stock),
+      type,
+      createdAt: new Date()
+    };
+
+    const result = await inventoryCollection.insertOne(newItem);
+
+    res.status(201).json({
+      message: 'Inventory item added successfully',
+      itemId: result.insertedId,
+      item: newItem
+    });
+  } catch (error) {
+    console.error('Error adding inventory item:', error.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 
 app.post('/logout', (req, res) => {

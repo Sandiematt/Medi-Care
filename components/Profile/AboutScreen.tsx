@@ -418,6 +418,9 @@ const styles = StyleSheet.create({
         height: 80,
         backgroundColor: 'rgba(0,0,0,0.3)',
     },
+    gradientPressed: {
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
     developerInfo: {
         padding: 16,
     },
