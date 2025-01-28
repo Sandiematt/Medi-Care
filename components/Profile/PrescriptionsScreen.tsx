@@ -1,56 +1,128 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity, Modal, TouchableWithoutFeedback, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Image, TouchableWithoutFeedback, Dimensions, TextInput, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
-
-interface Prescription {
-  id: string;
-  imageUri: string;
-  name: string;
-  date: string;
-  doctor: string;
-  medication: string;
-  dosage: string;
-  duration: string;
-}
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
 const { width } = Dimensions.get('window');
 
+interface Prescription {
+  _id: string;
+  name: string;
+  medication: string;
+  dosage: string;
+  duration: string;
+  doctor: string;
+  date: string;
+  hospital: string;
+  description:string;
+}
+
 const PrescriptionsScreen: React.FC = () => {
   const navigation = useNavigation();
-
-  const [prescriptions] = useState<Prescription[]>([
-    {
-      id: '1',
-      imageUri: 'https://img.freepik.com/free-vector/formal-a4-doctor-prescription-notepad-paper-template-design_1017-56467.jpg',
-      name: 'General Checkup Prescription',
-      date: 'Jan 15, 2025',
-      doctor: 'Dr. Sarah Johnson',
-      medication: 'Amoxicillin',
-      dosage: '500mg',
-      duration: '7 days'
-    },
-    {
-      id: '2',
-      imageUri: 'https://img.freepik.com/free-vector/formal-a4-doctor-prescription-notepad-paper-template-design_1017-56467.jpg',
-      name: 'Follow-up Prescription',
-      date: 'Jan 10, 2025',
-      doctor: 'Dr. Michael Chen',
-      medication: 'Ibuprofen',
-      dosage: '400mg',
-      duration: '5 days'
-    },
-  ]);
-
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [uploadModalVisible, setUploadModalVisible] = useState(false); // Added for upload modal visibility
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [newPrescription, setNewPrescription] = useState({
+    name: '',
+    doctor: '',
+    date: '', // Add a date field if you have one
+    hospital: '',
+    medication: '',
+    description: '',
+    image: '', // Include image if necessary
+  });
+
+  useEffect(() => {
+    fetchPrescriptions();
+  }, []);
+
+  const fetchPrescriptions = async () => {
+    try {
+      const username = await AsyncStorage.getItem('username');
+      if (username) {
+        const response = await fetch(`http://10.0.2.2:5000/prescriptions/${username}`);
+        const data = await response.json();
+        setPrescriptions(data);
+      } else {
+        console.error('Username not found');
+      }
+    } catch (error) {
+      console.error('Error fetching prescriptions:', error);
+    }
+  };
+
+
+  const handleUpload = async () => {
+    try {
+      // Prepare the data to be sent
+      const prescriptionData = {
+        username: await AsyncStorage.getItem('username'),
+        name: newPrescription.name,
+        date: newPrescription.date, // Add a date field if you have one
+        doctor: newPrescription.doctor,
+        hospital: newPrescription.hospital,
+        medication: newPrescription.medication,
+        description: newPrescription.description,
+        image: newPrescription.image, // Include image if necessary
+      };
+      
+  
+      // Check if username exists
+      if (prescriptionData.username) {
+        // Send a POST request to the server to save the new prescription using axios
+        const response = await axios.post('http://10.0.2.2:5000/prescriptions', prescriptionData, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+  
+        if (response.status === 200) {
+          // Successfully posted, close the modal and fetch updated prescriptions
+          setUploadModalVisible(false);
+          setNewPrescription({
+            name: '',
+            doctor: '',
+            hospital: '',
+            medication: '',
+            description: '',
+            date: '', // Reset date
+            image: '', // Reset image
+          }); // Reset form fields
+          fetchPrescriptions(); // Fetch the updated prescriptions list
+        }
+      } else {
+        console.error('Username not found');
+      }
+    } catch (error) {
+      console.error('Error posting prescription:', error);
+    }
+  };
+
+  const handleDelete = async (_id: string) => {
+    try {
+      const response = await axios.delete(`http://10.0.2.2:5000/prescriptions/${_id}`);
+      
+      
+      if (response.status === 200) {
+        // Remove the deleted prescription from the state
+        setPrescriptions((prevPrescriptions) =>
+          prevPrescriptions.filter((prescription) => prescription._id !== _id)
+        );
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('Error deleting prescription:', error.response ? error.response.data : error.message);
+      } else {
+        console.error('Error deleting prescription:', error);
+      }
+    }
+  };
 
   const renderItem = ({ item }: { item: Prescription }) => (
-    <TouchableOpacity 
-      style={styles.card}
-      onPress={() => setModalVisible(true)}
-      activeOpacity={0.9}
-    >
+    <TouchableOpacity style={styles.card} onPress={() => setModalVisible(true)} activeOpacity={0.9}>
       <View style={styles.cardContent}>
         <View style={styles.cardTop}>
           <View style={styles.prescriptionIconContainer}>
@@ -62,43 +134,32 @@ const PrescriptionsScreen: React.FC = () => {
         </View>
 
         <View style={styles.prescriptionInfo}>
-          <Text style={styles.prescriptionName}>{item.name}</Text>
-          
-          <View style={styles.medicationDetails}>
-            <View style={styles.detailBox}>
-              <Icon name="medical-outline" size={16} color="#4F46E5" />
-              <Text style={styles.detailText}>{item.medication}</Text>
-            </View>
-            <View style={styles.detailBox}>
-              <Icon name="timer-outline" size={16} color="#4F46E5" />
-              <Text style={styles.detailText}>{item.dosage}</Text>
-            </View>
-            <View style={styles.detailBox}>
-              <Icon name="calendar-outline" size={16} color="#4F46E5" />
-              <Text style={styles.detailText}>{item.duration}</Text>
-            </View>
+          <Text style={styles.prescriptionName}>{item.name} Prescription</Text>
+          <View style={styles.infoRow}>
+            <Icon name="medical-outline" size={16} color="#4F46E5" />
+            <Text style={styles.detailText}>{item.medication}</Text>
           </View>
-
+          <View style={styles.infoRow}>
+            <Icon name="business-outline" size={16} color="#4F46E5" />
+            <Text style={styles.detailText}>{item.hospital} Hospital</Text>
+          </View>
           <View style={styles.doctorInfo}>
             <View style={styles.infoRow}>
               <Icon name="person" size={16} color="#4F46E5" />
-              <Text style={styles.doctorText}>{item.doctor}</Text>
+              <Text style={styles.doctorText}>Dr.{item.doctor}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Icon name="time" size={16} color="#4F46E5" />
-              <Text style={styles.dateText}>{item.date}</Text>
+              <Icon name="document-text" size={16} color="#4F46E5" />
+              <Text style={styles.dateText}>{item.description}</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.cardActions}>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity style={styles.actionButton} >
             <Icon name="download-outline" size={20} color="#4F46E5" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Icon name="share-social-outline" size={20} color="#4F46E5" />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.deleteButton]}>
+          <TouchableOpacity style={[styles.actionButton, styles.deleteButton]} onPress={() => handleDelete(item._id)}>
             <Icon name="trash-outline" size={20} color="#DC2626" />
           </TouchableOpacity>
         </View>
@@ -106,15 +167,6 @@ const PrescriptionsScreen: React.FC = () => {
     </TouchableOpacity>
   );
 
-  const SummaryBox = ({ icon, title, value }: { icon: string; title: string; value: string }) => (
-    <View style={styles.summaryBox}>
-      <View style={styles.summaryIconContainer}>
-        <Icon name={icon} size={20} color="#4F46E5" />
-      </View>
-      <Text style={styles.summaryValue}>{value}</Text>
-      <Text style={styles.summaryTitle}>{title}</Text>
-    </View>
-  );
 
   return (
     <View style={styles.container}>
@@ -131,45 +183,112 @@ const PrescriptionsScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.summaryContainer}>
-        <SummaryBox icon="calendar" title="This Month" value="3" />
-        <SummaryBox icon="medical" title="Medications" value="5" />
-        <SummaryBox icon="pulse" title="Next Refill" value="2d" />
-      </View>
-
       <View style={styles.listContainer}>
         <View style={styles.listHeader}>
           <Text style={styles.sectionTitle}>Recent Prescriptions</Text>
-          <TouchableOpacity style={styles.filterButton}>
-            <Icon name="options-outline" size={20} color="#4F46E5" />
+          <TouchableOpacity style={styles.addButton} onPress={() => setUploadModalVisible(true)}>
+            <Icon name="add" size={24} color="#4F46E5" />
           </TouchableOpacity>
         </View>
 
         <FlatList
           data={prescriptions}
           renderItem={renderItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item._id} 
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.list}
         />
       </View>
 
-      <Modal
-        visible={modalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
-      >
+      {/* Image Preview Modal */}
+      <Modal visible={modalVisible} transparent={true} animationType="fade" onRequestClose={() => setModalVisible(false)}>
         <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
-              <Image source={{ uri: prescriptions[0].imageUri }} style={styles.modalImage} resizeMode="contain" />
+              <Image source={{ uri: selectedImage || '' }} style={styles.modalImage} resizeMode="contain" />
               <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
                 <Icon name="close" size={24} color="#FFF" />
               </TouchableOpacity>
             </View>
           </View>
         </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Upload Modal */}
+      <Modal visible={uploadModalVisible} transparent={true} animationType="slide" onRequestClose={() => setUploadModalVisible(false)}>
+        <View style={styles.uploadModalContainer}>
+          <View style={styles.uploadModalContent}>
+            <View style={styles.uploadModalHeader}>
+              <Text style={styles.uploadModalTitle}>Add New Prescription</Text>
+              <TouchableOpacity onPress={() => setUploadModalVisible(false)}>
+                <Icon name="close" size={24} color="#1E293B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.uploadForm}>
+              <TouchableOpacity style={styles.imageUploadButton}>
+                <Icon name="camera" size={24} color="#4F46E5" />
+                <Text style={styles.imageUploadText}>Upload Prescription Image</Text>
+              </TouchableOpacity>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Prescription Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={newPrescription.name}
+                  onChangeText={(text) => setNewPrescription({ ...newPrescription, name: text })}
+                  placeholder="Enter prescription name"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Doctor Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={newPrescription.doctor}
+                  onChangeText={(text) => setNewPrescription({ ...newPrescription, doctor: text })}
+                  placeholder="Enter doctor's name"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Hospital</Text>
+                <TextInput
+                  style={styles.input}
+                  value={newPrescription.hospital}
+                  onChangeText={(text) => setNewPrescription({ ...newPrescription, hospital: text })}
+                  placeholder="Enter hospital name"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Medications</Text>
+                <TextInput
+                  style={styles.input}
+                  value={newPrescription.medication}
+                  onChangeText={(text) => setNewPrescription({ ...newPrescription, medication: text })}
+                  placeholder="Enter medications"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Description</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  value={newPrescription.description}
+                  onChangeText={(text) => setNewPrescription({ ...newPrescription, description: text })}
+                  placeholder="Enter prescription details"
+                  multiline
+                  numberOfLines={4}
+                />
+              </View>
+
+              <TouchableOpacity style={styles.submitButton} onPress={handleUpload}>
+                <Text style={styles.submitButtonText}>Save Prescription</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
     </View>
   );
@@ -185,7 +304,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: 20,
     paddingBottom: 20,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
@@ -215,40 +334,6 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 4,
   },
-  summaryContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#fff',
-  },
-  summaryBox: {
-    flex: 1,
-    alignItems: 'center',
-    padding: 12,
-    marginHorizontal: 5,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-  },
-  summaryIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#EEF2FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  summaryValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1E293B',
-  },
-  summaryTitle: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 4,
-  },
   listContainer: {
     flex: 1,
     paddingHorizontal: 20,
@@ -264,7 +349,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1E293B',
   },
-  filterButton: {
+  addButton: {
     padding: 8,
     borderRadius: 8,
     backgroundColor: '#EEF2FF',
@@ -309,34 +394,21 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     marginBottom: 12,
   },
-  medicationDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  detailBox: {
+  infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+    marginTop: 6,
   },
   detailText: {
-    marginLeft: 6,
+    marginLeft: 8,
     color: '#475569',
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 14,
   },
   doctorInfo: {
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
     paddingTop: 12,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
+    marginTop: 12,
   },
   doctorText: {
     fontSize: 14,
@@ -389,6 +461,86 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     padding: 8,
     borderRadius: 20,
+  },
+  uploadModalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  uploadModalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: '90%',
+  },
+  uploadModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  uploadModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  uploadForm: {
+    padding: 20,
+  },
+  imageUploadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EEF2FF',
+    padding: 20,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#4F46E5',
+    borderStyle: 'dashed',
+    marginBottom: 20,
+  },
+  imageUploadText: {
+    color: '#4F46E5',
+    fontSize: 16,
+    fontWeight: '500',
+    marginLeft: 10,
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#475569',
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: '#1E293B',
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  submitButton: {
+    backgroundColor: '#4F46E5',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 40,
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 
