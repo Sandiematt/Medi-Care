@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Image, TouchableWithoutFeedback, Dimensions, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Image, TouchableWithoutFeedback, Dimensions, TextInput, ScrollView, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import { launchImageLibrary } from 'react-native-image-picker';
+
+import { PermissionsAndroid, Platform } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -16,23 +19,26 @@ interface Prescription {
   doctor: string;
   date: string;
   hospital: string;
-  description:string;
+  description: string;
+  image?: string;
 }
 
 const PrescriptionsScreen: React.FC = () => {
   const navigation = useNavigation();
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [uploadModalVisible, setUploadModalVisible] = useState(false); // Added for upload modal visibility
+  const [uploadModalVisible, setUploadModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [newPrescription, setNewPrescription] = useState({
     name: '',
     doctor: '',
-    date: '', // Add a date field if you have one
+    date: '',
     hospital: '',
     medication: '',
     description: '',
-    image: '', // Include image if necessary
+    image: '',
   });
 
   useEffect(() => {
@@ -42,87 +48,122 @@ const PrescriptionsScreen: React.FC = () => {
   const fetchPrescriptions = async () => {
     try {
       const username = await AsyncStorage.getItem('username');
-      if (username) {
-        const response = await fetch(`http://10.0.2.2:5000/prescriptions/${username}`);
-        const data = await response.json();
-        setPrescriptions(data);
-      } else {
-        console.error('Username not found');
+      if (!username) {
+        throw new Error('Username not found');
       }
+      const response = await axios.get(`http://10.0.2.2:5000/prescriptions/${username}`);
+      setPrescriptions(response.data);
     } catch (error) {
       console.error('Error fetching prescriptions:', error);
+      Alert.alert('Error', 'Failed to fetch prescriptions');
     }
   };
 
+  const handleImagePick = async () => {
+    try {
+      const result = await launchImageLibrary({
+        mediaType: 'photo',
+        quality: 0.8,
+        includeBase64: true,
+      });
+
+      if (result.didCancel || !result.assets?.[0]) return;
+
+      const imageUri = result.assets[0].uri;
+      const imageBase64 = result.assets[0].base64;
+
+      if (!imageBase64) {
+        throw new Error('No image data received');
+      }
+
+      setNewPrescription(prev => ({
+        ...prev,
+        image: `data:image/jpeg;base64,${imageBase64}`
+      }));
+
+      setSelectedImage(imageUri);
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image');
+    }
+  };
 
   const handleUpload = async () => {
     try {
-      // Prepare the data to be sent
-      const prescriptionData = {
-        username: await AsyncStorage.getItem('username'),
-        name: newPrescription.name,
-        date: newPrescription.date, // Add a date field if you have one
-        doctor: newPrescription.doctor,
-        hospital: newPrescription.hospital,
-        medication: newPrescription.medication,
-        description: newPrescription.description,
-        image: newPrescription.image, // Include image if necessary
-      };
+      setIsUploading(true);
+      const username = await AsyncStorage.getItem('username');
       
-  
-      // Check if username exists
-      if (prescriptionData.username) {
-        // Send a POST request to the server to save the new prescription using axios
-        const response = await axios.post('http://10.0.2.2:5000/prescriptions', prescriptionData, {
-          headers: {
-            'Content-Type': 'application/json',
-          },
+      if (!username) {
+        throw new Error('Username not found');
+      }
+
+      const prescriptionData = {
+        username,
+        ...newPrescription,
+      };
+
+      const response = await axios.post('http://10.0.2.2:5000/prescriptions', prescriptionData);
+
+      if (response.status === 200) {
+        setUploadModalVisible(false);
+        setNewPrescription({
+          name: '',
+          doctor: '',
+          hospital: '',
+          medication: '',
+          description: '',
+          date: '',
+          image: '',
         });
-  
-        if (response.status === 200) {
-          // Successfully posted, close the modal and fetch updated prescriptions
-          setUploadModalVisible(false);
-          setNewPrescription({
-            name: '',
-            doctor: '',
-            hospital: '',
-            medication: '',
-            description: '',
-            date: '', // Reset date
-            image: '', // Reset image
-          }); // Reset form fields
-          fetchPrescriptions(); // Fetch the updated prescriptions list
-        }
-      } else {
-        console.error('Username not found');
+        await fetchPrescriptions();
+        Alert.alert('Success', 'Prescription uploaded successfully');
       }
     } catch (error) {
       console.error('Error posting prescription:', error);
+      Alert.alert('Error', 'Failed to upload prescription');
+    } finally {
+      setIsUploading(false);
     }
   };
 
-  const handleDelete = async (_id: string) => {
+  const handleDelete = async (id: string) => {
     try {
-      const response = await axios.delete(`http://10.0.2.2:5000/prescriptions/${_id}`);
-      
-      
-      if (response.status === 200) {
-        // Remove the deleted prescription from the state
-        setPrescriptions((prevPrescriptions) =>
-          prevPrescriptions.filter((prescription) => prescription._id !== _id)
-        );
-      }
+      Alert.alert(
+        'Delete Prescription',
+        'Are you sure you want to delete this prescription?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              const response = await axios.delete(`http://10.0.2.2:5000/prescriptions/${id}`);
+              if (response.status === 200) {
+                setPrescriptions(prev => prev.filter(prescription => prescription._id !== id));
+                Alert.alert('Success', 'Prescription deleted successfully');
+              }
+            }
+          }
+        ]
+      );
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        console.error('Error deleting prescription:', error.response ? error.response.data : error.message);
-      } else {
-        console.error('Error deleting prescription:', error);
-      }
+      console.error('Error deleting prescription:', error);
+      Alert.alert('Error', 'Failed to delete prescription');
     }
   };
 
   const renderItem = ({ item }: { item: Prescription }) => (
-    <TouchableOpacity style={styles.card} onPress={() => setModalVisible(true)} activeOpacity={0.9}>
+    <TouchableOpacity 
+      style={styles.card} 
+      onPress={() => {
+        setSelectedPrescription(item);
+        if (item.image) {
+          setSelectedImage(item.image);
+          setModalVisible(true);
+        }
+      }} 
+      activeOpacity={0.9}
+    >
       <View style={styles.cardContent}>
         <View style={styles.cardTop}>
           <View style={styles.prescriptionIconContainer}>
@@ -146,7 +187,7 @@ const PrescriptionsScreen: React.FC = () => {
           <View style={styles.doctorInfo}>
             <View style={styles.infoRow}>
               <Icon name="person" size={16} color="#4F46E5" />
-              <Text style={styles.doctorText}>Dr.{item.doctor}</Text>
+              <Text style={styles.doctorText}>Dr. {item.doctor}</Text>
             </View>
             <View style={styles.infoRow}>
               <Icon name="document-text" size={16} color="#4F46E5" />
@@ -156,10 +197,13 @@ const PrescriptionsScreen: React.FC = () => {
         </View>
 
         <View style={styles.cardActions}>
-          <TouchableOpacity style={styles.actionButton} >
-            <Icon name="download-outline" size={20} color="#4F46E5" />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.deleteButton]} onPress={() => handleDelete(item._id)}>
+        <View style={styles.prescriptionIconContainer}>
+            <Icon name="eye" size={24} color="#4F46E5" />
+          </View>
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.deleteButton]} 
+            onPress={() => handleDelete(item._id)}
+          >
             <Icon name="trash-outline" size={20} color="#DC2626" />
           </TouchableOpacity>
         </View>
@@ -167,11 +211,13 @@ const PrescriptionsScreen: React.FC = () => {
     </TouchableOpacity>
   );
 
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => navigation.goBack()}
+        >
           <Icon name="chevron-back" size={24} color="#4F46E5" />
         </TouchableOpacity>
         <View style={styles.headerTextContainer}>
@@ -186,7 +232,10 @@ const PrescriptionsScreen: React.FC = () => {
       <View style={styles.listContainer}>
         <View style={styles.listHeader}>
           <Text style={styles.sectionTitle}>Recent Prescriptions</Text>
-          <TouchableOpacity style={styles.addButton} onPress={() => setUploadModalVisible(true)}>
+          <TouchableOpacity 
+            style={styles.addButton} 
+            onPress={() => setUploadModalVisible(true)}
+          >
             <Icon name="add" size={24} color="#4F46E5" />
           </TouchableOpacity>
         </View>
@@ -194,19 +243,32 @@ const PrescriptionsScreen: React.FC = () => {
         <FlatList
           data={prescriptions}
           renderItem={renderItem}
-          keyExtractor={(item) => item._id} 
+          keyExtractor={(item) => item._id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.list}
         />
       </View>
 
-      {/* Image Preview Modal */}
-      <Modal visible={modalVisible} transparent={true} animationType="fade" onRequestClose={() => setModalVisible(false)}>
+      <Modal 
+        visible={modalVisible} 
+        transparent={true} 
+        animationType="fade" 
+        onRequestClose={() => setModalVisible(false)}
+      >
         <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
-              <Image source={{ uri: selectedImage || '' }} style={styles.modalImage} resizeMode="contain" />
-              <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+              {selectedImage && (
+                <Image 
+                  source={{ uri: selectedImage }} 
+                  style={styles.modalImage} 
+                  resizeMode="contain" 
+                />
+              )}
+              <TouchableOpacity 
+                style={styles.closeButton} 
+                onPress={() => setModalVisible(false)}
+              >
                 <Icon name="close" size={24} color="#FFF" />
               </TouchableOpacity>
             </View>
@@ -214,8 +276,12 @@ const PrescriptionsScreen: React.FC = () => {
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* Upload Modal */}
-      <Modal visible={uploadModalVisible} transparent={true} animationType="slide" onRequestClose={() => setUploadModalVisible(false)}>
+      <Modal 
+        visible={uploadModalVisible} 
+        transparent={true} 
+        animationType="slide" 
+        onRequestClose={() => setUploadModalVisible(false)}
+      >
         <View style={styles.uploadModalContainer}>
           <View style={styles.uploadModalContent}>
             <View style={styles.uploadModalHeader}>
@@ -226,9 +292,15 @@ const PrescriptionsScreen: React.FC = () => {
             </View>
 
             <ScrollView style={styles.uploadForm}>
-              <TouchableOpacity style={styles.imageUploadButton}>
+              <TouchableOpacity 
+                style={styles.imageUploadButton}
+                onPress={handleImagePick}
+                disabled={isUploading}
+              >
                 <Icon name="camera" size={24} color="#4F46E5" />
-                <Text style={styles.imageUploadText}>Upload Prescription Image</Text>
+                <Text style={styles.imageUploadText}>
+                  {isUploading ? 'Uploading...' : 'Upload Prescription Image'}
+                </Text>
               </TouchableOpacity>
 
               <View style={styles.inputContainer}>
@@ -236,7 +308,7 @@ const PrescriptionsScreen: React.FC = () => {
                 <TextInput
                   style={styles.input}
                   value={newPrescription.name}
-                  onChangeText={(text) => setNewPrescription({ ...newPrescription, name: text })}
+                  onChangeText={(text) => setNewPrescription(prev => ({ ...prev, name: text }))}
                   placeholder="Enter prescription name"
                 />
               </View>
@@ -246,7 +318,7 @@ const PrescriptionsScreen: React.FC = () => {
                 <TextInput
                   style={styles.input}
                   value={newPrescription.doctor}
-                  onChangeText={(text) => setNewPrescription({ ...newPrescription, doctor: text })}
+                  onChangeText={(text) => setNewPrescription(prev => ({ ...prev, doctor: text }))}
                   placeholder="Enter doctor's name"
                 />
               </View>
@@ -256,7 +328,7 @@ const PrescriptionsScreen: React.FC = () => {
                 <TextInput
                   style={styles.input}
                   value={newPrescription.hospital}
-                  onChangeText={(text) => setNewPrescription({ ...newPrescription, hospital: text })}
+                  onChangeText={(text) => setNewPrescription(prev => ({ ...prev, hospital: text }))}
                   placeholder="Enter hospital name"
                 />
               </View>
@@ -266,7 +338,7 @@ const PrescriptionsScreen: React.FC = () => {
                 <TextInput
                   style={styles.input}
                   value={newPrescription.medication}
-                  onChangeText={(text) => setNewPrescription({ ...newPrescription, medication: text })}
+                  onChangeText={(text) => setNewPrescription(prev => ({ ...prev, medication: text }))}
                   placeholder="Enter medications"
                 />
               </View>
@@ -276,7 +348,7 @@ const PrescriptionsScreen: React.FC = () => {
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   value={newPrescription.description}
-                  onChangeText={(text) => setNewPrescription({ ...newPrescription, description: text })}
+                  onChangeText={(text) => setNewPrescription(prev => ({ ...prev, description: text }))}
                   placeholder="Enter prescription details"
                   multiline
                   numberOfLines={4}

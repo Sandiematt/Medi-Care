@@ -339,82 +339,88 @@ app.get('/stats', async (req, res) => {
   }
 });
 
+// If you're sending base64 image data
+app.use(express.json({limit: '50mb'}));
+app.use(express.urlencoded({
+  extended: true,
+  limit: '50mb',
+  parameterLimit: 100000
+}));
 
-
-
-app.get('/prescriptions/:username', async (req, res) => {
-  try {
-    const username = req.params.username;
-    
-    // Assuming prescriptions are stored in a collection of prescriptions, 
-    // each document includes a reference to the username or user ID.
-    const prescriptions = await prescriptionsCollection.find({ username }).toArray();
-
-    if (prescriptions.length > 0) {
-      // Send the prescriptions data as a response
-      res.status(200).json(prescriptions);
-    } else {
-      res.status(404).json({ error: 'No prescriptions found for this user' });
-    }
-  } catch (error) {
-    console.error('Error fetching prescriptions:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-
-// Add a new prescription
 app.post('/prescriptions', async (req, res) => {
-  const { username, name, date, doctor, hospital, medication, description, image } = req.body;
-  
-
   try {
-    const newPrescription = {
-      username,
-      name,
-      date,
-      doctor,
-      hospital,
-      medication,
-      description,
-      image, // Optional field
+    const prescription = {
+      username: req.body.username,
+      name: req.body.name,
+      medication: req.body.medication,
+      doctor: req.body.doctor,
+      hospital: req.body.hospital,
+      description: req.body.description,
+      date: req.body.date,
+      image: req.body.image,
+      createdAt: new Date()
     };
 
-    // Insert new prescription into MongoDB
-    const result = await prescriptionsCollection.insertOne(newPrescription);
-
-    // Return the inserted prescription with its generated _id
-    res.status(201).json({
-      message: 'Prescription added successfully',
-      prescription: {
-        _id: result.insertedId,
-        ...newPrescription,
-      },
+    const result = await db.collection('prescriptions').insertOne(prescription);
+    res.status(200).json({
+      message: 'Prescription saved successfully',
+      _id: result.insertedId
     });
   } catch (error) {
-    console.error('Error adding prescription:', error);
-    res.status(500).json({ error: 'Failed to add prescription' });
+    console.error('Error saving prescription:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-//delte
+// GET prescriptions by username
+app.get('/prescriptions/:username', async (req, res) => {
+  try {
+    const prescriptions = await db
+      .collection('prescriptions')
+      .find({ username: req.params.username })
+      .sort({ createdAt: -1 })
+      .toArray();
+    
+    res.json(prescriptions);
+  } catch (error) {
+    console.error('Error fetching prescriptions:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE prescription
 app.delete('/prescriptions/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    
-    // Ensure id is a valid ObjectId
-    const objectId = new ObjectId(id);
-    
-    const result = await prescriptionsCollection.deleteOne({ _id: objectId });
+    const result = await db
+      .collection('prescriptions')
+      .deleteOne({ _id: new ObjectId(req.params.id) });
 
     if (result.deletedCount === 0) {
       return res.status(404).json({ message: 'Prescription not found' });
     }
 
-    res.json({ message: 'Prescription deleted successfully' });
+    res.status(200).json({ message: 'Prescription deleted successfully' });
   } catch (error) {
     console.error('Error deleting prescription:', error);
-    res.status(500).json({ error: 'Failed to delete prescription' });
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET single prescription
+app.get('/prescriptions/detail/:id', async (req, res) => {
+  try {
+    const prescription = await db
+      .collection('prescriptions')
+      .findOne({ _id: new ObjectId(req.params.id) });
+
+    if (!prescription) {
+      return res.status(404).json({ message: 'Prescription not found' });
+    }
+
+    res.json(prescription);
+  } catch (error) {
+    console.error('Error fetching prescription:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
