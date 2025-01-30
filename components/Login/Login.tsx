@@ -171,7 +171,7 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess }) => {
           <View style={styles.header}>
             <View style={styles.logoContainer}>
               <Image
-                source={require('../../assets/images/logo.png')}
+                source={require('../../assets/images/logo.jpg')}
                 style={styles.logo}
               />
             </View>
@@ -258,8 +258,8 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   logo: {
-    width: 120,
-    height: 120,
+    width: 170,
+    height: 170,
   },
   formContainer: {
     paddingHorizontal: 24,

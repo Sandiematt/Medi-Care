@@ -6,8 +6,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { launchImageLibrary } from 'react-native-image-picker';
 
-import { PermissionsAndroid, Platform } from 'react-native';
-
 const { width } = Dimensions.get('window');
 
 interface Prescription {

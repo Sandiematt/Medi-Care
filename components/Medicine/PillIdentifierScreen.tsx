@@ -50,6 +50,7 @@ const PillIdentifierScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const [imprint, setImprint] = useState('');
   const [ocrResult, setOcrResult] = useState('');
   
+  
   // Animation values using useRef
   const headerAnimation = useRef(new Animated.Value(0)).current;
   const searchAnimation = useRef(new Animated.Value(0)).current;
@@ -178,6 +179,11 @@ const PillIdentifierScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     outputRange: [0, -10],
   });
 
+  const handleSearch = () => {
+    // Navigate to PillDisplay screen and pass the imprint as a query parameter
+    navigation.navigate('PillDisplay', { query: imprint });
+  };
+
   return (
     <ScrollView style={styles.container}>
       {/* Gradient Header */}
@@ -224,7 +230,7 @@ const PillIdentifierScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   </View>
   <TouchableOpacity 
     style={styles.searchButton}
-    onPress={() => {navigation.navigate('PillDisplay')}}
+    onPress={handleSearch}
     activeOpacity={0.8}
   >
     <LinearGradient

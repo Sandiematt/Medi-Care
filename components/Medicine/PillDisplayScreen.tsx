@@ -1,44 +1,170 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, SafeAreaView, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, ScrollView, SafeAreaView ,ActivityIndicator} from 'react-native';
+import axios from 'axios';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 
-const PillDisplayScreen = ({ medicine }) => {
-    const sampleMedicine = {
-        name: "Paracetamol",
-        brand: "Tylenol",
-        composition: "Acetaminophen 500mg",
-        usage: "For temporary relief of minor aches and pains. Reduces fever.",
-        sideEffects: "Nausea, stomach pain, loss of appetite, headache, yellowing of skin or eyes",
-        isCounterfeit: false,
-        image: "https://example.com/medicine-image.jpg",
-        dosage: "1-2 tablets every 4-6 hours",
-        category: "Pain Relief",
-        nextDose: "4:30 PM",
-        lastTaken: "12:30 PM"
-    };
+interface Medicine {
+    _id: string;
+    name: string;
+    brand: string;
+    size: number;
+    'image ': string; // Note: This matches the database field with space
+    composition: string;
+    uses: string;
+    sideeffects: string;
+    counterfeit: boolean;
+    imprint?: string;
+}
 
-    const med = medicine || sampleMedicine;
+interface RouteParams {
+    query: string;
+}
+
+interface Props {
+    route: {
+        params: RouteParams;
+    };
+    navigation: any;
+}
+
+
+const ImageDisplay = ({ uri }: { uri: string }) => {
+    const [isLoading, setIsLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
+
+    // Sanitize the URI by trimming whitespace and ensuring it's a valid URL
+    const sanitizedUri = uri.trim();
+
+    return (
+        <View style={styles.imageSection}>
+            {sanitizedUri ? (
+                <>
+                    <Image
+                        source={{ 
+                            uri: sanitizedUri,
+                            headers: {
+                                'Accept': 'image/jpeg,image/png,image/*',
+                                'Cache-Control': 'max-age=3600'
+                            }
+                        }}
+                        style={styles.image}
+                        resizeMode="contain"
+                        onLoadStart={() => setIsLoading(true)}
+                        onLoadEnd={() => setIsLoading(false)}
+                        onError={() => {
+                            setHasError(true);
+                            setIsLoading(false);
+                            console.error('Failed to load image:', sanitizedUri);
+                        }}
+                    />
+                    {isLoading && (
+                        <View style={styles.imageLoader}>
+                            <ActivityIndicator size="large" color="#0083B0" />
+                        </View>
+                    )}
+                </>
+            ) : null}
+            {(hasError || !sanitizedUri) && (
+                <View style={styles.imageError}>
+                    <Icon name="image-off" size={40} color="#64748B" />
+                    <Text style={styles.imageErrorText}>Image not available</Text>
+                </View>
+            )}
+        </View>
+    );
+};
+
+const PillDisplayScreen: React.FC<Props> = ({ route, navigation }) => {
+    const [medicine, setMedicine] = useState<Medicine | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const { query } = route.params;
+
+    useEffect(() => {
+        const fetchMedicineDetails = async () => {
+            setLoading(true);
+            setError(null);
+            
+            try {
+                const response = await axios.get('http://10.0.2.2:5000/api/medicine', {
+                    params: { query },
+                    timeout: 5000
+                });
+
+                if (response.data) {
+                    setMedicine(response.data);
+                } else {
+                    setError('Medicine not found.');
+                }
+            } catch (err) {
+                if (axios.isAxiosError(err)) {
+                    if (err.response?.status === 404) {
+                        setError('Medicine not found.');
+                    } else if (err.code === 'ECONNABORTED') {
+                        setError('Request timed out. Please try again.');
+                    } else if (!err.response) {
+                        setError('Network error. Please check your connection.');
+                    } else {
+                        setError('Failed to fetch medicine details.');
+                    }
+                } else {
+                    setError('An unexpected error occurred.');
+                }
+                console.error('Error fetching medicine:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (query) {
+            fetchMedicineDetails();
+        }
+    }, [query]);
+
+    if (loading) {
+        return (
+            <View style={styles.centerContainer}>
+                <Text style={styles.messageText}>Loading...</Text>
+            </View>
+        );
+    }
+
+    if (error) {
+        return (
+            <View style={styles.centerContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+            </View>
+        );
+    }
+
+    if (!medicine) {
+        return (
+            <View style={styles.centerContainer}>
+                <Text style={styles.messageText}>No medicine details available</Text>
+            </View>
+        );
+    }
 
     const VerificationBadge = () => (
         <LinearGradient
-            colors={med.isCounterfeit ? ['#FF416C', '#FF4B2B'] : ['#00B4DB', '#0083B0']}
+            colors={medicine.counterfeit ? ['#FF416C', '#FF4B2B'] : ['#00B4DB', '#0083B0']}
             style={styles.verificationBadge}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
         >
             <Icon 
-                name={med.isCounterfeit ? 'alert-circle' : 'shield-check'} 
+                name={medicine.counterfeit ? 'alert-circle' : 'shield-check'} 
                 size={20} 
                 color="white" 
             />
             <Text style={styles.verificationText}>
-                {med.isCounterfeit ? 'Counterfeit Alert' : 'Verified'}
+                {medicine.counterfeit ? 'Counterfeit Alert' : 'Verified'}
             </Text>
         </LinearGradient>
     );
 
-    const InfoCard = ({ title, content, iconName }) => (
+    const InfoCard = ({ title, content, iconName }: { title: string; content: string; iconName: string }) => (
         <View style={styles.infoCard}>
             <Icon name={iconName} size={22} color="#0083B0" style={styles.cardIcon} />
             <Text style={styles.cardTitle}>{title}</Text>
@@ -46,72 +172,38 @@ const PillDisplayScreen = ({ medicine }) => {
         </View>
     );
 
-    const TimingCard = () => (
-        <View style={styles.timingCard}>
-            <View style={styles.timingItem}>
-                <Icon name="clock-outline" size={24} color="#0083B0" />
-                <View style={styles.timingTextContainer}>
-                    <Text style={styles.timingLabel}>Next Dose</Text>
-                    <Text style={styles.timingValue}>{med.nextDose}</Text>
-                </View>
-            </View>
-            <View style={styles.timingDivider} />
-            <View style={styles.timingItem}>
-                <Icon name="history" size={24} color="#0083B0" />
-                <View style={styles.timingTextContainer}>
-                    <Text style={styles.timingLabel}>Last Taken</Text>
-                    <Text style={styles.timingValue}>{med.lastTaken}</Text>
-                </View>
-            </View>
-        </View>
-    );
-
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
                 <View style={styles.contentContainer}>
-                    {/* Header Section */}
                     <View style={styles.headerSection}>
-                        <View style={styles.categoryContainer}>
-                            <Text style={styles.category}>{med.category}</Text>
+                        <View style={styles.headerTop}>
+                            <Text style={styles.size}>{medicine?.size}mg</Text>
                             <VerificationBadge />
                         </View>
-                        <Text style={styles.title}>{med.name}</Text>
-                        <Text style={styles.brand}>{med.brand}</Text>
+                        <Text style={styles.title}>{medicine?.name}</Text>
+                        <Text style={styles.brand}>{medicine?.brand}</Text>
+                        {medicine?.imprint && (
+                            <Text style={styles.imprint}>Imprint: {medicine.imprint}</Text>
+                        )}
                     </View>
 
-                    {/* Image Section */}
-                    <View style={styles.imageSection}>
-                        <Image
-                            source={{ uri: med.image }}
-                            style={styles.image}
-                            resizeMode="contain"
-                        />
-                    </View>
+                    {medicine && <ImageDisplay uri={medicine['image '] || ''} />}
 
-                    {/* Timing Section */}
-                    <TimingCard />
-
-                    {/* Info Grid */}
                     <View style={styles.infoGrid}>
                         <InfoCard 
-                            title="Dosage" 
-                            content={med.dosage}
-                            iconName="pill"
-                        />
-                        <InfoCard 
                             title="Composition" 
-                            content={med.composition}
+                            content={medicine?.composition}
                             iconName="flask-outline"
                         />
                         <InfoCard 
-                            title="Usage" 
-                            content={med.usage}
+                            title="Uses" 
+                            content={medicine?.uses}
                             iconName="information-outline"
                         />
                         <InfoCard 
                             title="Side Effects" 
-                            content={med.sideEffects}
+                            content={medicine?.sideeffects}
                             iconName="alert-outline"
                         />
                     </View>
@@ -135,13 +227,13 @@ const styles = StyleSheet.create({
     headerSection: {
         marginBottom: 24,
     },
-    categoryContainer: {
+    headerTop: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         marginBottom: 12,
     },
-    category: {
+    size: {
         fontSize: 14,
         color: '#0083B0',
         fontWeight: '600',
@@ -174,6 +266,11 @@ const styles = StyleSheet.create({
         color: '#64748B',
         fontWeight: '500',
     },
+    imprint: {
+        fontSize: 14,
+        color: '#64748B',
+        marginTop: 4,
+    },
     imageSection: {
         backgroundColor: 'white',
         borderRadius: 24,
@@ -189,44 +286,6 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 200,
         borderRadius: 16,
-    },
-    timingCard: {
-        backgroundColor: 'white',
-        borderRadius: 16,
-        padding: 20,
-        marginBottom: 24,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        shadowColor: '#64748B',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 3,
-    },
-    timingItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    timingTextContainer: {
-        marginLeft: 12,
-    },
-    timingLabel: {
-        fontSize: 12,
-        color: '#64748B',
-        marginBottom: 2,
-    },
-    timingValue: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#1E293B',
-    },
-    timingDivider: {
-        width: 1,
-        height: '100%',
-        backgroundColor: '#E2E8F0',
-        marginHorizontal: 20,
     },
     infoGrid: {
         flexDirection: 'row',
@@ -257,6 +316,47 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#64748B',
         lineHeight: 20,
+    },
+    centerContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    messageText: {
+        fontSize: 16,
+        color: '#64748B',
+        textAlign: 'center',
+    },
+    errorText: {
+        fontSize: 16,
+        color: '#EF4444',
+        textAlign: 'center',
+    },
+    imageLoader: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    },
+    imageError: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+    },
+    imageErrorText: {
+        marginTop: 8,
+        fontSize: 14,
+        color: '#64748B',
     },
 });
 

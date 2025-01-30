@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   Platform,
   ScrollView,
-  Dimensions,
+  Animated,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Picker } from '@react-native-picker/picker';
@@ -29,6 +29,33 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [isFocused, setIsFocused] = useState({
+    username: false,
+    email: false,
+    contact: false,
+    age: false,
+    gender: false,
+    password: false,
+    confirmPassword: false,
+  });
+
+  const [labelAnimations] = useState({
+    username: new Animated.Value(0),
+    email: new Animated.Value(0),
+    contact: new Animated.Value(0),
+    age: new Animated.Value(0),
+    gender: new Animated.Value(0),
+    password: new Animated.Value(0),
+    confirmPassword: new Animated.Value(0),
+  });
+
+  const animateLabel = (field: string, toValue: number) => {
+    Animated.timing(labelAnimations[field], {
+      toValue,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  };
 
   const handleSignUp = async () => {
     if (password !== confirmPassword) {
@@ -36,7 +63,7 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
       return;
     }
 
-    if (!email || !password || !username || !contact || !age || !gender) { // Replaced name with username
+    if (!email || !password || !username || !contact || !age || !gender) {
       setError('Please fill in all fields');
       return;
     }
@@ -53,7 +80,7 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username, // Replaced name with username
+          username,
           email,
           contact,
           age,
@@ -65,7 +92,7 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
       const result = await response.json();
 
       if (response.ok && result.message === 'User registered successfully') {
-        navigation.navigate('Login'); // Navigate to Login screen
+        navigation.navigate('Login');
       } else {
         setError(result.message || 'Sign-up failed');
       }
@@ -80,29 +107,126 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
     value: string,
     onChangeText: (text: string) => void,
     iconName: string,
-    placeholder: string,
     secureTextEntry?: boolean,
-    keyboardType?: any
-  ) => (
-    <View style={styles.inputContainer}>
-      <View style={styles.iconContainer}>
-        <Icon name={iconName} size={20} color="#199A8E" />
+    keyboardType?: any,
+    field: keyof typeof isFocused
+  ) => {
+    const labelStyle = {
+      transform: [{
+        translateY: labelAnimations[field].interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, -20],
+        }),
+      }],
+      fontSize: labelAnimations[field].interpolate({
+        inputRange: [0, 1],
+        outputRange: [16, 12],
+      }),
+      color: labelAnimations[field].interpolate({
+        inputRange: [0, 1],
+        outputRange: ['#A0A0A0', '#199A8E'],
+      }),
+    };
+
+    const underlineStyle = {
+      backgroundColor: labelAnimations[field].interpolate({
+        inputRange: [0, 1],
+        outputRange: ['#E2E8F0', '#199A8E'],
+      }),
+    };
+
+    return (
+      <View style={styles.inputContainer}>
+        <View style={styles.iconContainer}>
+          <Icon name={iconName} size={20} color="#199A8E" />
+        </View>
+        <View style={styles.inputWrapper}>
+          <View style={styles.labelContainer}>
+            <Animated.Text style={[styles.floatingLabel, labelStyle]}>
+              {label}
+            </Animated.Text>
+          </View>
+          <TextInput
+            style={styles.input}
+            value={value}
+            onChangeText={onChangeText}
+            secureTextEntry={secureTextEntry}
+            keyboardType={keyboardType}
+            autoCapitalize="none"
+            onFocus={() => {
+              setIsFocused({ ...isFocused, [field]: true });
+              animateLabel(field, 1);
+            }}
+            onBlur={() => {
+              setIsFocused({ ...isFocused, [field]: false });
+              if (!value) {
+                animateLabel(field, 0);
+              }
+            }}
+          />
+          <Animated.View style={[styles.inputUnderline, underlineStyle]} />
+        </View>
       </View>
-      <View style={styles.inputWrapper}>
-        <Text style={styles.label}>{label}</Text>
-        <TextInput
-          style={styles.input}
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor="#A0A0A0"
-          secureTextEntry={secureTextEntry}
-          keyboardType={keyboardType}
-          autoCapitalize="none"
-        />
+    );
+  };
+
+  const renderPicker = () => {
+    const labelStyle = {
+      transform: [{
+        translateY: labelAnimations['gender'].interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, -20],
+        }),
+      }],
+      fontSize: labelAnimations['gender'].interpolate({
+        inputRange: [0, 1],
+        outputRange: [16, 12],
+      }),
+      color: labelAnimations['gender'].interpolate({
+        inputRange: [0, 1],
+        outputRange: ['#A0A0A0', '#199A8E'],
+      }),
+    };
+
+    const underlineStyle = {
+      backgroundColor: labelAnimations['gender'].interpolate({
+        inputRange: [0, 1],
+        outputRange: ['#E2E8F0', '#199A8E'],
+      }),
+    };
+
+    return (
+      <View style={styles.inputContainer}>
+        <View style={styles.iconContainer}>
+          <Icon name="people-outline" size={20} color="#199A8E" />
+        </View>
+        <View style={styles.inputWrapper}>
+          <View style={styles.labelContainer}>
+            <Animated.Text style={[styles.floatingLabel, labelStyle]}>
+              Gender
+            </Animated.Text>
+          </View>
+          <Picker
+            selectedValue={gender}
+            style={[styles.picker, { opacity: gender ? 1 : 0.7 }]}
+            onValueChange={(itemValue) => {
+              setGender(itemValue);
+              if (itemValue) {
+                animateLabel('gender', 1);
+              } else {
+                animateLabel('gender', 0);
+              }
+            }}
+          >
+            <Picker.Item label="Select Gender" value="" color="#A0A0A0" />
+            <Picker.Item label="Male" value="Male" color="#000000" />
+            <Picker.Item label="Female" value="Female" color="#000000" />
+          </Picker>
+          <Animated.View style={[styles.inputUnderline, underlineStyle]} />
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -122,71 +246,57 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
               username,
               setUsername,
               'person-outline',
-              'Enter your username'
+              false,
+              undefined,
+              'username'
             )}
             {renderInput(
               'Email',
               email,
               setEmail,
               'mail-outline',
-              'Enter your email',
               false,
-              'email-address'
+              'email-address',
+              'email'
             )}
             {renderInput(
               'Contact',
               contact,
               setContact,
               'call-outline',
-              'Enter your phone number',
               false,
-              'phone-pad'
+              'phone-pad',
+              'contact'
             )}
             {renderInput(
               'Age',
               age,
               setAge,
               'calendar-outline',
-              'Enter your age',
               false,
-              'numeric'
+              'numeric',
+              'age'
             )}
 
-            <View style={styles.pickerOuterContainer}>
-              <View style={styles.iconContainer}>
-                <Icon name="people-outline" size={20} color="#199A8E" />
-              </View>
-              <View style={styles.pickerContainer}>
-                <Text style={styles.label}>Gender</Text>
-                <View style={styles.pickerWrapper}>
-                  <Picker
-                    selectedValue={gender}
-                    style={styles.picker}
-                    onValueChange={(itemValue) => setGender(itemValue)}
-                  >
-                    <Picker.Item label="Select Gender" value="" color="#A0A0A0" />
-                    <Picker.Item label="Male" value="Male" color="#000000" />
-                    <Picker.Item label="Female" value="Female" color="#000000" />
-                  </Picker>
-                </View>
-              </View>
-            </View>
+            {renderPicker()}
 
             {renderInput(
               'Password',
               password,
               setPassword,
               'lock-closed-outline',
-              '••••••••',
-              true
+              true,
+              undefined,
+              'password'
             )}
             {renderInput(
               'Confirm Password',
               confirmPassword,
               setConfirmPassword,
               'lock-closed-outline',
-              '••••••••',
-              true
+              true,
+              undefined,
+              'confirmPassword'
             )}
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -198,7 +308,10 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
             <View style={styles.loginContainer}>
               <Text style={styles.loginText}>
                 Already have an account?{' '}
-                <Text style={styles.loginLink} onPress={() => navigation.navigate('Login')}>
+                <Text
+                  style={styles.loginLink}
+                  onPress={() => navigation.navigate('Login')}
+                >
                   Login
                 </Text>
               </Text>
@@ -245,59 +358,54 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    overflow: 'hidden',
+    marginBottom: 24,
+    height: 56,
   },
   iconContainer: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
   },
   inputWrapper: {
     flex: 1,
-    paddingVertical: 8,
-    paddingRight: 16,
+    height: 56,
+    justifyContent: 'center',
+    position: 'relative',
   },
-  label: {
-    fontSize: 12,
-    color: '#199A8E',
-    marginBottom: 4,
-    fontWeight: '600',
+  labelContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 56,
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  floatingLabel: {
+    position: 'absolute',
+    left: 0,
+    paddingHorizontal: 0,
+    fontWeight: '500',
   },
   input: {
     fontSize: 16,
     color: '#1A1A1A',
     padding: 0,
     height: 24,
+    marginTop: 16,
+    zIndex: 2,
   },
-  pickerOuterContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    overflow: 'hidden',
-  },
-  pickerContainer: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingRight: 16,
-  },
-  pickerWrapper: {
-    height: 24,
-    justifyContent: 'center',
+  inputUnderline: {
+    height: 1,
+    width: '100%',
+    position: 'absolute',
+    bottom: 0,
   },
   picker: {
     margin: 0,
     height: 24,
+    marginTop: 16,
     fontSize: 16,
     color: '#1A1A1A',
   },
