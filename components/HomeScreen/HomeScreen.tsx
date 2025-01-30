@@ -1,20 +1,74 @@
-import React from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TextInput, 
-  ScrollView, 
-  Image, 
-  TouchableOpacity,
-  Dimensions 
-} from 'react-native';
+import React, { useState, useEffect ,useRef} from 'react';
+import { View, Text, StyleSheet, TextInput, ScrollView, Image, Animated,TouchableOpacity,Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { createStackNavigator } from '@react-navigation/stack';
 import InventoryScreen from '../Reminder/InventoryScreen';
 import HospitalScreen from './HospitalScreen';
 import SymptomCheckerScreen from './SymptomCheckerScreen';
 import PrescriptionsScreen from './PrescriptionsScreen';
+
+
+const bannerImages = [
+  require('../../assets/images/home.png'),
+  require('../../assets/images/banner2.png'), 
+  require('../../assets/images/banner3.jpg') // Add your banner images
+];
+
+const BannerCarousel = () => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const nextIndex = (currentIndex + 1) % bannerImages.length;
+      setCurrentIndex(nextIndex);
+
+      // Scroll to the next banner
+      scrollViewRef.current?.scrollTo({
+        x: nextIndex * width,
+        animated: true,
+      });
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, [currentIndex]);
+
+  return (
+    <View style={styles.bannerContainer}>
+      <ScrollView
+        ref={scrollViewRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
+      >
+        {bannerImages.map((image, index) => (
+          <View key={index} style={[styles.bannerSlide, { width }]}>
+            <Image source={image} style={styles.bannerImage} resizeMode="cover" />
+          </View>
+        ))}
+      </ScrollView>
+      <View style={styles.paginationDots}>
+        {bannerImages.map((_, index) => (
+          <View
+            key={index}
+            style={[
+              styles.dot,
+              { backgroundColor: currentIndex === index ? '#5856D6' : '#D1D1D6' },
+            ]}
+          />
+        ))}
+      </View>
+    </View>
+  );
+};
+
+
 
 const Stack = createStackNavigator();
 const { width } = Dimensions.get('window');
@@ -37,9 +91,9 @@ const HomeMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     { name: 'Symptom\nChecker', icon: 'healing', color: '#FF9500', route: 'Symptom' },
   ];
 
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header Section */}
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Hello,</Text>
@@ -54,7 +108,6 @@ const HomeMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Search Section */}
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
           <Icon name="search" size={24} color="#8E8E93" />
@@ -69,21 +122,7 @@ const HomeMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Banner Section */}
-      <View style={styles.bannerContainer}>
-        <Image
-          source={require('../../assets/images/heart.png')}
-          style={styles.bannerImage}
-          resizeMode="cover"
-        />
-        <View style={styles.bannerContent}>
-          <Text style={styles.bannerTitle}>Medical Checkup</Text>
-          <Text style={styles.bannerSubtitle}>Get a checkup now and{'\n'}stay healthy!</Text>
-          <TouchableOpacity style={styles.bannerButton}>
-            <Text style={styles.bannerButtonText}>Book Now</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <BannerCarousel />
 
       {/* Services Section */}
       <View style={styles.sectionHeader}>
@@ -162,7 +201,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingTop: 30,
     paddingBottom: 24,
   },
   greeting: {
@@ -226,45 +265,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   bannerContainer: {
-    marginHorizontal: 24,
+    width: '100%',
     height: 160,
-    backgroundColor: '#5856D6',
-    borderRadius: 24,
+    borderRadius: 20,
     overflow: 'hidden',
     marginBottom: 24,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+  },
+  bannerSlide: {
+    width: 400,
+    height: 180,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   bannerImage: {
     width: '100%',
     height: '100%',
+    alignSelf: 'center', // Ensures proper centering
+  },
+  paginationDots: {
+    flexDirection: 'row',
     position: 'absolute',
+    bottom: 16,
+    alignSelf: 'center',
   },
-  bannerContent: {
-    padding: 24,
-    height: '100%',
-    justifyContent: 'center',
-  },
-  bannerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  bannerSubtitle: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    opacity: 0.8,
-    marginBottom: 16,
-  },
-  bannerButton: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  bannerButtonText: {
-    color: '#5856D6',
-    fontWeight: 'bold',
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
   },
   sectionHeader: {
     flexDirection: 'row',
