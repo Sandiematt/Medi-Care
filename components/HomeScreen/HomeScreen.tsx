@@ -1,15 +1,5 @@
 import React, { useState, useEffect ,useRef} from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TextInput, 
-  ScrollView, 
-  Image, 
-  Animated,
-  TouchableOpacity,
-  Dimensions 
-} from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, Image, Animated,TouchableOpacity,Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { createStackNavigator } from '@react-navigation/stack';
 import InventoryScreen from '../Reminder/InventoryScreen';
