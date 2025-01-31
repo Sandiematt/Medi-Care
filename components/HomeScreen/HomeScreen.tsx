@@ -5,7 +5,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 import InventoryScreen from '../Reminder/InventoryScreen';
 import HospitalScreen from './HospitalScreen';
 import SymptomCheckerScreen from './SymptomCheckerScreen';
-import PrescriptionsScreen from './PrescriptionsScreen';
+import PrescriptionsScreen from '../Profile/PrescriptionsScreen';
+
 
 
 const bannerImages = [
