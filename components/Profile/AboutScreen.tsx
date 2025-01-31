@@ -236,12 +236,12 @@ const AboutUs: React.FC = () => {
                     <Text style={styles.sectionTitle}>Meet Our Team</Text>
                     <View style={styles.teamGrid}>
                         <DeveloperCard 
-                            image={require('../../assets/images/sandeep.png')}
+                            image={require('../../assets/images/sande.jpg')}
                             name="Sandeep Mathew"
                             role="Lead Developer"
                         />
                         <DeveloperCard 
-                            image={require('../../assets/images/greeshma.png')}
+                            image={require('../../assets/images/gree.jpeg')}
                             name="Greeshma Girish"
                             role="UI/UX Designer"
                         />
@@ -383,6 +383,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
+        alignItems: 'center',
     },
     developerCard: {
         width: (width - 72) / 2,

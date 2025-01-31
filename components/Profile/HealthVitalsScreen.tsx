@@ -100,12 +100,9 @@ const HealthVitalsScreen: React.FC = () => {
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={handleGoBack}>
-          <Icon name="chevron-back" size={24} color="black" />
+          <Icon name="chevron-back" size={30} color="black" />
         </TouchableOpacity>
-        <Text style={styles.greeting}>Hello, {username}!</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Edit')}>
-          <Icon name="create-outline" size={24} color="black" />
-        </TouchableOpacity>
+        <Text style={styles.title1}>Edit Health Vitals</Text>
       </View>
 
       <View style={styles.card}>
@@ -120,7 +117,7 @@ const HealthVitalsScreen: React.FC = () => {
               Diagnosis of Heart Health
             </Text>
             <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Edit')}>
-              <Text style={styles.buttonText}>Diagnose</Text>
+              <Text style={styles.buttonText}>Edit Vitals</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -174,7 +171,7 @@ const HealthVitalsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FFF',
     padding: 20,
   },
   header: {
@@ -182,15 +179,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 20,
+    right:6,
   },
   avatar: {
     width: 50,
     height: 50,
     borderRadius: 25,
   },
-  greeting: {
-    fontSize: 18,
-    fontWeight: '600',
+  title1: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 20,
+    top:10,
+    textAlign: 'center',
+    right:70,
   },
   card: {
     backgroundColor: '#E8F5E9',
@@ -237,7 +240,8 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: 'bold',
+    fontSize:16,
   },
   vitals: {
     flexDirection: 'row',

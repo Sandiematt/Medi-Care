@@ -93,7 +93,7 @@ const EditProfileScreen: React.FC = () => {
       console.error('Error updating profile:', error);
       Alert.alert(
         'Error',
-        error.response?.data?.message || 'Failed to update profile'
+        (error as any).response?.data?.message || 'Failed to update profile'
       );
     }
   };
@@ -118,7 +118,7 @@ const EditProfileScreen: React.FC = () => {
 
       <View style={styles.imageContainer}>
         <Image
-          source={{ uri: 'https://via.placeholder.com/100' }}
+          source={{ uri: 'https://img.freepik.com/premium-vector/man-professional-business-casual-young-avatar-icon-illustration_1277826-623.jpg' }}
           style={styles.profileImage}
         />
       </View>
@@ -196,8 +196,8 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    borderWidth: 2,
-    borderColor: '#ddd',
+    borderWidth: 1,
+    borderColor: '#fff',
   },
   inputContainer: {
     flexDirection: 'row',

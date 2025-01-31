@@ -81,8 +81,8 @@ const EditHealthVitalsScreen: React.FC<Props> = ({ navigation }) => {
       <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={handleGoBack}>
-                <Icon name="chevron-back" size={24} color="black" />
-                </TouchableOpacity>
+                <Icon name="chevron-back" size={30} color="black" />
+        </TouchableOpacity>
         <Text style={styles.title}>Edit Health Vitals</Text>
       </View>
         <View style={styles.inputContainer}>
@@ -162,7 +162,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 40,
+    right:6,
   },
   loadingContainer: {
     flex: 1,
@@ -171,11 +172,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#333',
     marginBottom: 20,
     top:10,
     textAlign: 'center',
+    right:70,
   },
   inputContainer: {
     marginBottom: 20,

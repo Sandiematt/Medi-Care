@@ -9,9 +9,9 @@ import PrescriptionsScreen from './PrescriptionsScreen';
 
 
 const bannerImages = [
-  require('../../assets/images/home.png'),
-  require('../../assets/images/banner2.png'), 
-  require('../../assets/images/banner3.jpg') // Add your banner images
+  require('../../assets/images/banner1.png'),
+  require('../../assets/images/bannerr2.png'), 
+  require('../../assets/images/bannerr3.png') // Add your banner images
 ];
 
 const BannerCarousel = () => {
@@ -101,7 +101,7 @@ const HomeMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         </View>
         <TouchableOpacity style={styles.profileButton}>
           <Image
-            source={require('../../assets/images/sandeep.png')}
+            source={require('../../assets/images/sande.jpg')}
             style={styles.profileImage}
           />
           <View style={styles.notificationBadge} />
