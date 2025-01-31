@@ -118,7 +118,7 @@ const EditProfileScreen: React.FC = () => {
 
       <View style={styles.imageContainer}>
         <Image
-          source={{ uri: 'https://via.placeholder.com/100' }}
+          source={{ uri: 'https://img.freepik.com/premium-vector/man-professional-business-casual-young-avatar-icon-illustration_1277826-623.jpg' }}
           style={styles.profileImage}
         />
       </View>
