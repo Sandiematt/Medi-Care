@@ -541,6 +541,67 @@ app.get('/api/medicine', async (req, res) => {
   }
 });
 
+ // Add this new endpoint to get current user data
+ app.get('/api/current-user/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    
+    if (!username) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username is required'
+      });
+    }
+
+    const user = await usersCollection.findOne(
+      { username },
+      { projection: { password: 0 } } // Exclude password from the response
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        contact: user.contact,
+        age: user.age,
+        gender: user.gender,
+        isAdmin: user.isadmin
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching current user:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching user data'
+    });
+  }
+});
+
+app.get('/api/remind', async (req, res) => {
+  try {
+    const reminders = await remindersCollection.find().toArray();
+    res.json({ 
+      success: true, 
+      reminders: reminders 
+    });
+  } catch (error) {
+    console.error('Error fetching reminders:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch reminders'
+    });
+  }
+});
 
 
 app.post('/logout', (req, res) => {
