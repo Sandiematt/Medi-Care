@@ -9,10 +9,6 @@
 
 ### Modern Healthcare Management at Your Fingertips 📱
 
-<p align="center">
-  <img src="/api/placeholder/800/400" alt="Medi-Care App Demo" />
-</p>
-
 </div>
 
 ## ✨ Features
@@ -90,14 +86,6 @@ npm run android
 yarn android
 ```
 
-**iOS:**
-```bash
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
 
 ## 🏗️ Project Structure
 
@@ -138,13 +126,6 @@ Built with:
 
 ## 🛠️ Development
 
-### Environment Setup
-
-Create a `.env` file in the root:
-```env
-API_URL=your_api_url
-GOOGLE_MAPS_KEY=your_google_maps_key
-```
 
 ### Running Tests
 
@@ -160,12 +141,6 @@ npm run e2e
 
 ### Common Issues
 
-#### 🔴 iOS Build Fails
-```bash
-cd ios
-pod deintegrate
-pod install
-```
 
 #### 🔴 Android Build Issues
 ```bash
@@ -211,9 +186,9 @@ npm start -- --reset-cache
 
 ## 📬 Contact
 
-Your Name - [@your_twitter](https://twitter.com/your_twitter)
+Sandeep Mathew - [@Sandeepmathew15](https://x.com/SandeepMathew15)
 
-Project Link: [https://github.com/your-username/medi-care](https://github.com/your-username/medi-care)
+Project Link:(https://github.com/Sandiematt/medi-care)
 
 ---
 
