@@ -175,7 +175,7 @@ Project Link:(https://github.com/Sandiematt/medi-care)
 
 <div align="center">
 
-Made with ❤️ by [Sandeep Mathew & Greeshma Girish C]
+Made with ❤️ by Sandeep Mathew & Greeshma Girish C
 
 ⭐️ Star us on GitHub — it helps!
 
