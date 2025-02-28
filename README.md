@@ -13,13 +13,10 @@
 ## ✨ Features
 
 🏛️ **Core Functionalities**
-- 📅 Smart Appointment Scheduling
 - 📊 Interactive Health Dashboard
 - 💊 Medication Tracking & Reminders
-- 👨‍⚕️ Doctor Directory & Instant Chat
-- 🚑 Emergency Care Locator
 - 📋 Digital Medical Records
-- 🎥 Telemedicine Integration
+- 🎥 Finding Nearby Hospitals
 - ⚡ Real-time Health Monitoring
 
 ## 🚀 Getting Started
@@ -111,7 +108,6 @@ medi-care/
 ## 🔄 State Management
 
 The app uses a combination of:
-- Redux Toolkit for global state
 - React Context for theme/auth
 - Local state for component-specific data
 
@@ -152,12 +148,6 @@ cd android
 npm start -- --reset-cache
 ```
 
-## 📚 Documentation
-
-- [Component Documentation](docs/components.md)
-- [API Documentation](docs/api.md)
-- [Contributing Guide](CONTRIBUTING.md)
-
 ## 🤝 Contributing
 
 1. 🍴 Fork the repository
@@ -174,14 +164,6 @@ npm start -- --reset-cache
 - [Redux Toolkit](https://redux-toolkit.js.org/)
 - [React Native Paper](https://callstack.github.io/react-native-paper/)
 
-## 🤝 Support
-
-<a href="https://github.com/your-username/medi-care/issues">
-  <img src="/api/placeholder/150/40" alt="Report Bug" />
-</a>
-<a href="https://github.com/your-username/medi-care/issues">
-  <img src="/api/placeholder/150/40" alt="Request Feature" />
-</a>
 
 ## 📬 Contact
 
