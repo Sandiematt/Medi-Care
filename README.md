@@ -1,83 +1,182 @@
-<<<<<<< HEAD
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+<div align="center">
+  
+# 🏥 Medi-Care
 
-# Getting Started
+[![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactnative.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)](CODE_OF_CONDUCT.md)
 
->**Note**: Make sure you have completed the [React Native - Environment Setup](https://reactnative.dev/docs/environment-setup) instructions till "Creating a new application" step, before proceeding.
+### Modern Healthcare Management at Your Fingertips 📱
 
-## Step 1: Start the Metro Server
+</div>
 
-First, you will need to start **Metro**, the JavaScript _bundler_ that ships _with_ React Native.
+## ✨ Features
 
-To start Metro, run the following command from the _root_ of your React Native project:
+🏛️ **Core Functionalities**
+- 📊 Interactive Health Dashboard
+- 💊 Medication Tracking & Reminders
+- 📋 Digital Medical Records
+- 🎥 Finding Nearby Hospitals
+- ⚡ Real-time Health Monitoring
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- 📦 Node.js (v16 or newer)
+- 🔧 npm or Yarn
+- 🛠️ React Native CLI
+- 🍎 For iOS:
+  - Xcode
+  - CocoaPods
+- 🤖 For Android:
+  - Android Studio
+  - JDK
+
+### 🔨 Installation
+
+1️⃣ **Clone the repository**
+```bash
+git clone https://github.com/your-username/medi-care.git
+cd medi-care
+```
+
+2️⃣ **Install dependencies**
+```bash
+# Using npm
+npm install
+
+# OR using Yarn
+yarn install
+```
+
+3️⃣ **iOS Setup** (iOS only)
+```bash
+cd ios
+pod install
+cd ..
+```
+
+## 🎯 Running the App
+
+### 🚦 Start Metro Server
 
 ```bash
-# using npm
+# Using npm
 npm start
 
 # OR using Yarn
 yarn start
 ```
 
-## Step 2: Start your Application
+### 📱 Launch the App
 
-Let Metro Bundler run in its _own_ terminal. Open a _new_ terminal from the _root_ of your React Native project. Run the following command to start your _Android_ or _iOS_ app:
-
-### For Android
-
+**Android:**
 ```bash
-# using npm
+# Using npm
 npm run android
 
 # OR using Yarn
 yarn android
 ```
 
-### For iOS
 
-```bash
-# using npm
-npm run ios
+## 🏗️ Project Structure
 
-# OR using Yarn
-yarn ios
+```
+medi-care/
+├── 📱 src/
+│   ├── 🧩 components/
+│   │   ├── common/
+│   │   ├── forms/
+│   │   └── screens/
+│   ├── 📄 screens/
+│   │   ├── auth/
+│   │   ├── dashboard/
+│   │   └── profile/
+│   ├── 🧭 navigation/
+│   ├── 🔧 services/
+│   ├── 🛠️ utils/
+│   └── 🎨 assets/
+├── 📱 ios/
+├── 🤖 android/
+└── 📘 README.md
 ```
 
-If everything is set up _correctly_, you should see your new app running in your _Android Emulator_ or _iOS Simulator_ shortly provided you have set up your emulator/simulator correctly.
+## 🔄 State Management
 
-This is one way to run your app — you can also run it directly from within Android Studio and Xcode respectively.
+The app uses a combination of:
+- React Context for theme/auth
+- Local state for component-specific data
 
-## Step 3: Modifying your App
+## 🎨 UI Components
 
-Now that you have successfully run the app, let's modify it.
+Built with:
+- React Native Paper
+- Custom components
+- Native animations
+- Responsive layouts
 
-1. Open `App.tsx` in your text editor of choice and edit some lines.
-2. For **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Developer Menu** (<kbd>Ctrl</kbd> + <kbd>M</kbd> (on Window and Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (on macOS)) to see your changes!
+## 🛠️ Development
 
-   For **iOS**: Hit <kbd>Cmd ⌘</kbd> + <kbd>R</kbd> in your iOS Simulator to reload the app and see your changes!
 
-## Congratulations! :tada:
+### Running Tests
 
-You've successfully run and modified your React Native App. :partying_face:
+```bash
+# Unit tests
+npm run test
 
-### Now what?
+# E2E tests
+npm run e2e
+```
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [Introduction to React Native](https://reactnative.dev/docs/getting-started).
+## 🐛 Troubleshooting
 
-# Troubleshooting
+### Common Issues
 
-If you can't get this to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
 
-# Learn More
+#### 🔴 Android Build Issues
+```bash
+cd android
+./gradlew clean
+```
 
-To learn more about React Native, take a look at the following resources:
+#### 🔴 Metro Bundler Issues
+```bash
+npm start -- --reset-cache
+```
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
-=======
-# Medi-Care
->>>>>>> 4d02eaedda1ecba34e9fc31be5baddb15c0a3068
+## 🤝 Contributing
+
+1. 🍴 Fork the repository
+2. 🌱 Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. 💻 Code your changes
+4. 📝 Commit changes (`git commit -m 'Add AmazingFeature'`)
+5. 🚀 Push to branch (`git push origin feature/AmazingFeature`)
+6. 🔍 Open a Pull Request
+
+## 📘 Learn More
+
+- [React Native](https://reactnative.dev/)
+- [React Navigation](https://reactnavigation.org/)
+- [Redux Toolkit](https://redux-toolkit.js.org/)
+- [React Native Paper](https://callstack.github.io/react-native-paper/)
+
+
+## 📬 Contact
+
+Sandeep Mathew - [@Sandeepmathew15](https://x.com/SandeepMathew15)
+
+Project Link:(https://github.com/Sandiematt/medi-care)
+
+---
+
+<div align="center">
+
+Made with ❤️ by Sandeep Mathew & Greeshma Girish C
+
+⭐️ Star us on GitHub — it helps!
+
+</div>
