@@ -19,7 +19,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import InventoryScreen from '../Reminder/InventoryScreen';
-import HospitalScreen from './HospitalScreen';
+import HospitalScreen from './CounterfietDetection';
 import SymptomCheckerScreen from './SymptomCheckerScreen';
 import PrescriptionsScreen from '../Profile/PrescriptionsScreen';
 
@@ -223,18 +223,18 @@ const HomeMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   const services = [
     { 
-      name: 'Medicines', 
+      name: 'Inventory', 
       icon: 'medical-services', 
       color: '#5856D6', 
       route: 'Medicines',
       description: 'Track your medications'
     },
     { 
-      name: 'Hospital', 
-      icon: 'local-hospital', 
+      name: 'Counterfiet Detector',
+      icon: 'verified',
       color: '#FF2D55', 
       route: 'Hospital',
-      description: 'Find nearby hospitals'
+      description: 'Check your medicine is fake or not'
     },
     { 
       name: 'Prescriptions', 
