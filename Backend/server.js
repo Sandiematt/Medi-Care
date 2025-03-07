@@ -774,9 +774,9 @@ app.post('/logout', (req, res) => {
   
   // Start the server
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, '0.0.0.0', () => {  // Explicitly bind to 0.0.0.0
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on http://20.193.156.237:${PORT}`);
+});
 };
 
 // Start the main function
