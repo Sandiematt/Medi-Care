@@ -49,7 +49,7 @@ const PrescriptionsScreen: React.FC = () => {
       if (!username) {
         throw new Error('Username not found');
       }
-      const response = await axios.get(`http://10.0.2.2:5000/prescriptions/${username}`);
+      const response = await axios.get(`http://20.193.156.237:5000/prescriptions/${username}`);
       setPrescriptions(response.data);
     } catch (error) {
       console.error('Error fetching prescriptions:', error);
@@ -100,7 +100,7 @@ const PrescriptionsScreen: React.FC = () => {
         ...newPrescription,
       };
 
-      const response = await axios.post('http://10.0.2.2:5000/prescriptions', prescriptionData);
+      const response = await axios.post('http://20.193.156.237:5000/prescriptions', prescriptionData);
 
       if (response.status === 200) {
         setUploadModalVisible(false);
@@ -135,7 +135,7 @@ const PrescriptionsScreen: React.FC = () => {
             text: 'Delete',
             style: 'destructive',
             onPress: async () => {
-              const response = await axios.delete(`http://10.0.2.2:5000/prescriptions/${id}`);
+              const response = await axios.delete(`http://20.193.156.237:5000/prescriptions/${id}`);
               if (response.status === 200) {
                 setPrescriptions(prev => prev.filter(prescription => prescription._id !== id));
                 Alert.alert('Success', 'Prescription deleted successfully');

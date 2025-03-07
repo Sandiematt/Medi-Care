@@ -280,7 +280,7 @@ const HomeMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         
         // Fetch reminders for this specific user
         const username = user.username;
-        const response = await axios.get(`http://10.0.2.2:5000/api/remind/${username}`);
+        const response = await axios.get(`http://20.193.156.237:5000/api/remind/${username}`);
         
         if (response.data.success) {
           setReminders(response.data.reminders);

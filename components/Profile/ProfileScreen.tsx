@@ -40,7 +40,7 @@ const ProfileScreen = ({ navigation }) => {
       try {
         const storedUsername = await AsyncStorage.getItem('username');
         if (storedUsername) {
-          const response = await axios.get(`http://10.0.2.2:5000/users/${storedUsername}`);
+          const response = await axios.get(`http://20.193.156.237:5000/users/${storedUsername}`);
           setUserData(response.data);
           setUsername(response.data.username);
           setEmail(response.data.email);

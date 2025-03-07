@@ -135,7 +135,7 @@ const CounterfeitDetection = () => {
       console.log('Uploading image:', imageFile.uri);
       
       const response = await axios.post(
-        "http://10.0.2.2:5000/detect-counterfeit", 
+        "http://20.193.156.237:5000/detect-counterfeit", 
         formData,
         { 
           headers: { 

@@ -46,12 +46,12 @@ const ReminderMainScreen = ({ navigation }) => {
       }
   
       // Fetch inventory stats
-      const statsResponse = await fetch('http://10.0.2.2:5000/stats');
+      const statsResponse = await fetch('http://20.193.156.237:5000/stats');
       const statsData = await statsResponse.json();
       setInventoryStats(statsData);
   
       // Fetch all inventory items with the username parameter
-      const inventoryResponse = await fetch(`http://10.0.2.2:5000/inventory?username=${username}`);
+      const inventoryResponse = await fetch(`http://20.193.156.237:5000/inventory?username=${username}`);
       const inventoryData = await inventoryResponse.json();
       
       // Check if inventoryData is an array before filtering
@@ -79,7 +79,7 @@ const ReminderMainScreen = ({ navigation }) => {
       }
       
       // Use the endpoint that fetches reminders for a specific user
-      const response = await fetch(`http://10.0.2.2:5000/reminders/${username}`);
+      const response = await fetch(`http://20.193.156.237:5000/reminders/${username}`);
       const data = await response.json();
       
       if (response.ok) {
@@ -182,7 +182,7 @@ const ReminderMainScreen = ({ navigation }) => {
   const handleRemoveTime = async (time, day) => {
     if (selectedReminder) {
       try {
-        const response = await fetch(`http://10.0.2.2:5000/reminders/${selectedReminder._id}`, {
+        const response = await fetch(`http://20.193.156.237:5000/reminders/${selectedReminder._id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

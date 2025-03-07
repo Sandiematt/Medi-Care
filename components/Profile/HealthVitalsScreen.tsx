@@ -50,7 +50,7 @@ const HealthVitalsScreen: React.FC = () => {
           throw new Error('Username not found in storage.');
         }
   
-        const response = await axios.get(`http://10.0.2.2:5000/healthvitals/${storedUsername}`);
+        const response = await axios.get(`http://20.193.156.237:5000/healthvitals/${storedUsername}`);
   
         // Use response data if available, else fallback to defaults
         const data = response.data || {};

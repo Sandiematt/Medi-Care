@@ -140,7 +140,7 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess }) => {
     }
 
     try {
-      const response = await axios.post('http://10.0.2.2:5000/login', {
+      const response = await axios.post('http://20.193.156.237:5000/login', {
         username,
         password,
       });

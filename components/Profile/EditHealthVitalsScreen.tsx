@@ -22,7 +22,7 @@ const EditHealthVitalsScreen: React.FC<Props> = ({ navigation }) => {
         const storedUsername = await AsyncStorage.getItem('username');
         if (!storedUsername) throw new Error('Username not found in storage.');
 
-        const response = await axios.get(`http://10.0.2.2:5000/healthvitals/${storedUsername}`);
+        const response = await axios.get(`http://20.193.156.237:5000/healthvitals/${storedUsername}`);
         const data = response.data;
 
         setBloodPressure(data.bloodpressure || '');
@@ -50,7 +50,7 @@ const EditHealthVitalsScreen: React.FC<Props> = ({ navigation }) => {
       if (!storedUsername) throw new Error('Username not found in storage.');
   
       const payload = { bloodpressure, heartrate, bloodgroup, height, weight };
-      const response = await axios.post(`http://10.0.2.2:5000/healthvitals/${storedUsername}`, payload);
+      const response = await axios.post(`http://20.193.156.237:5000/healthvitals/${storedUsername}`, payload);
   
       // Check for a successful status code
       if (response.status >= 200 && response.status < 300) {
