@@ -186,48 +186,70 @@ app.post('/healthvitals/:username', async (req, res) => {
 
 
   // Add Reminder API
-  app.post('/addReminder', async (req, res) => {
-    try {
-      const { name, description, days, times, totalDoses } = req.body;
-
-      if (!name || !description || !days || !times || totalDoses === undefined) {
-        return res.status(400).json({ message: 'All fields are required' });
-      }
-
-      const updatedTimes = times.map(time => {
-        const completedForDays = {};  
-        days.forEach(day => {
-          completedForDays[day] = false;  
-        });
-        return { ...time, completed: completedForDays };  
+app.post('/addReminder', async (req, res) => {
+  try {
+    const { username, name, description, days, times, totalDoses } = req.body;
+    
+    // Add username to required fields validation
+    if (!username || !name || !description || !days || !times || totalDoses === undefined) {
+      return res.status(400).json({ 
+        message: 'All fields are required including username' 
       });
-
-      const completed = {};
-      days.forEach(day => {
-        completed[day] = false;  
-      });
-
-      const newReminder = {
-        name,
-        description,
-        days,
-        times: updatedTimes,  
-        totalDoses,
-        completed,  
-        createdAt: new Date(),  
-      };
-
-      const result = await remindersCollection.insertOne(newReminder);
-
-      res.status(201).json({
-        message: 'Reminder added successfully',
-        reminderId: result.insertedId,
-      });
-    } catch (error) {
-      console.error('Error adding reminder:', error.message);
-      res.status(500).json({ message: 'Internal server error' });
     }
-  });
+    
+    const updatedTimes = times.map(time => {
+      const completedForDays = {};
+      days.forEach(day => {
+        completedForDays[day] = false;
+      });
+      return { ...time, completed: completedForDays };
+    });
+    
+    const completed = {};
+    days.forEach(day => {
+      completed[day] = false;
+    });
+    
+    const newReminder = {
+      username, // Store the username with the reminder
+      name,
+      description,
+      days,
+      times: updatedTimes,
+      totalDoses,
+      completed,
+      createdAt: new Date(),
+    };
+    
+    const result = await remindersCollection.insertOne(newReminder);
+    
+    res.status(201).json({
+      message: 'Reminder added successfully',
+      reminderId: result.insertedId,
+    });
+  } catch (error) {
+    console.error('Error adding reminder:', error.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Add a new endpoint to get reminders for a specific user
+app.get('/reminders/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    
+    if (!username) {
+      return res.status(400).json({ message: 'Username is required' });
+    }
+    
+    const reminders = await remindersCollection.find({ username }).toArray();
+    
+    res.status(200).json(reminders);
+  } catch (error) {
+    console.error('Error fetching reminders:', error.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
   // Get Reminders API
   app.get('/reminders', async (req, res) => {
@@ -307,15 +329,67 @@ app.post('/healthvitals/:username', async (req, res) => {
 
   // Inventory API
   // API to fetch inventory items
-app.get('/inventory', async (req, res) => {
+  app.get('/inventory', async (req, res) => {
+    try {
+      const { username } = req.query;
+      
+      if (!username) {
+        return res.status(400).json({ message: 'Username is required' });
+      }
+      
+      // Find only inventory items created by this user
+      const items = await inventoryCollection.find({ createdBy: username }).toArray();
+      
+      res.status(200).json(items);
+    } catch (error) {
+      console.error('Error fetching inventory items:', error.message);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+
+
+app.post('/inventory', async (req, res) => {
   try {
-    const inventoryItems = await inventoryCollection.find().toArray(); // Fetch all items
-    res.status(200).json(inventoryItems);
+    const { name, price, stock, type, username } = req.body;
+    
+    // Validate required fields
+    if (!name || !price || !stock || !type) {
+      return res.status(400).json({
+        message: 'All fields are required (name, price, stock, type)'
+      });
+    }
+    
+    // Validate user is logged in
+    if (!username) {
+      return res.status(401).json({
+        message: 'Authentication required'
+      });
+    }
+    
+    // Create new inventory item with username
+    const newItem = {
+      name,
+      price: parseFloat(price),
+      inStock: parseInt(stock),
+      type,
+      createdBy: username,
+      createdAt: new Date()
+    };
+    
+    const result = await inventoryCollection.insertOne(newItem);
+    
+    res.status(201).json({
+      message: 'Inventory item added successfully',
+      itemId: result.insertedId,
+      item: newItem
+    });
   } catch (error) {
-    console.error('Error fetching inventory:', error.message);
+    console.error('Error adding inventory item:', error.message);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 app.get('/stats', async (req, res) => {
   try {
@@ -425,39 +499,6 @@ app.get('/prescriptions/detail/:id', async (req, res) => {
   }
 });
 
-
-app.post('/inventory', async (req, res) => {
-  try {
-    const { name, price, stock, type } = req.body;
-
-    // Validate required fields
-    if (!name || !price || !stock || !type) {
-      return res.status(400).json({ 
-        message: 'All fields are required (name, price, stock, type)' 
-      });
-    }
-
-    // Create new inventory item
-    const newItem = {
-      name,
-      price: parseFloat(price),
-      inStock: parseInt(stock),
-      type,
-      createdAt: new Date()
-    };
-
-    const result = await inventoryCollection.insertOne(newItem);
-
-    res.status(201).json({
-      message: 'Inventory item added successfully',
-      itemId: result.insertedId,
-      item: newItem
-    });
-  } catch (error) {
-    console.error('Error adding inventory item:', error.message);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
 
 
 
@@ -587,17 +628,18 @@ app.get('/api/medicine', async (req, res) => {
   }
 });
 
-app.get('/api/remind', async (req, res) => {
+app.get('/api/remind/:username', async (req, res) => {
   try {
-    const reminders = await remindersCollection.find().toArray();
-    res.json({ 
-      success: true, 
-      reminders: reminders 
+    const { username } = req.params;
+    const reminders = await remindersCollection.find({ username }).toArray();
+    res.json({
+      success: true,
+      reminders: reminders
     });
   } catch (error) {
     console.error('Error fetching reminders:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: 'Failed to fetch reminders'
     });
   }

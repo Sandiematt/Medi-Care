@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AddInventoryScreen = () => {
   const navigation = useNavigation();
@@ -21,6 +22,35 @@ const AddInventoryScreen = () => {
   const [price, setPrice] = useState('');
   const [stock, setStock] = useState('');
   const [type, setType] = useState('');
+  const [username, setUsername] = useState('');
+
+  useEffect(() => {
+    // Get the username of the logged in user when component mounts
+    const getUserData = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('username');
+        if (userData) {
+          // Try to parse as JSON first
+          try {
+            const parsedUserData = JSON.parse(userData);
+            setUsername(parsedUserData.username);
+          } catch (parseError) {
+            // If parsing fails, assume it's a plain string username
+            setUsername(userData);
+          }
+        } else {
+          // Handle case where user is not logged in
+          Alert.alert('Error', 'Please log in to add inventory items');
+          navigation.goBack();
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        Alert.alert('Error', 'Could not retrieve user information');
+      }
+    };
+  
+    getUserData();
+  }, []);
 
   const validateForm = () => {
     if (!name.trim()) return 'Item name is required';
@@ -29,6 +59,7 @@ const AddInventoryScreen = () => {
     if (!type.trim()) return 'Item type is required';
     if (isNaN(parseFloat(price))) return 'Price must be a valid number';
     if (isNaN(parseInt(stock))) return 'Stock must be a valid number';
+    if (!username) return 'User authentication required';
     return null;
   };
 
@@ -38,28 +69,35 @@ const AddInventoryScreen = () => {
       Alert.alert('Validation Error', error);
       return;
     }
-
+  
     setLoading(true);
     try {
+      // Get auth token if you're using token-based authentication
+      const token = await AsyncStorage.getItem('authToken'); // Change this to the correct key for your token
+      
       const response = await fetch('http://10.0.2.2:5000/inventory', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          // Include authorization header if using token-based auth
+          ...(token && { 'Authorization': `Bearer ${token}` }),
         },
         body: JSON.stringify({
           name,
           price,
           stock,
           type,
+          // Include the username in the request body
+          username,
         }),
       });
-
+  
       const data = await response.json();
-
+  
       if (!response.ok) {
         throw new Error(data.message || 'Failed to add item');
       }
-
+  
       Alert.alert(
         'Success',
         'Item added successfully',
@@ -148,6 +186,14 @@ const AddInventoryScreen = () => {
               />
             </View>
           </View>
+
+          {/* Optional: Display the username */}
+          {username && (
+            <View style={styles.userInfoContainer}>
+              <Icon name="user" size={16} color="#6D28D9" />
+              <Text style={styles.userInfoText}>Adding as: {username}</Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -299,6 +345,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  userInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    gap: 8,
+  },
+  userInfoText: {
+    fontSize: 14,
+    color: '#64748B',
   },
 });
 

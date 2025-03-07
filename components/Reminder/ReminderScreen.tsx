@@ -6,6 +6,7 @@ import NewReminderScreen from './NewReminderScreen';
 import notifee from '@notifee/react-native';
 import { TriggerType, AndroidImportance } from '@notifee/react-native';
 import InventoryScreen from './InventoryScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Create a Stack Navigator
 const Stack = createStackNavigator();
@@ -36,18 +37,31 @@ const ReminderMainScreen = ({ navigation }) => {
 
   const fetchInventoryData = async () => {
     try {
+      // Get the username from AsyncStorage
+      const username = await AsyncStorage.getItem('username');
+      
+      if (!username) {
+        Alert.alert('Error', 'You need to be logged in to view inventory data.');
+        return;
+      }
+  
       // Fetch inventory stats
       const statsResponse = await fetch('http://10.0.2.2:5000/stats');
       const statsData = await statsResponse.json();
       setInventoryStats(statsData);
-
-      // Fetch all inventory items
-      const inventoryResponse = await fetch('http://10.0.2.2:5000/inventory');
+  
+      // Fetch all inventory items with the username parameter
+      const inventoryResponse = await fetch(`http://10.0.2.2:5000/inventory?username=${username}`);
       const inventoryData = await inventoryResponse.json();
       
-      // Filter low stock items (items with stock less than 5 but greater than 0)
-      const lowStockItems = inventoryData.filter(item => item.inStock < 5 && item.inStock > 0);
-      setLowStockItems(lowStockItems);
+      // Check if inventoryData is an array before filtering
+      if (Array.isArray(inventoryData)) {
+        const lowStockItems = inventoryData.filter(item => item.inStock < 5 && item.inStock > 0);
+        setLowStockItems(lowStockItems);
+      } else {
+        console.error('Invalid inventory data format:', inventoryData);
+        setLowStockItems([]);
+      }
     } catch (error) {
       console.error('Error fetching inventory data:', error);
       Alert.alert('Error', 'Failed to fetch inventory data');
@@ -56,9 +70,18 @@ const ReminderMainScreen = ({ navigation }) => {
 
   const fetchReminders = async () => {
     try {
-      const response = await fetch('http://10.0.2.2:5000/reminders');
+      // Get the username from AsyncStorage
+      const username = await AsyncStorage.getItem('username');
+      
+      if (!username) {
+        Alert.alert('Error', 'You need to be logged in to view reminders.');
+        return;
+      }
+      
+      // Use the endpoint that fetches reminders for a specific user
+      const response = await fetch(`http://10.0.2.2:5000/reminders/${username}`);
       const data = await response.json();
-  
+      
       if (response.ok) {
         const todaysReminders = data.filter((reminder) => reminder.days.includes(today));
         setReminders(todaysReminders);
@@ -66,10 +89,7 @@ const ReminderMainScreen = ({ navigation }) => {
         todaysReminders.forEach((reminder) => {
           reminder.times.forEach(async (timeObj) => {
             if (!timeObj.completed[today]) {
-              const [hour, minute] = timeObj.time.split(':');
-              const triggerTime = new Date();
-              triggerTime.setHours(parseInt(hour), parseInt(minute), 0, 0);
-              await scheduleNotification(triggerTime);
+              await scheduleNotification(timeObj.time, reminder.name);
             }
           });
         });
@@ -82,7 +102,7 @@ const ReminderMainScreen = ({ navigation }) => {
     }
   };
 
-  const scheduleNotification = async (triggerTime) => {
+  const scheduleNotification = async (timeString, medicineName) => {
     try {
       await notifee.requestPermission();
   
@@ -92,11 +112,24 @@ const ReminderMainScreen = ({ navigation }) => {
         sound: 'default',
         importance: AndroidImportance.HIGH,
       });
+      
+      // Parse the time string
+      const [hour, minute] = timeString.split(':');
+      const triggerTime = new Date();
+      triggerTime.setHours(parseInt(hour), parseInt(minute), 0, 0);
+      
+      // Check if the time is in the future
+      const now = new Date();
+      if (triggerTime <= now) {
+        // Time has already passed today, no need to show an error
+        console.log(`Skipped notification for ${medicineName} at ${timeString} - time already passed`);
+        return;
+      }
   
       await notifee.createTriggerNotification(
         {
           title: 'Medication Reminder',
-          body: 'It\'s time to take your medicine.',
+          body: `It's time to take your ${medicineName}.`,
           android: {
             channelId,
             smallIcon: 'ic_launcher',
@@ -114,8 +147,8 @@ const ReminderMainScreen = ({ navigation }) => {
         }
       );
     } catch (error) {
+      // Handle other unexpected errors without showing user-facing alerts
       console.error('Notification scheduling error:', error);
-      Alert.alert('Notification Error', 'Could not schedule medication reminder');
     }
   };
 
@@ -132,7 +165,18 @@ const ReminderMainScreen = ({ navigation }) => {
 
   const handleTickClick = (reminder) => {
     setSelectedReminder(reminder);
-    setModalVisible(true);
+    
+    // Filter out times that have already been completed
+    const incompleteTimes = reminder.times.filter(
+      (timeObj) => !(timeObj.completed && timeObj.completed[today])
+    );
+    
+    // If there are incomplete times, show the modal
+    if (incompleteTimes.length > 0) {
+      setModalVisible(true);
+    } else {
+      Alert.alert('Info', 'All doses for today have been marked as completed.');
+    }
   };
 
   const handleRemoveTime = async (time, day) => {
@@ -183,6 +227,15 @@ const ReminderMainScreen = ({ navigation }) => {
     }
   };
 
+  // Function to determine if a reminder time is past due
+  const isPastDue = (timeString) => {
+    const [hour, minute] = timeString.split(':');
+    const reminderTime = new Date();
+    reminderTime.setHours(parseInt(hour), parseInt(minute), 0, 0);
+    
+    return reminderTime < new Date();
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Today's Reminders</Text>
@@ -205,10 +258,14 @@ const ReminderMainScreen = ({ navigation }) => {
                       styles.time,
                       timeObj.completed && timeObj.completed[today]
                         ? { textDecorationLine: 'line-through', opacity: 0.5 }
+                        : isPastDue(timeObj.time) && !(timeObj.completed && timeObj.completed[today])
+                        ? styles.pastDueTime
                         : {},
                     ]}
                   >
                     {timeObj.time} - {timeObj.dose} dose
+                    {isPastDue(timeObj.time) && !(timeObj.completed && timeObj.completed[today]) && 
+                      " (Past Due)"}
                   </Text>
                 ))}
               </View>
@@ -231,7 +288,7 @@ const ReminderMainScreen = ({ navigation }) => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Select a Time to Remove</Text>
+            <Text style={styles.modalHeader}>Select a Time to Mark as Taken</Text>
             {selectedReminder?.times
               .filter((timeObj) => !(timeObj.completed && timeObj.completed[today]))
               .map((timeObj, index) => (
@@ -240,7 +297,10 @@ const ReminderMainScreen = ({ navigation }) => {
                   onPress={() => handleRemoveTime(timeObj)}
                   style={styles.modalOption}
                 >
-                  <Text style={styles.modalOptionText}>{timeObj.time}</Text>
+                  <Text style={styles.modalOptionText}>
+                    {timeObj.time}
+                    {isPastDue(timeObj.time) ? " (Past Due)" : ""}
+                  </Text>
                 </TouchableOpacity>
               ))}
             <Button title="Close" onPress={() => setModalVisible(false)} />
@@ -356,6 +416,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Normal',
     color: '#888',
     marginRight: 10,
+  },
+  pastDueTime: {
+    color: '#FF6B6B',
+    fontFamily: 'Poppins-SemiBold',
   },
   totalDoses: {
     fontSize: 14,

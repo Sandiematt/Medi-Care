@@ -252,40 +252,51 @@ const HomeMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     },
   ];
 
+  
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchReminders = async () => {
       try {
-        const username = await AsyncStorage.getItem('username');
-        if (username) {
-          const response = await axios.get(`http://10.0.2.2:5000/api/current-user/${username}`);
-          if (response.data.success) {
-            setUserData(response.data.user);
-          }
+        setLoading(true);
+        // Get the current user from AsyncStorage
+        const storedUser = await AsyncStorage.getItem('username');
+        
+        if (!storedUser) {
+          console.log('No user found in AsyncStorage');
+          setLoading(false);
+          return;
+        }
+        
+        // Check if the stored value is already an object (not a JSON string)
+        let user;
+        try {
+          // Try to parse as JSON
+          user = JSON.parse(storedUser);
+        } catch (parseError) {
+          // If it fails, it might be just a string username
+          user = { username: storedUser };
+        }
+        
+        setUserData(user);
+        
+        // Fetch reminders for this specific user
+        const username = user.username;
+        const response = await axios.get(`http://10.0.2.2:5000/api/remind/${username}`);
+        
+        if (response.data.success) {
+          setReminders(response.data.reminders);
+        } else {
+          console.log('Failed to fetch reminders:', response.data.message);
         }
       } catch (error) {
-        console.error('Error fetching user data:', error);
+        console.error('Error fetching reminders:', error);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchUserData();
-  }, []);
-
-  useEffect(() => {
-    const fetchReminders = async () => {
-      try {
-        const response = await axios.get('http://10.0.2.2:5000/api/remind');
-        if (response.data.success) {
-          setReminders(response.data.reminders);
-        }
-      } catch (error) {
-        console.error('Error fetching reminders:', error);
-      }
-    };
-
+    
     fetchReminders();
   }, []);
+
 
   if (loading) {
     return (

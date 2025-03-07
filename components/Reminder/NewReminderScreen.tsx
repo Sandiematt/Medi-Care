@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const NewReminderScreen: React.FC = () => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [username, setUsername] = useState('');
   const [days, setDays] = useState({
     Mon: false,
     Tue: false,
@@ -16,6 +18,26 @@ const NewReminderScreen: React.FC = () => {
   });
   const [times, setTimes] = useState([{ time: '12:00', dose: 1 }, { time: '24:00', dose: 1 }]);
   const [totalDoses, setTotalDoses] = useState(30);
+
+  // Fetch username from AsyncStorage when component mounts
+  useEffect(() => {
+    const fetchUsername = async () => {
+      try {
+        const storedUsername = await AsyncStorage.getItem('username');
+        if (storedUsername) {
+          setUsername(storedUsername);
+        } else {
+          Alert.alert('Error', 'You need to be logged in to add reminders.');
+          // Navigate to login screen or handle accordingly
+        }
+      } catch (error) {
+        console.error('Error retrieving username:', error);
+        Alert.alert('Error', 'Failed to retrieve user information.');
+      }
+    };
+
+    fetchUsername();
+  }, []);
 
   const handleDayToggle = (day: string) => {
     setDays((prevDays) => ({
@@ -39,19 +61,25 @@ const NewReminderScreen: React.FC = () => {
 
   const handleSubmit = async () => {
     const selectedDays = Object.keys(days).filter((day) => days[day]);
+    if (!username) {
+      Alert.alert('Error', 'You need to be logged in to add reminders.');
+      return;
+    }
+    
     if (!name || !description || selectedDays.length === 0 || times.length === 0) {
       Alert.alert('Error', 'Please fill all the required fields.');
       return;
     }
-
+    
     const reminderData = {
+      username,
       name,
       description,
       days: selectedDays,
       times,
       totalDoses,
     };
-
+    
     try {
       const response = await fetch('http://10.0.2.2:5000/addReminder', {
         method: 'POST',

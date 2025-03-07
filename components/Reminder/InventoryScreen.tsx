@@ -13,6 +13,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createStackNavigator } from '@react-navigation/stack';
 import AddInventoryScreen from './AddInventory';
 import { useFocusEffect } from '@react-navigation/native';
@@ -48,21 +49,45 @@ const InventoryScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [stats, setStats] = useState<Stats>({ totalItems: 0, lowStock: 0, outOfStock: 0 });
 
   // Fetch items from database
-  const fetchInventoryItems = async () => {
+  // Fetch items from database
+const fetchInventoryItems = async () => {
+  setLoading(true);
+  try {
+    // Get username from AsyncStorage
+    const username = await AsyncStorage.getItem('username');
+    let parsedUsername;
+    
+    // Try to parse username if it's stored as JSON
     try {
-      const response = await fetch('http://10.0.2.2:5000/inventory'); // Replace with your API URL
-      if (!response.ok) {
-        throw new Error('Failed to fetch inventory items');
-      }
-      const data = await response.json();
-      setInventoryItems(data);
-    } catch (error) {
-      console.error('Error fetching inventory:', error);
-    } finally {
+      const parsedUserData = JSON.parse(username);
+      parsedUsername = parsedUserData.username;
+    } catch (parseError) {
+      // If parsing fails, assume it's a plain string
+      parsedUsername = username;
+    }
+    
+    if (!parsedUsername) {
+      console.error('No username found');
       setLoading(false);
       setRefreshing(false);
+      return;
     }
-  };
+    
+    // Use the username as a query parameter
+    const response = await fetch(`http://10.0.2.2:5000/inventory?username=${encodeURIComponent(parsedUsername)}`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch inventory items');
+    }
+    const data = await response.json();
+    setInventoryItems(data);
+  } catch (error) {
+    console.error('Error fetching inventory:', error);
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
 
   const fetchStats = async () => {
     try {

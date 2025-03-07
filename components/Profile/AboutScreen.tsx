@@ -141,7 +141,7 @@ const AboutUs: React.FC = () => {
         );
     };
 
-    const renderValueCard = ({ icon, title, text }: { icon: string; title: string; text: string }) => {
+    const renderValueCard = ({ icon, title, text }: { icon: string; title: string; text: string }, index: number) => {
         const [isPressed, setIsPressed] = useState(false);
         const valueScale = useRef(new Animated.Value(1)).current;
 
@@ -162,7 +162,7 @@ const AboutUs: React.FC = () => {
         };
 
         return (
-            <Animated.View style={[styles.valueCard, { transform: [{ scale: valueScale }] }]}>
+            <Animated.View key={index} style={[styles.valueCard, { transform: [{ scale: valueScale }] }]}>
                 <TouchableOpacity
                     onPressIn={handlePressIn}
                     onPressOut={handlePressOut}
@@ -218,7 +218,7 @@ const AboutUs: React.FC = () => {
                         <Icon name="medical" size={40} color="#4A90E2" style={styles.missionIcon} />
                         <Text style={styles.missionTitle}>Our Mission</Text>
                         <Text style={styles.missionText}>
-                            Meicare is dedicated to improving the healthcare experience by leveraging technology 
+                            Medicare is dedicated to improving the healthcare experience by leveraging technology 
                             to simplify healthcare management for users.
                         </Text>
                     </View>
@@ -255,7 +255,7 @@ const AboutUs: React.FC = () => {
                             { icon: 'heart', title: 'Patient First', text: 'Prioritizing patient care and experience' },
                             { icon: 'shield-checkmark', title: 'Security', text: 'Ensuring data privacy and protection' },
                             { icon: 'trending-up', title: 'Innovation', text: 'Constantly improving our solutions' },
-                        ].map((value, index) => renderValueCard(value))}
+                        ].map((value, index) => renderValueCard(value, index))}
                     </View>
                 </View>
             </Animated.ScrollView>
