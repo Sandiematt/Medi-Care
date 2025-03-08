@@ -5,7 +5,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-// Import screens remain the same
+// Import screens
 import EditProfileScreen from './EditProfileScreen';
 import FavoriteScreen from './FavoriteScreen';
 import AboutScreen from './AboutScreen';
@@ -14,20 +14,8 @@ import PrescriptionsScreen from './PrescriptionsScreen';
 
 const Stack = createStackNavigator();
 
-const ProfileScreenApp = () => {
-  return (
-    <Stack.Navigator screenOptions={{ headerTitleAlign: 'center' }}>
-      <Stack.Screen name="ProfileMains" component={ProfileScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="Favorite" component={FavoriteScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="About" component={AboutScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="HealthVitals" component={HealthVitalsScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="Prescriptions" component={PrescriptionsScreen} options={{ headerShown: false }} />
-    </Stack.Navigator>
-  );
-}
-
-const ProfileScreen = ({ navigation }) => {
+// Main Profile Screen Component
+const ProfileMainScreen = ({ navigation }) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState('');
@@ -40,12 +28,22 @@ const ProfileScreen = ({ navigation }) => {
       try {
         const storedUsername = await AsyncStorage.getItem('username');
         if (storedUsername) {
-          const response = await axios.get(`http://20.193.156.237:5000/users/${storedUsername}`);
-          setUserData(response.data);
-          setUsername(response.data.username);
-          setEmail(response.data.email);
-          setContact(response.data.contact);
-          setGender(response.data.gender);
+          // Consider using HTTPS for release builds
+          // Add error handling for network requests
+          try {
+            const response = await axios.get(`http://20.193.156.237:5000/users/${storedUsername}`);
+            const data = response.data;
+            setUserData(data);
+            setUsername(data.username);
+            setEmail(data.email);
+            setContact(data.contact);
+            setGender(data.gender);
+          } catch (networkError) {
+            console.log('Network error:', networkError);
+            // Set some default values if needed
+            setUsername(storedUsername);
+            setEmail('Unable to load');
+          }
         }
       } catch (error) {
         console.log('Error fetching user data:', error);
@@ -55,7 +53,7 @@ const ProfileScreen = ({ navigation }) => {
     };
 
     fetchUserData();
-  }, []);
+  }, []); // Added empty dependency array to run only on mount
 
   const handleLogoutPress = () => {
     Alert.alert(
@@ -92,79 +90,78 @@ const ProfileScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
 
-  const ProfileMainScreen = () => {
-    if (loading) {
-      return (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#199A8E" />
-        </View>
-      );
-    }
-
+  if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Profile</Text>
-            <TouchableOpacity onPress={handleLogoutPress}>
-              <Icon name="log-out-outline" size={24} color="#64748B" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Profile Card */}
-          <View style={styles.profileCard}>
-            <View style={styles.profileImageContainer}>
-              <Image
-                source={{
-                  uri: 'https://img.freepik.com/premium-vector/man-professional-business-casual-young-avatar-icon-illustration_1277826-623.jpg',
-                }}
-                style={styles.profileImage}
-              />
-              <View style={styles.badgeContainer}>
-                <Icon name="checkmark-circle" size={24} color="#199A8E" />
-              </View>
-            </View>
-            <Text style={styles.profileName}>{username}</Text>
-            <Text style={styles.profileEmail}>{email}</Text>
-          </View>
-
-          {/* Menu Items */}
-          <View style={styles.menuContainer}>
-            <MenuItem
-              icon="person-outline"
-              label="Edit Profile"
-              onPress={() => navigation.navigate('EditProfile')}
-            />
-            <MenuItem
-              icon="star-outline"
-              label="Wellness Score"
-              onPress={() => navigation.navigate('Favorite')}
-            />
-            <MenuItem
-              icon="pulse-outline"
-              label="Health Vitals"
-              onPress={() => navigation.navigate('HealthVitals')}
-            />
-            <MenuItem
-              icon="medical-outline"
-              label="My Prescriptions"
-              onPress={() => navigation.navigate('Prescriptions')}
-            />
-            <MenuItem
-              icon="information-circle-outline"
-              label="About MediCare"
-              onPress={() => navigation.navigate('About')}
-            />
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#199A8E" />
+      </View>
     );
-  };
+  }
 
-  const Stack = createStackNavigator();
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Profile</Text>
+          <TouchableOpacity onPress={handleLogoutPress}>
+            <Icon name="log-out-outline" size={24} color="#64748B" />
+          </TouchableOpacity>
+        </View>
 
-  const ProfileOptionsNavigator = () => (
+        {/* Profile Card */}
+        <View style={styles.profileCard}>
+          <View style={styles.profileImageContainer}>
+            <Image
+              source={{
+                uri: 'https://img.freepik.com/premium-vector/man-professional-business-casual-young-avatar-icon-illustration_1277826-623.jpg',
+              }}
+              style={styles.profileImage}
+            />
+            <View style={styles.badgeContainer}>
+              <Icon name="checkmark-circle" size={24} color="#199A8E" />
+            </View>
+          </View>
+          <Text style={styles.profileName}>{username}</Text>
+          <Text style={styles.profileEmail}>{email}</Text>
+        </View>
+
+        {/* Menu Items */}
+        <View style={styles.menuContainer}>
+          <MenuItem
+            icon="person-outline"
+            label="Edit Profile"
+            onPress={() => navigation.navigate('EditProfile')}
+          />
+          <MenuItem
+            icon="star-outline"
+            label="Wellness Score"
+            onPress={() => navigation.navigate('Favorite')}
+          />
+          <MenuItem
+            icon="pulse-outline"
+            label="Health Vitals"
+            onPress={() => navigation.navigate('HealthVitals')}
+          />
+          <MenuItem
+            icon="medical-outline"
+            label="My Prescriptions"
+            onPress={() => navigation.navigate('Prescriptions')}
+          />
+          <MenuItem
+            icon="information-circle-outline"
+            label="About MediCare"
+            onPress={() => navigation.navigate('About')}
+          />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+// Root Navigator Component
+const ProfileScreenApp = () => {
+  return (
     <Stack.Navigator screenOptions={{ headerTitleAlign: 'center' }}>
       <Stack.Screen name="ProfileMain" component={ProfileMainScreen} options={{ headerShown: false }} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
@@ -174,8 +171,6 @@ const ProfileScreen = ({ navigation }) => {
       <Stack.Screen name="Prescriptions" component={PrescriptionsScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
-
-  return <ProfileOptionsNavigator />;
 };
 
 const styles = StyleSheet.create({

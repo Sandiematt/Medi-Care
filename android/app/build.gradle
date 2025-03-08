@@ -98,6 +98,7 @@ android {
     }
     buildTypes {
         debug {
+             debuggable true
             signingConfig signingConfigs.debug
         }
         release {
