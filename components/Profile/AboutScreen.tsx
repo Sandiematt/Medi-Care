@@ -417,10 +417,11 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         height: 80,
-        backgroundColor: 'rgba(0,0,0,0.3)',
+        backgroundColor: 'transparent',
+        
     },
     gradientPressed: {
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(0,0,0,0.2)',
     },
     developerInfo: {
         padding: 16,
@@ -495,6 +496,7 @@ const styles = StyleSheet.create({
         top: 40,
         right: 20,
     },
+   
 });
 
 export default AboutUs;

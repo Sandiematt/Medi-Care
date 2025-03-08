@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   TextInput,
@@ -10,9 +10,9 @@ import {
   Platform,
   ScrollView,
   Animated,
+  Modal,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { Picker } from '@react-native-picker/picker';
 
 interface SignUpProps {
   navigation: {
@@ -29,6 +29,7 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [showGenderModal, setShowGenderModal] = useState<boolean>(false);
   const [isFocused, setIsFocused] = useState({
     username: false,
     email: false,
@@ -48,6 +49,17 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
     password: new Animated.Value(0),
     confirmPassword: new Animated.Value(0),
   });
+
+  // Initialize animations for fields with existing values
+  useEffect(() => {
+    if (username) animateLabel('username', 1);
+    if (email) animateLabel('email', 1);
+    if (contact) animateLabel('contact', 1);
+    if (age) animateLabel('age', 1);
+    if (gender) animateLabel('gender', 1);
+    if (password) animateLabel('password', 1);
+    if (confirmPassword) animateLabel('confirmPassword', 1);
+  }, []);
 
   const animateLabel = (field: string, toValue: number) => {
     Animated.timing(labelAnimations[field], {
@@ -170,7 +182,7 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
     );
   };
 
-  const renderPicker = () => {
+  const renderGenderPicker = () => {
     const labelStyle = {
       transform: [{
         translateY: labelAnimations['gender'].interpolate({
@@ -201,40 +213,86 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
           <Icon name="people-outline" size={20} color="#199A8E" />
         </View>
         <View style={styles.inputWrapper}>
-          <View style={styles.labelContainer}>
+          <View style={styles.labelContainer1}>
             <Animated.Text style={[styles.floatingLabel, labelStyle]}>
               Gender
             </Animated.Text>
           </View>
-          <Picker
-            selectedValue={gender}
-            style={[styles.picker, { opacity: gender ? 1 : 0.7 }]}
-            onValueChange={(itemValue) => {
-              setGender(itemValue);
-              if (itemValue) {
-                animateLabel('gender', 1);
-              } else {
-                animateLabel('gender', 0);
-              }
+          
+          {/* Custom picker touchable - covers the entire input area */}
+          <TouchableOpacity
+            style={styles.customPickerButton}
+            onPress={() => {
+              setShowGenderModal(true);
+              setIsFocused({ ...isFocused, gender: true });
+              animateLabel('gender', 1);
             }}
           >
-            <Picker.Item label="Select Gender" value="" color="#A0A0A0" />
-            <Picker.Item label="Male" value="Male" color="#000000" />
-            <Picker.Item label="Female" value="Female" color="#000000" />
-          </Picker>
+            <Text style={[
+              styles.customPickerText,
+              !gender && { color: '#A0A0A0' }
+            ]}>
+              {gender || "Select Gender"}
+            </Text>
+            <Icon name="chevron-down-outline" size={16} color="#1A1A1A" />
+          </TouchableOpacity>
+          
           <Animated.View style={[styles.inputUnderline, underlineStyle]} />
         </View>
       </View>
     );
   };
 
+  // Render gender modal separately to avoid rendering issues
+  const renderGenderModal = () => (
+    <Modal
+      visible={showGenderModal}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => setShowGenderModal(false)}
+    >
+      <TouchableOpacity
+        style={styles.modalOverlay}
+        activeOpacity={1}
+        onPress={() => setShowGenderModal(false)}
+      >
+        <View style={styles.modalContent}>
+          <TouchableOpacity
+            style={styles.modalItem}
+            onPress={() => {
+              setGender('Male');
+              setShowGenderModal(false);
+            }}
+          >
+            <Text style={[styles.modalItemText, gender === 'Male' && styles.selectedItemText]}>Male</Text>
+          </TouchableOpacity>
+          <View style={styles.modalDivider} />
+          <TouchableOpacity
+            style={styles.modalItem}
+            onPress={() => {
+              setGender('Female');
+              setShowGenderModal(false);
+            }}
+          >
+            <Text style={[styles.modalItemText, gender === 'Female' && styles.selectedItemText]}>Female</Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardView}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
       >
-        <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          bounces={false} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
           <View style={styles.header}>
             <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>Join our community today</Text>
@@ -278,7 +336,8 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
               'age'
             )}
 
-            {renderPicker()}
+            {renderGenderPicker()}
+            {renderGenderModal()}
 
             {renderInput(
               'Password',
@@ -331,6 +390,9 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
+  scrollContent: {
+    flexGrow: 1,
+  },
   header: {
     backgroundColor: '#199A8E',
     paddingVertical: 40,
@@ -353,7 +415,7 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingBottom: 40, // Increased to provide more space at the bottom
   },
   inputContainer: {
     flexDirection: 'row',
@@ -380,7 +442,16 @@ const styles = StyleSheet.create({
     right: 0,
     height: 56,
     justifyContent: 'center',
-    zIndex: 1,
+    pointerEvents: 'none', // This prevents the label from capturing touches
+  },
+  labelContainer1: {
+    position: 'absolute',
+    bottom:10,
+    left: 0,
+    right: 0,
+    height: 56,
+    justifyContent: 'center',
+    pointerEvents: 'none', // This prevents the label from capturing touches
   },
   floatingLabel: {
     position: 'absolute',
@@ -402,12 +473,51 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
   },
-  picker: {
-    margin: 0,
-    height: 24,
+  customPickerButton: {
+    height: 40,
     marginTop: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingRight: 8,
+    zIndex: 3, // Ensure this is above other elements
+  },
+  customPickerText: {
     fontSize: 16,
     color: '#1A1A1A',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    width: '80%',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  modalItem: {
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+  },
+  modalItemText: {
+    fontSize: 16,
+    color: '#1A1A1A',
+    textAlign: 'center',
+  },
+  selectedItemText: {
+    color: '#199A8E',
+    fontWeight: 'bold',
+  },
+  modalDivider: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
   },
   signupButton: {
     backgroundColor: '#199A8E',

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator, StatusBar } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -7,40 +7,45 @@ import EditHealthVitalsScreen from './EditHealthVitalsScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
+// Define the color palette
+const COLORS = {
+  primary: '#3F51B5', // Indigo as primary color
+  secondary: '#FF9800', // Orange as secondary color
+  background: '#F8F9FA',
+  cardBackground: '#FFFFFF',
+  cardBackgroundAlt: '#F5F5F5',
+  textPrimary: '#333333',
+  textSecondary: '#666666',
+  textLight: '#FFFFFF',
+  textAccent: '#3F51B5', // Indigo for accent text
+  success: '#4CAF50',
+  error: '#F44336',
+  warning: '#FFC107',
+  info: '#2196F3',
+  shadowColor: '#000',
+};
 
-const Stack = createStackNavigator<RootStackParamList>();
+const Stack = createStackNavigator();
 const HealthVitalsApp = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="HealthVitalss" component={HealthVitalsScreen} />
-      <Stack.Screen name="Edit" component={EditHealthVitalsScreen} />
+      <Stack.Screen name="HealthVitalsDashboard" component={HealthVitalsScreen} />
+      <Stack.Screen name="EditHealthVitals" component={EditHealthVitalsScreen} />
     </Stack.Navigator>
   );
 };
 
-type RootStackParamList = {
-  HealthVitalss: undefined;
-  Edit: undefined;
-};
-const HealthVitalsScreen: React.FC = () => {
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [userData, setUserData] = useState<any>(null);
-  const [editableFields, setEditableFields] = useState({
-    username: false,
-    bloodpressure: false,
-    heartrate:false,
-    bloodgroup: false,
-    height: false,
-    weight: false
-  });
+const HealthVitalsScreen = () => {
+  const navigation = useNavigation();
+  const [userData, setUserData] = useState(null);
   const [username, setName] = useState('');
   const [bloodpressure, setBloodPressure] = useState('');
-  const [heartrate, setheartrate] = useState('');
+  const [heartrate, setHeartRate] = useState('');
   const [bloodgroup, setBloodGroup] = useState('');
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchHealthVitals = async () => {
@@ -52,25 +57,24 @@ const HealthVitalsScreen: React.FC = () => {
   
         const response = await axios.get(`http://20.193.156.237:5000/healthvitals/${storedUsername}`);
   
-        // Use response data if available, else fallback to defaults
         const data = response.data || {};
         setUserData(data);
         setName(data.username || 'N/A');
         setBloodPressure(data.bloodpressure || 'N/A');
-        setheartrate(data.heartrate || 'N/A');
+        setHeartRate(data.heartrate || 'N/A');
         setBloodGroup(data.bloodgroup || 'N/A');
         setHeight(data.height || 'N/A');
         setWeight(data.weight || 'N/A');
         setError(null);
       } catch (err) {
-        setUserData(null); // Ensure UI still renders
+        setUserData(null);
         setName('N/A');
         setBloodPressure('N/A');
-        setheartrate('N/A');
+        setHeartRate('N/A');
         setBloodGroup('N/A');
         setHeight('N/A');
         setWeight('N/A');
-        setError(null); // Avoid error message, just fallback
+        setError(null);
       } finally {
         setLoading(false);
       }
@@ -79,221 +83,349 @@ const HealthVitalsScreen: React.FC = () => {
     fetchHealthVitals();
   }, []);
   
-
-  if (loading) {
-    return <ActivityIndicator size="large" color="#000" style={{ marginTop: 50 }} />;
-  }
-
-  if (error) {
-    return (
-      <View style={styles.container}>
-        <Text style={{ color: 'red', textAlign: 'center' }}>{error}</Text>
-      </View>
-    );
-  }
-
   const handleGoBack = () => {
     navigation.goBack();
   };
 
-  return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleGoBack}>
-          <Icon name="chevron-back" size={30} color="black" />
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Loading your health data...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Icon name="alert-circle-outline" size={60} color={COLORS.error} />
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={() => setLoading(true)}>
+          <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
-        <Text style={styles.title1}>Edit Health Vitals</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+      
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+          <Icon name="chevron-back" size={24} color={COLORS.textLight} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Health Vitals</Text>
+        <View style={{width: 36}} />
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.title}>Heart Health</Text>
-        <View style={styles.infoSection}>
-          <View style={styles.heartIconContainer}>
-            <Icon name="pulse" size={60} color="#FF6F61" />
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Heart Health Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={styles.titleContainer}>
+              <Icon name="heart-outline" size={22} color={COLORS.primary} />
+              <Text style={styles.cardTitle}>Cardiac Health</Text>
+            </View>
           </View>
-          <View style={styles.details}>
-            <Text style={styles.subTitle}>Health</Text>
-            <Text style={styles.description}>
-              Diagnosis of Heart Health
-            </Text>
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Edit')}>
-              <Text style={styles.buttonText}>Edit Vitals</Text>
-            </TouchableOpacity>
+
+          <View style={styles.vitalRow}>
+            <View style={styles.vitalCard}>
+              <View style={[styles.vitalIconContainer, {backgroundColor: COLORS.primary}]}>
+                <Icon name="pulse-outline" size={24} color={COLORS.textLight} />
+              </View>
+              <View style={styles.vitalTextContainer}>
+                <Text style={styles.vitalLabel}>Blood Pressure</Text>
+                <Text style={styles.vitalValue}>{bloodpressure} <Text style={styles.vitalUnit}>mmHg</Text></Text>
+              </View>
+            </View>
+
+            <View style={styles.vitalCard}>
+              <View style={[styles.vitalIconContainer, {backgroundColor: COLORS.info}]}>
+                <Icon name="fitness-outline" size={24} color={COLORS.textLight} />
+              </View>
+              <View style={styles.vitalTextContainer}>
+                <Text style={styles.vitalLabel}>Heart Rate</Text>
+                <Text style={styles.vitalValue}>{heartrate} <Text style={styles.vitalUnit}>bpm</Text></Text>
+              </View>
+            </View>
           </View>
         </View>
 
-        <View style={styles.vitals}>
-          <View style={styles.vitalCard}>
-            <Text style={styles.vitalLabel}>Blood Pressure</Text>
-            <Text style={styles.vitalValue}>
-              {bloodpressure || 'N/A'} mmHg
-            </Text>
+        {/* Body Measurements Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={styles.titleContainer}>
+              <Icon name="body-outline" size={22} color={COLORS.primary} />
+              <Text style={styles.cardTitle}>Body Measurements</Text>
+            </View>
           </View>
-          <View style={styles.vitalCard}>
-            <Text style={styles.vitalLabel}>Heart Rate</Text>
-            <Text style={styles.vitalValue}>
-              {heartrate || 'N/A'} ms
-            </Text>
-          </View>
-        </View>
-      </View>
 
-      <View style={styles.card1}>
-        <Text style={styles.title}>Additional Health Data</Text>
-        <View style={styles.vitals}>
-          <View style={styles.vitalCard}>
-            <Icon name="body-outline" size={30} color="#6A1B9A" />
-            <Text style={styles.vitalLabel}>Height</Text>
-            <Text style={styles.vitalValue}>
-              {height || 'N/A'} cm
-            </Text>
-          </View>
-          <View style={styles.vitalCard}>
-            <Icon name="barbell-outline" size={30} color="#1E88E5" />
-            <Text style={styles.vitalLabel}>Weight</Text>
-            <Text style={styles.vitalValue}>
-              {weight || 'N/A'} kg
-            </Text>
-          </View>
-          <View style={styles.vitalCard}>
-            <Icon name="water-outline" size={30} color="#D84315" />
-            <Text style={styles.vitalLabel}>Blood Group</Text>
-            <Text style={styles.vitalValue}>
-              {bloodgroup || 'N/A'} ve
-            </Text>
+          <View style={styles.vitalRow}>
+            <View style={styles.vitalCard}>
+              <View style={[styles.vitalIconContainer, {backgroundColor: COLORS.success}]}>
+                <Icon name="resize-outline" size={24} color={COLORS.textLight} />
+              </View>
+              <View style={styles.vitalTextContainer}>
+                <Text style={styles.vitalLabel}>Height</Text>
+                <Text style={styles.vitalValue}>{height} <Text style={styles.vitalUnit}>cm</Text></Text>
+              </View>
+            </View>
+
+            <View style={styles.vitalCard}>
+              <View style={[styles.vitalIconContainer, {backgroundColor: COLORS.warning}]}>
+                <Icon name="barbell-outline" size={24} color={COLORS.textLight} />
+              </View>
+              <View style={styles.vitalTextContainer}>
+                <Text style={styles.vitalLabel}>Weight</Text>
+                <Text style={styles.vitalValue}>{weight} <Text style={styles.vitalUnit}>kg</Text></Text>
+              </View>
+            </View>
           </View>
         </View>
-      </View>
-    </ScrollView>
+
+        {/* Blood Group Card */}
+        <View style={styles.bloodGroupCard}>
+          <View style={styles.bloodGroupContent}>
+            <View style={styles.bloodGroupLeft}>
+              <View style={[styles.bloodGroupIcon, {backgroundColor: COLORS.secondary}]}>
+                <Icon name="water-outline" size={28} color={COLORS.textLight} />
+              </View>
+              <View style={styles.bloodGroupTextContainer}>
+                <Text style={styles.bloodGroupLabel}>Blood Group</Text>
+                <Text style={styles.bloodGroupValue}>{bloodgroup}</Text>
+              </View>
+            </View>
+            <View style={styles.bloodGroupIconContainer}>
+              <Icon name="information-circle-outline" size={22} color={COLORS.primary} />
+            </View>
+          </View>
+        </View>
+
+        {/* Action Button */}
+        <TouchableOpacity 
+          style={styles.actionButton} 
+          onPress={() => navigation.navigate('EditHealthVitals')}
+        >
+          <Text style={styles.actionButtonText}>Update Health Vitals</Text>
+          <Icon name="arrow-forward" size={18} color={COLORS.textLight} />
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    backgroundColor: '#FFF',
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: COLORS.textAccent,
+    fontWeight: '500',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
     padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: COLORS.error,
+    textAlign: 'center',
+    marginTop: 12,
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: COLORS.textLight,
+    fontWeight: '600',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
-    right:6,
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.primary,
   },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  title1: {
-    fontSize: 24,
+  headerTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 20,
-    top:10,
-    textAlign: 'center',
-    right:70,
+    color: COLORS.textLight,
+  },
+  scrollContent: {
+    padding: 16,
   },
   card: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.cardBackground,
     borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 2,
   },
-  card1: {
-    backgroundColor: '#F7E5EC',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 10,
-  },
-  infoSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  heartIconContainer: {
-    marginRight: 15,
-  },
-  details: {
-    flex: 1,
-  },
-  subTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  description: {
-    fontSize: 14,
-    color: '#555',
-    marginBottom: 10,
-  },
-  button: {
-    backgroundColor: '#FF6F61',
-    padding: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize:16,
-  },
-  vitals: {
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    marginLeft: 8,
+  },
+  vitalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   vitalCard: {
-    backgroundColor: '#FFF',
-    padding: 15,
-    borderRadius: 8,
     width: '48%',
+    borderRadius: 10,
+    padding: 14,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    backgroundColor: COLORS.cardBackgroundAlt,
+  },
+  vitalIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 2,
+    marginRight: 10,
+  },
+  vitalTextContainer: {
+    flex: 1,
   },
   vitalLabel: {
-    fontSize: 14,
-    color: '#555',
-    marginBottom: 5,
-    textAlign: 'center',
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginBottom: 4,
   },
   vitalValue: {
     fontSize: 18,
     fontWeight: '700',
+    color: COLORS.textPrimary,
   },
-  contactCard: {
+  vitalUnit: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: COLORS.textSecondary,
+  },
+  bloodGroupCard: {
+    borderRadius: 12,
+    marginBottom: 20,
+    backgroundColor: COLORS.cardBackground,
+    overflow: 'hidden',
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  bloodGroupContent: {
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  bloodGroupLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFECB3',
-    borderRadius: 12,
-    padding: 15,
   },
-  contactAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 10,
+  bloodGroupIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  contactDetails: {
-    flex: 1,
+  bloodGroupTextContainer: {
+    marginLeft: 12,
   },
-  contactName: {
+  bloodGroupLabel: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginBottom: 4,
+  },
+  bloodGroupValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  bloodGroupIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(63, 81, 181, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionButton: {
+    marginVertical: 10,
+    borderRadius: 10,
+    backgroundColor: COLORS.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  actionButtonText: {
     fontSize: 16,
     fontWeight: '600',
-  },
-  contactRole: {
-    fontSize: 14,
-    color: '#555',
-  },
-  contactActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: 80,
+    color: COLORS.textLight,
+    marginRight: 8,
   },
 });
 

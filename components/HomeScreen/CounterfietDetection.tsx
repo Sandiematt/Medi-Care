@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { 
   View, 
   Text, 
@@ -9,19 +9,57 @@ import {
   Dimensions,
   PermissionsAndroid,
   Platform,
-  ScrollView
+  ScrollView,
+  StatusBar,
+  Alert,
+  Linking
 } from "react-native";
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import axios from "axios";
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useFocusEffect } from '@react-navigation/native';
+import { LinearGradient } from 'react-native-linear-gradient';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const CounterfeitDetection = () => {
   const [image, setImage] = useState(null);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [cameraPermission, setCameraPermission] = useState(null);
+
+  // Check camera permissions on component mount
+  useEffect(() => {
+    (async () => {
+      if (Platform.OS === 'android') {
+        const permission = await checkCameraPermission();
+        setCameraPermission(permission);
+      }
+    })();
+  }, []);
+
+  // Reset states when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        // Clean up any resources if needed
+      };
+    }, [])
+  );
+
+  const checkCameraPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const result = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.CAMERA);
+        return result;
+      } catch (err) {
+        console.warn(err);
+        return false;
+      }
+    }
+    return true;
+  };
 
   const requestCameraPermission = async () => {
     if (Platform.OS === 'android') {
@@ -30,13 +68,33 @@ const CounterfeitDetection = () => {
           PermissionsAndroid.PERMISSIONS.CAMERA,
           {
             title: "Camera Permission",
-            message: "This app needs access to your camera to take pictures",
+            message: "This app needs access to your camera to verify medications",
             buttonNeutral: "Ask Me Later",
             buttonNegative: "Cancel",
             buttonPositive: "OK"
           }
         );
-        return granted === PermissionsAndroid.RESULTS.GRANTED;
+
+        setCameraPermission(granted === PermissionsAndroid.RESULTS.GRANTED);
+        
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          Alert.alert(
+            "Permission Required", 
+            "Camera permission is required to take photos. Would you like to enable it in your device settings?",
+            [
+              { 
+                text: "No thanks", 
+                style: "cancel"
+              },
+              { 
+                text: "Open Settings", 
+                onPress: () => Linking.openSettings() 
+              }
+            ]
+          );
+          return false;
+        }
+        return true;
       } catch (err) {
         console.warn(err);
         return false;
@@ -54,13 +112,22 @@ const CounterfeitDetection = () => {
         maxHeight: 1200,
         maxWidth: 1200,
         quality: 1,
+        selectionLimit: 1,
       };
 
       launchImageLibrary(options, response => {
         if (response.didCancel) {
           return;
         } else if (response.errorCode) {
-          setError('Image picker error: ' + response.errorMessage);
+          let errorMsg = 'Image picker error';
+          if (response.errorCode === 'camera_unavailable') {
+            errorMsg = 'Camera is not available on this device';
+          } else if (response.errorCode === 'permission') {
+            errorMsg = 'Permission not granted';
+          } else {
+            errorMsg = response.errorMessage || 'Unknown error occurred';
+          }
+          setError(errorMsg);
           return;
         }
         
@@ -84,11 +151,11 @@ const CounterfeitDetection = () => {
       const hasPermission = await requestCameraPermission();
       
       if (!hasPermission) {
-        setError('Camera permission denied');
         return;
       }
 
       const options = {
+        saveToPhotos: false,
         mediaType: 'photo',
         includeBase64: false,
         maxHeight: 1200,
@@ -100,7 +167,15 @@ const CounterfeitDetection = () => {
         if (response.didCancel) {
           return;
         } else if (response.errorCode) {
-          setError('Camera error: ' + response.errorMessage);
+          let errorMsg = 'Camera error';
+          if (response.errorCode === 'camera_unavailable') {
+            errorMsg = 'Camera is not available on this device';
+          } else if (response.errorCode === 'permission') {
+            errorMsg = 'Camera permission not granted';
+          } else {
+            errorMsg = response.errorMessage || 'Unknown error occurred';
+          }
+          setError(errorMsg);
           return;
         }
         
@@ -142,15 +217,32 @@ const CounterfeitDetection = () => {
             'Content-Type': 'multipart/form-data',
             'Accept': 'application/json'
           },
-          timeout: 15000 // 15 seconds timeout
+          timeout: 30000 // 30 seconds timeout - increased for slower connections
         }
       );
       
       setResult(response.data);
       
     } catch (error) {
-      setError('Server error: ' + (error.response?.data?.message || error.message));
-      console.error(error);
+      let errorMessage = 'Server error';
+      
+      if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Request timed out. Please try again with a stronger connection.';
+      } else if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        errorMessage = error.response.data?.message || 
+                      `Server error (${error.response.status}): Please try again.`;
+      } else if (error.request) {
+        // The request was made but no response was received
+        errorMessage = 'No response from server. Please check your internet connection.';
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        errorMessage = error.message || 'An unknown error occurred';
+      }
+      
+      setError(errorMessage);
+      console.error('Upload error:', error);
     } finally {
       setLoading(false);
     }
@@ -165,7 +257,7 @@ const CounterfeitDetection = () => {
   // Get result color based on authenticity
   const getResultColor = () => {
     if (!result) return '#808080';
-    return !result.isCounterfeit ? '#00A896' : '#EF4444';
+    return !result.isCounterfeit ? '#10B981' : '#EF4444';
   };
 
   // Get result text based on authenticity
@@ -215,45 +307,85 @@ const CounterfeitDetection = () => {
     return details;
   };
 
+  // Handle retry scan
+  const handleReset = () => {
+    setImage(null);
+    setResult(null);
+    setError(null);
+  };
+  
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <StatusBar barStyle="light-content" backgroundColor="#0891B2" />
+      
+      <LinearGradient
+        colors={['#0891B2', '#0E7490']}
+        start={{x: 0, y: 0}}
+        end={{x: 1, y: 0}}
+        style={styles.header}
+      >
         <View style={styles.headerContent}>
-          <Icon name="shield-checkmark" size={32} color="#FFFFFF" />
-          <Text style={styles.headerTitle}>Medicine Authenticator</Text>
+          <Icon name="shield-checkmark" size={28} color="#FFFFFF" />
+          <Text style={styles.headerTitle}>Medication Verify</Text>
         </View>
-        <Text style={styles.headerSubtitle}>Verify medication authenticity instantly</Text>
-      </View>
+        <Text style={styles.headerSubtitle}>Instant authenticity check</Text>
+      </LinearGradient>
       
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
         showsVerticalScrollIndicator={false}
+        bounces={true}
       >
         <View style={styles.content}>
           {!image ? (
             <View style={styles.placeholderContainer}>
-              <View style={styles.placeholderBox}>
-                <Icon name="medical" size={80} color="#6B7280" />
-                <Text style={styles.placeholderText}>
-                  Upload or take a photo of medicine packaging to verify
-                </Text>
-                <View style={styles.placeholderIconsRow}>
-                  <Icon name="camera" size={24} color="#6B7280" style={styles.placeholderIcon} />
-                  <Icon name="arrow-forward" size={16} color="#6B7280" style={styles.placeholderIcon} />
-                  <Icon name="scan-outline" size={24} color="#6B7280" style={styles.placeholderIcon} />
-                  <Icon name="arrow-forward" size={16} color="#6B7280" style={styles.placeholderIcon} />
-                  <Icon name="checkmark-circle" size={24} color="#6B7280" style={styles.placeholderIcon} />
+              <LinearGradient
+                colors={['#F9FAFB', '#F3F4F6']}
+                style={styles.placeholderBox}
+              >
+                <View style={styles.iconCircle}>
+                  <Icon name="medkit" size={40} color="#0891B2" />
                 </View>
-              </View>
+                <Text style={styles.placeholderTitle}>
+                  Verify Your Medication
+                </Text>
+                <Text style={styles.placeholderText}>
+                  Take a photo or select an image of your medicine packaging
+                </Text>
+                <View style={styles.placeholderSteps}>
+                  <View style={styles.stepItem}>
+                    <View style={styles.stepCircle}>
+                      <Icon name="camera" size={18} color="#FFFFFF" />
+                    </View>
+                    <Text style={styles.stepText}>Capture</Text>
+                  </View>
+                  <View style={styles.stepDivider} />
+                  <View style={styles.stepItem}>
+                    <View style={styles.stepCircle}>
+                      <Icon name="scan-outline" size={18} color="#FFFFFF" />
+                    </View>
+                    <Text style={styles.stepText}>Analyze</Text>
+                  </View>
+                  <View style={styles.stepDivider} />
+                  <View style={styles.stepItem}>
+                    <View style={styles.stepCircle}>
+                      <Icon name="checkmark-circle" size={18} color="#FFFFFF" />
+                    </View>
+                    <Text style={styles.stepText}>Verify</Text>
+                  </View>
+                </View>
+              </LinearGradient>
             </View>
           ) : (
             <View style={styles.imageContainer}>
               <Image source={{ uri: image }} style={styles.imagePreview} />
               {loading && (
                 <View style={styles.loadingOverlay}>
-                  <ActivityIndicator size="large" color="#FFFFFF" />
-                  <Text style={styles.loadingText}>Analyzing...</Text>
+                  <View style={styles.loadingCard}>
+                    <ActivityIndicator size="large" color="#0891B2" />
+                    <Text style={styles.loadingText}>Analyzing Medicine...</Text>
+                  </View>
                 </View>
               )}
             </View>
@@ -263,7 +395,11 @@ const CounterfeitDetection = () => {
             <View style={styles.errorContainer}>
               <Icon name="alert-circle" size={24} color="#EF4444" />
               <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity onPress={() => setError(null)} style={styles.dismissButton}>
+              <TouchableOpacity 
+                onPress={() => setError(null)} 
+                style={styles.dismissButton}
+                hitSlop={{top: 10, right: 10, bottom: 10, left: 10}}
+              >
                 <Icon name="close" size={18} color="#6B7280" />
               </TouchableOpacity>
             </View>
@@ -271,7 +407,7 @@ const CounterfeitDetection = () => {
           
           {result && !loading && (
             <View style={styles.resultContainer}>
-              <View style={[styles.resultBox, { backgroundColor: !result.isCounterfeit ? '#E8F8F5' : '#FEF2F2' }]}>
+              <View style={[styles.resultCard, { backgroundColor: !result.isCounterfeit ? '#ECFDF5' : '#FEF2F2' }]}>
                 <View style={styles.resultHeaderContainer}>
                   <View style={[styles.resultIndicator, { backgroundColor: getResultColor() }]}>
                     <Icon 
@@ -285,20 +421,27 @@ const CounterfeitDetection = () => {
                   </Text>
                 </View>
                 
-                <View style={styles.iconContainer}>
-                  <Icon 
-                    name={!result.isCounterfeit ? "shield-checkmark" : "warning"} 
-                    size={64} 
-                    color={getResultColor()} 
-                  />
+                <View style={styles.resultIconContainer}>
+                  <View style={[styles.iconCircleLarge, { borderColor: getResultColor() }]}>
+                    <Icon 
+                      name={!result.isCounterfeit ? "shield-checkmark" : "warning"} 
+                      size={48} 
+                      color={getResultColor()} 
+                    />
+                  </View>
                 </View>
                 
                 <View style={styles.resultDetailsContainer}>
                   {getResultDetails()?.map((detail, index) => (
-                    <View key={index} style={styles.detailRow}>
+                    <View key={index} style={[
+                      styles.detailRow, 
+                      index === getResultDetails().length - 1 ? { borderBottomWidth: 0 } : {}
+                    ]}>
                       <View style={styles.detailLabelContainer}>
-                        <Icon name={detail.icon || 'information-circle'} size={18} color="#00786A" style={styles.detailIcon} />
-                        <Text style={styles.detailLabel}>{detail.label}:</Text>
+                        <View style={[styles.detailIconCircle, { backgroundColor: !result.isCounterfeit ? '#059669' : '#B91C1C' }]}>
+                          <Icon name={detail.icon || 'information-circle'} size={14} color="#FFFFFF" />
+                        </View>
+                        <Text style={styles.detailLabel}>{detail.label}</Text>
                       </View>
                       <Text style={styles.detailValue}>{detail.value}</Text>
                     </View>
@@ -313,32 +456,53 @@ const CounterfeitDetection = () => {
                     </Text>
                   </View>
                 )}
+                
+                <TouchableOpacity 
+                  style={[styles.actionButton, { backgroundColor: !result.isCounterfeit ? '#10B981' : '#4B5563' }]}
+                  onPress={handleReset}
+                  activeOpacity={0.7}
+                >
+                  <Icon name="refresh" size={18} color="#FFFFFF" />
+                  <Text style={styles.actionButtonText}>Scan Another</Text>
+                </TouchableOpacity>
               </View>
             </View>
           )}
         </View>
       </ScrollView>
       
-      <View style={styles.buttonsContainer}>
-        <TouchableOpacity 
-          style={[styles.button, { backgroundColor: '#00A896' }]}
-          onPress={takePicture}
-          activeOpacity={0.8}
-          disabled={loading}
+      <View style={styles.footerContainer}>
+        <LinearGradient
+          colors={['#FFFFFF', '#F9FAFB']}
+          style={styles.buttonsGradient}
         >
-          <Icon name="camera" size={24} color="#FFFFFF" />
-          <Text style={styles.buttonText}>Camera</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.button, { backgroundColor: '#05668D' }]}
-          onPress={pickImage}
-          activeOpacity={0.8}
-          disabled={loading}
-        >
-          <Icon name="images" size={24} color="#FFFFFF" />
-          <Text style={styles.buttonText}>Gallery</Text>
-        </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.cameraButton, { opacity: loading ? 0.7 : 1 }]}
+            onPress={takePicture}
+            activeOpacity={0.7}
+            disabled={loading}
+          >
+            <LinearGradient
+              colors={['#0E7490', '#0891B2']}
+              start={{x: 0, y: 0}}
+              end={{x: 1, y: 1}}
+              style={styles.buttonGradient}
+            >
+              <Icon name="camera" size={22} color="#FFFFFF" />
+              <Text style={styles.buttonText}>Take Photo</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.galleryButton, { opacity: loading ? 0.7 : 1 }]}
+            onPress={pickImage}
+            activeOpacity={0.7}
+            disabled={loading}
+          >
+            <Icon name="images" size={22} color="#0E7490" />
+            <Text style={styles.galleryButtonText}>Gallery</Text>
+          </TouchableOpacity>
+        </LinearGradient>
       </View>
     </View>
   );
@@ -347,18 +511,17 @@ const CounterfeitDetection = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
   },
   header: {
-    paddingTop: Platform.OS === 'ios' ? 50 : 25,
-    paddingBottom: 20,
+    paddingTop: Platform.OS === 'ios' ? 50 : 16,
+    paddingBottom: 16,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
-    backgroundColor: '#02C39A',
     ...Platform.select({
       ios: {
-        shadowColor: '#00786A',
+        shadowColor: '#0E7490',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
@@ -391,76 +554,110 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollViewContent: {
-    flexGrow: 1, 
-    paddingBottom: 20,
+    flexGrow: 1,
+    paddingBottom: 30,
   },
   content: {
     flex: 1,
-    padding: 20,
+    padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   placeholderContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: 20,
+    width: width - 32,
+    borderRadius: 24,
     overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  placeholderBox: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 20,
-  },
-  placeholderText: {
-    marginTop: 20,
-    marginBottom: 24,
-    textAlign: 'center',
-    color: '#4B5563',
-    fontSize: 16,
-  },
-  placeholderIconsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-  },
-  placeholderIcon: {
-    marginHorizontal: 6,
-  },
-  imageContainer: {
-    width: width * 0.9,
-    aspectRatio: 1,
-    borderRadius: 20,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 5,
+        shadowRadius: 6,
       },
       android: {
         elevation: 4,
       },
     }),
-    backgroundColor: '#FFFFFF',
+    marginVertical: 16,
+  },
+  placeholderBox: {
+    width: '100%',
+    padding: 24,
+    borderRadius: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F0FDFA',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+  },
+  placeholderTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  placeholderText: {
+    textAlign: 'center',
+    color: '#6B7280',
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  placeholderSteps: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 16,
+  },
+  stepItem: {
+    alignItems: 'center',
+  },
+  stepCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#0891B2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  stepText: {
+    fontSize: 12,
+    color: '#4B5563',
+    fontWeight: '500',
+  },
+  stepDivider: {
+    height: 1,
+    width: 40,
+    backgroundColor: '#D1D5DB',
+  },
+  imageContainer: {
+    width: width - 32,
+    aspectRatio: 1,
+    borderRadius: 24,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.16,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+    marginVertical: 16,
   },
   imagePreview: {
     width: '100%',
@@ -473,23 +670,41 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  loadingCard: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+    width: '80%',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
   loadingText: {
-    color: '#FFFFFF',
-    marginTop: 10,
+    color: '#1F2937',
+    marginTop: 12,
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
+    marginVertical: 16,
     padding: 16,
     backgroundColor: '#FEF2F2',
-    borderRadius: 12,
+    borderRadius: 16,
     width: '100%',
     borderWidth: 1,
     borderColor: '#FEE2E2',
@@ -499,37 +714,35 @@ const styles = StyleSheet.create({
     color: '#B91C1C',
     flex: 1,
     fontSize: 14,
+    lineHeight: 20,
   },
   dismissButton: {
     padding: 4,
   },
   resultContainer: {
-    marginTop: 20,
     width: '100%',
-    borderRadius: 20,
-    overflow: 'hidden',
+    marginVertical: 16,
+  },
+  resultCard: {
+    padding: 20,
+    borderRadius: 24,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowRadius: 6,
       },
       android: {
-        elevation: 3,
+        elevation: 4,
       },
     }),
-  },
-  resultBox: {
-    padding: 20,
-    width: '100%',
-    borderRadius: 20,
   },
   resultHeaderContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 15,
+    marginBottom: 16,
   },
   resultIndicator: {
     width: 40,
@@ -555,17 +768,36 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 1,
   },
-  iconContainer: {
-    height: 100,
+  resultIconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 15,
+    marginVertical: 16,
+  },
+  iconCircleLarge: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 2,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   resultDetailsContainer: {
-    marginTop: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    borderRadius: 12,
-    padding: 12,
+    marginTop: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   detailRow: {
     flexDirection: 'row',
@@ -573,19 +805,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#F3F4F6',
   },
   detailLabelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  detailIcon: {
-    marginRight: 8,
+  detailIconCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
   },
   detailLabel: {
     fontSize: 14,
     color: '#4B5563',
-    fontWeight: '600',
+    fontWeight: '500',
   },
   detailValue: {
     fontSize: 14,
@@ -594,11 +831,11 @@ const styles = StyleSheet.create({
   },
   warningContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 15,
+    alignItems: 'flex-start',
+    marginTop: 16,
     padding: 14,
-    backgroundColor: 'rgba(254, 226, 226, 0.8)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(254, 226, 226, 0.6)',
+    borderRadius: 16,
     borderLeftWidth: 4,
     borderLeftColor: '#EF4444',
   },
@@ -606,18 +843,13 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     color: '#B91C1C',
     flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
   },
-  buttonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 20,
-  },
-  button: {
-    width: '48%',
-    height: 54,
+  actionButton: {
+    marginTop: 20,
     borderRadius: 16,
+    height: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -625,7 +857,53 @@ const styles = StyleSheet.create({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  actionButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    marginLeft: 8,
+    fontSize: 16,
+  },
+  footerContainer: {
+    width: width,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  buttonsGradient: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  cameraButton: {
+    width: '68%',
+    height: 56,
+    borderRadius: 28,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0E7490',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
         shadowRadius: 4,
       },
       android: {
@@ -633,11 +911,34 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  buttonGradient: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   buttonText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
     marginLeft: 10,
     fontSize: 16,
+  },
+  galleryButton: {
+    width: '28%',
+    height: 56,
+    borderRadius: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#0E7490',
+  },
+  galleryButtonText: {
+    color: '#0E7490',
+    fontWeight: '600',
+    marginLeft: 6,
+    fontSize: 14,
   },
 });
 

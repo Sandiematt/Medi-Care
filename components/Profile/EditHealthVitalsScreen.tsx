@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, TextInput, View, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { 
+  StyleSheet, 
+  Text, 
+  TextInput, 
+  View, 
+  TouchableOpacity, 
+  ScrollView, 
+  ActivityIndicator, 
+  Alert,
+  StatusBar,
+  KeyboardAvoidingView,
+  Platform
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -15,6 +27,7 @@ const EditHealthVitalsScreen: React.FC<Props> = ({ navigation }) => {
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
   const [loading, setLoading] = useState<boolean>(true);
+  const [saving, setSaving] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchHealthVitals = async () => {
@@ -46,13 +59,13 @@ const EditHealthVitalsScreen: React.FC<Props> = ({ navigation }) => {
 
   const saveDetails = async () => {
     try {
+      setSaving(true);
       const storedUsername = await AsyncStorage.getItem('username');
       if (!storedUsername) throw new Error('Username not found in storage.');
   
       const payload = { bloodpressure, heartrate, bloodgroup, height, weight };
       const response = await axios.post(`http://20.193.156.237:5000/healthvitals/${storedUsername}`, payload);
   
-      // Check for a successful status code
       if (response.status >= 200 && response.status < 300) {
         Alert.alert('Success', 'Health vitals saved successfully!');
         navigation.goBack();
@@ -62,156 +75,247 @@ const EditHealthVitalsScreen: React.FC<Props> = ({ navigation }) => {
     } catch (error) {
       console.error('Error saving health vitals:', error);
       Alert.alert('Error', 'Failed to save health vitals. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
   
-
   const handleGoBack = () => navigation.goBack();
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2196F3" />
+        <ActivityIndicator size="large" color="#4551C5" />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.mainContainer}>
-      <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleGoBack}>
-                <Icon name="chevron-back" size={30} color="black" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Edit Health Vitals</Text>
-      </View>
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Blood Pressure (mmHg)</Text>
-          <TextInput
-            style={styles.input}
+    <KeyboardAvoidingView 
+      style={styles.mainContainer}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
+    >
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <ScrollView 
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={handleGoBack}
+          >
+            <Icon name="chevron-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.title}>Health Vitals</Text>
+          <View style={styles.placeholder} />
+        </View>
+
+        <View style={styles.cardContainer}>
+          <VitalInputField
+            label="Blood Pressure"
             value={bloodpressure}
             onChangeText={setBloodPressure}
-            placeholder="Enter blood pressure"
-            placeholderTextColor="#999"
+            placeholder="120/80 mmHg"
+            icon="heart-outline"
           />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Heart Rate (ms)</Text>
-          <TextInput
-            style={styles.input}
+          
+          <VitalInputField
+            label="Heart Rate"
             value={heartrate}
             onChangeText={setHeartrate}
-            placeholder="Enter heart rate"
-            placeholderTextColor="#999"
+            placeholder="72 bpm"
+            icon="pulse-outline"
           />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Height (cm)</Text>
-          <TextInput
-            style={styles.input}
+          
+          <VitalInputField
+            label="Height"
             value={height}
             onChangeText={setHeight}
-            placeholder="Enter height"
-            placeholderTextColor="#999"
+            placeholder="175 cm"
+            icon="resize-outline"
+            keyboardType="numeric"
           />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Weight (kg)</Text>
-          <TextInput
-            style={styles.input}
+          
+          <VitalInputField
+            label="Weight"
             value={weight}
             onChangeText={setWeight}
-            placeholder="Enter weight"
-            placeholderTextColor="#999"
+            placeholder="70 kg"
+            icon="scale-outline"
+            keyboardType="numeric"
           />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Blood Group (A+)</Text>
-          <TextInput
-            style={styles.input}
+          
+          <VitalInputField
+            label="Blood Group"
             value={bloodgroup}
             onChangeText={setBloodGroup}
-            placeholder="Enter blood group"
-            placeholderTextColor="#999"
+            placeholder="A+"
+            icon="water-outline"
           />
         </View>
 
-        <TouchableOpacity style={styles.button} onPress={saveDetails}>
-          <Text style={styles.buttonText}>Save</Text>
+        <TouchableOpacity 
+          style={[styles.saveButton, saving && styles.savingButton]} 
+          onPress={saveDetails}
+          disabled={saving}
+        >
+          {saving ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              <Icon name="save-outline" size={20} color="#fff" style={styles.buttonIcon} />
+              <Text style={styles.buttonText}>Save Changes</Text>
+            </>
+          )}
         </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+};
+
+interface VitalInputFieldProps {
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder: string;
+  icon: string;
+  keyboardType?: 'default' | 'numeric' | 'email-address' | 'phone-pad';
+}
+
+const VitalInputField: React.FC<VitalInputFieldProps> = ({ 
+  label, 
+  value, 
+  onChangeText, 
+  placeholder,
+  icon,
+  keyboardType = 'default'
+}) => {
+  return (
+    <View style={styles.inputContainer}>
+      <View style={styles.labelContainer}>
+        <Icon name={icon} size={18} color="#4551C5" />
+        <Text style={styles.label}>{label}</Text>
       </View>
-    </ScrollView>
+      <TextInput
+        style={styles.input}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor="#AAAAAA"
+        keyboardType={keyboardType}
+      />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f5f7',
   },
-  container: {
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
     flexGrow: 1,
-    backgroundColor: '#fff',
-    padding: 20,
+    paddingBottom: 30,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 40,
-    right:6,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#333',
+  },
+  placeholder: {
+    width: 40,
+  },
+  cardContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginHorizontal: 20,
+    marginTop: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 20,
-    top:10,
-    textAlign: 'center',
-    right:70,
+    backgroundColor: '#f5f5f7',
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 24,
+  },
+  labelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   label: {
     fontSize: 16,
     fontWeight: '500',
     color: '#333',
-    marginBottom: 8,
+    marginLeft: 8,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
+    borderWidth: 1.5,
+    borderColor: '#e0e0e0',
+    borderRadius: 12,
+    padding: 14,
     fontSize: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#f9f9f9',
+    color: '#333',
   },
-  button: {
-    backgroundColor: '#24BAAC',
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 10,
+  saveButton: {
+    backgroundColor: '#4551C5',
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginHorizontal: 20,
+    marginTop: 20,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#4551C5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  savingButton: {
+    backgroundColor: '#3A45AD',
   },
   buttonText: {
     color: '#fff',
-    textAlign: 'center',
     fontSize: 16,
     fontWeight: '600',
   },
-  errorText: {
-    color: 'red',
-    textAlign: 'center',
-    marginTop: 20,
+  buttonIcon: {
+    marginRight: 8,
   },
 });
 

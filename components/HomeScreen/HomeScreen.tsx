@@ -12,7 +12,8 @@ import {
   StyleSheet,
   SafeAreaView,
   Platform,
-  StatusBar
+  StatusBar,
+  FlatList
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -22,14 +23,18 @@ import InventoryScreen from '../Reminder/InventoryScreen';
 import HospitalScreen from './CounterfietDetection';
 import SymptomCheckerScreen from './SymptomCheckerScreen';
 import PrescriptionsScreen from '../Profile/PrescriptionsScreen';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import ProfileScreenApp from '../Profile/ProfileScreen';
+import ReminderScreen from '../Reminder/ReminderScreen';
 
 const Stack = createStackNavigator();
 const { width } = Dimensions.get('window');
 
 const BannerCarousel = () => {
+  // Banner carousel code unchanged
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollX = useRef(new Animated.Value(0)).current;
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef();
 
   const bannerImages = [
     require('../../assets/images/banner1.png'),
@@ -132,7 +137,7 @@ interface Reminder {
   createdAt: string;
 }
 
-const ReminderCard: React.FC<{ reminder: Reminder }> = ({ reminder }) => {
+const ReminderCard = ({ reminder, navigation }) => {
   const getNextReminderTime = () => {
     const now = new Date();
     const currentDay = now.toLocaleDateString('en-US', { weekday: 'short' });
@@ -174,7 +179,11 @@ const ReminderCard: React.FC<{ reminder: Reminder }> = ({ reminder }) => {
   if (!nextReminder) return null;
 
   return (
-    <TouchableOpacity style={styles.reminderCard} activeOpacity={0.7}>
+    <TouchableOpacity 
+      style={styles.reminderCard} 
+      activeOpacity={0.7}
+      onPress={() => navigation.navigate('Reminder', { reminder })}
+    >
       <View style={styles.reminderHeader}>
         <View style={styles.reminderInfo}>
           <View style={[styles.reminderIcon, { backgroundColor: '#5856D615' }]}>
@@ -183,17 +192,15 @@ const ReminderCard: React.FC<{ reminder: Reminder }> = ({ reminder }) => {
           <View style={styles.reminderDetails}>
             <Text style={styles.reminderName}>{reminder.name}</Text>
             <Text
-        style={styles.reminderDescription}
-        numberOfLines={4}
-        ellipsizeMode="tail"
-      >
-        {reminder.description}
-      </Text>
+              style={styles.reminderDescription}
+              numberOfLines={4}
+              ellipsizeMode="tail"
+            >
+              {reminder.description}
+            </Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.moreButton}>
-          <Icon name="more-vert" size={24} color="#8E8E93" />
-        </TouchableOpacity>
+        
       </View>
       
       <View style={styles.reminderDivider} />
@@ -216,10 +223,73 @@ const ReminderCard: React.FC<{ reminder: Reminder }> = ({ reminder }) => {
   );
 };
 
-const HomeMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const [userData, setUserData] = useState<any>(null);
+// New component for search results
+const SearchResults = ({ searchResults, navigation }) => {
+  return (
+    <View style={styles.searchResultsContainer}>
+      <Text style={styles.searchResultsTitle}>Search Results</Text>
+      
+      {searchResults.services.length > 0 && (
+        <>
+          <Text style={styles.searchResultsSubtitle}>Services</Text>
+          {searchResults.services.map((service, index) => (
+            <TouchableOpacity 
+              key={`service-${index}`}
+              style={styles.searchResultItem}
+              onPress={() => navigation.navigate(service.route)}
+            >
+              <View style={[styles.searchResultIcon, { backgroundColor: `${service.color}15` }]}>
+                <Icon name={service.icon} size={22} color={service.color} />
+              </View>
+              <View style={styles.searchResultInfo}>
+                <Text style={styles.searchResultName}>{service.name}</Text>
+                <Text style={styles.searchResultDescription}>{service.description}</Text>
+              </View>
+              <Icon name="chevron-right" size={20} color="#8E8E93" />
+            </TouchableOpacity>
+          ))}
+        </>
+      )}
+      
+      {searchResults.reminders.length > 0 && (
+        <>
+          <Text style={styles.searchResultsSubtitle}>Medications</Text>
+          {searchResults.reminders.map((reminder) => (
+            <TouchableOpacity 
+              key={`reminder-${reminder._id}`}
+              style={styles.searchResultItem}
+              onPress={() => navigation.navigate('Reminder', { reminder })}
+            >
+              <View style={[styles.searchResultIcon, { backgroundColor: '#5856D615' }]}>
+                <Icon name="medication" size={22} color="#5856D6" />
+              </View>
+              <View style={styles.searchResultInfo}>
+                <Text style={styles.searchResultName}>{reminder.name}</Text>
+                <Text style={styles.searchResultDescription} numberOfLines={1}>{reminder.description}</Text>
+              </View>
+              <Icon name="chevron-right" size={20} color="#8E8E93" />
+            </TouchableOpacity>
+          ))}
+        </>
+      )}
+      
+      {searchResults.services.length === 0 && searchResults.reminders.length === 0 && (
+        <View style={styles.noResultsContainer}>
+          <Icon name="search-off" size={40} color="#8E8E93" />
+          <Text style={styles.noResultsText}>No results found</Text>
+        </View>
+      )}
+    </View>
+  );
+};
+
+const HomeMainScreen = ({ navigation }) => {
+  const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [reminders, setReminders] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState({ services: [], reminders: [] });
 
   const services = [
     { 
@@ -252,7 +322,34 @@ const HomeMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     },
   ];
 
-  
+  const performSearch = (query) => {
+    if (!query.trim()) {
+      setIsSearching(false);
+      return;
+    }
+    
+    const normalizedQuery = query.toLowerCase().trim();
+    
+    // Filter services
+    const filteredServices = services.filter((service) => 
+      service.name.toLowerCase().includes(normalizedQuery) || 
+      service.description.toLowerCase().includes(normalizedQuery)
+    );
+    
+    // Filter reminders
+    const filteredReminders = reminders.filter((reminder) => 
+      reminder.name.toLowerCase().includes(normalizedQuery) || 
+      (reminder.description && reminder.description.toLowerCase().includes(normalizedQuery))
+    );
+    
+    setSearchResults({
+      services: filteredServices,
+      reminders: filteredReminders
+    });
+    
+    setIsSearching(true);
+  };
+
   useEffect(() => {
     const fetchReminders = async () => {
       try {
@@ -297,6 +394,15 @@ const HomeMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     fetchReminders();
   }, []);
 
+  // Clear search when navigating back to this screen
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      setSearchQuery('');
+      setIsSearching(false);
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   if (loading) {
     return (
@@ -308,79 +414,102 @@ const HomeMainScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Hello,</Text>
-            <Text style={styles.userName}>{userData?.username || 'Guest'} 👋</Text>
-          </View>
-          <TouchableOpacity style={styles.profileButton}>
-            <Image
-              source={require('../../assets/images/sande.jpg')}
-              style={styles.profileImage}
-            />
-            <View style={styles.notificationBadge} />
-          </TouchableOpacity>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.greeting}>Hello,</Text>
+          <Text style={styles.userName}>{userData?.username || 'Guest'} 👋</Text>
         </View>
+        <TouchableOpacity style={styles.profileButton} onPress={() => navigation.navigate('Profile')}>
+          <Ionicons name="person-circle" size={40} color="#6200EE" />
+          <View style={styles.notificationBadge} />
+        </TouchableOpacity>
+      </View>
 
-        <View style={styles.searchContainer}>
-          <View style={styles.searchInputContainer}>
-            <Icon name="search" size={24} color="#8E8E93" />
-            <TextInput
-              placeholder="Search medical services..."
-              placeholderTextColor="#8E8E93"
-              style={styles.searchInput}
-            />
-          </View>
-        </View>
-
-        <BannerCarousel />
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Our Services</Text>
-        </View>
-
-        <View style={styles.servicesGrid}>
-          {services.map((service, index) => (
+      <View style={styles.searchContainer}>
+        <View style={styles.searchInputContainer}>
+          <Icon name="search" size={24} color="#8E8E93" />
+          <TextInput
+            placeholder="Search medical services..."
+            placeholderTextColor="#8E8E93"
+            style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={(text) => {
+              setSearchQuery(text);
+              performSearch(text);
+            }}
+            returnKeyType="search"
+          />
+          {searchQuery.length > 0 && (
             <TouchableOpacity 
-              key={index}
-              style={[
-                styles.serviceCard,
-                { transform: [{ scale: 1 }] }
-              ]}
-              onPress={() => navigation.navigate(service.route)}
-              activeOpacity={0.7}
+              onPress={() => {
+                setSearchQuery('');
+                setIsSearching(false);
+              }}
             >
-              <View style={[styles.serviceIcon, { backgroundColor: `${service.color}15` }]}>
-                <Icon name={service.icon} size={28} color={service.color} />
-              </View>
-              <Text style={styles.serviceText}>{service.name}</Text>
-              <Text style={styles.serviceDescription}>{service.description}</Text>
+              <Icon name="cancel" size={20} color="#8E8E93" />
             </TouchableOpacity>
-          ))}
+          )}
         </View>
+      </View>
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Upcoming Reminder</Text>
-          <TouchableOpacity 
-            onPress={() => navigation.navigate('Medicines')}
-            style={styles.seeAllButton}
-          >
-            <Text style={styles.sectionLink}>See All</Text>
-          </TouchableOpacity>
-        </View>
+      {isSearching ? (
+        <SearchResults 
+          searchResults={searchResults} 
+          navigation={navigation} 
+        />
+      ) : (
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+          <BannerCarousel />
 
-        {reminders.length > 0 ? (
-          reminders.map((reminder) => (
-            <ReminderCard key={reminder._id} reminder={reminder} />
-          ))
-        ) : (
-          <View style={styles.emptyReminders}>
-            <Icon name="notifications-none" size={48} color="#8E8E93" />
-            <Text style={styles.emptyRemindersText}>No upcoming reminders</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Our Services</Text>
           </View>
-        )}
-      </ScrollView>
+
+          <View style={styles.servicesGrid}>
+            {services.map((service, index) => (
+              <TouchableOpacity 
+                key={index}
+                style={styles.serviceCard}
+                onPress={() => navigation.navigate(service.route)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.serviceIcon, { backgroundColor: `${service.color}15` }]}>
+                  <Icon name={service.icon} size={28} color={service.color} />
+                </View>
+                <Text style={styles.serviceText}>{service.name}</Text>
+                <Text style={styles.serviceDescription}>{service.description}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Upcoming Reminder</Text>
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('Reminders')}
+              style={styles.seeAllButton}
+            >
+              <Text style={styles.sectionLink}>See All</Text>
+            </TouchableOpacity>
+          </View>
+
+          {reminders.length > 0 ? (
+            reminders.map((reminder) => (
+              <ReminderCard 
+                key={reminder._id} 
+                reminder={reminder} 
+                navigation={navigation}
+              />
+            ))
+          ) : (
+            <View style={styles.emptyReminders}>
+              <Icon name="notifications-none" size={48} color="#8E8E93" />
+              <Text style={styles.emptyRemindersText}>No upcoming reminders</Text>
+            </View>
+          )}
+          
+          <View style={styles.bottomPadding} />
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 };
@@ -412,10 +541,20 @@ const HomeOptionsNavigator = () => (
       component={PrescriptionsScreen} 
       options={{ headerShown: false }} 
     />
+    <Stack.Screen 
+      name="Profile" 
+      component={ProfileScreenApp} 
+      options={{ headerShown: false }} 
+    />
+    <Stack.Screen
+      name="Reminder"
+      component={ReminderScreen}
+      options={{ headerShown: false }}
+    />
   </Stack.Navigator>
 );
 
-const HomeScreen: React.FC = () => {
+const HomeScreen = () => {
   return <HomeOptionsNavigator />;
 };
 
@@ -434,6 +573,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 20,
+    paddingHorizontal: 16,
   },
   greeting: {
     fontSize: 16,
@@ -465,6 +605,7 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     marginTop: 20,
+    paddingHorizontal: 16,
   },
   searchInputContainer: {
     flexDirection: 'row',
@@ -479,6 +620,66 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontSize: 16,
     color: '#333',
+  },
+  searchResultsContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+  },
+  searchResultsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: 15,
+    fontFamily: 'Poppins-Bold',
+  },
+  searchResultsSubtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#484848',
+    marginTop: 10,
+    marginBottom: 5,
+    fontFamily: 'Poppins-Bold',
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F1F1',
+  },
+  searchResultIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  searchResultInfo: {
+    flex: 1,
+  },
+  searchResultName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    fontFamily: 'Poppins-Bold',
+  },
+  searchResultDescription: {
+    fontSize: 14,
+    color: '#8E8E93',
+    fontFamily: 'Poppins-Normal',
+  },
+  noResultsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 50,
+  },
+  noResultsText: {
+    fontSize: 16,
+    color: '#8E8E93',
+    marginTop: 10,
+    fontFamily: 'Poppins-Normal',
   },
   bannerContainer: {
     marginTop: 20,
@@ -569,7 +770,6 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     fontFamily: 'Poppins-Normal',
   },
- 
   reminderCard: {
     backgroundColor: '#FFF',
     borderRadius: 10,
@@ -584,11 +784,11 @@ const styles = StyleSheet.create({
   reminderHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start', // Changed from 'center' to 'flex-start'
+    alignItems: 'flex-start',
   },
   reminderInfo: {
     flexDirection: 'row',
-    flex: 1, // Added flex: 1
+    flex: 1,
   },
   reminderIcon: {
     width: 40,
@@ -599,24 +799,24 @@ const styles = StyleSheet.create({
   },
   reminderDetails: {
     marginLeft: 10,
-    flex: 1, // Added flex: 1
-    marginRight: 10, // Added margin to prevent text from touching the more button
+    flex: 1,
+    marginRight: 10,
   },
   reminderName: {
     fontSize: 16,
     fontWeight: 'bold',
     fontFamily: 'Poppins-Bold',
-    marginBottom: 4, // Added margin bottom for spacing
+    marginBottom: 4,
   },
   reminderDescription: {
     fontSize: 12,
     color: '#8E8E93',
     fontFamily: 'Poppins-Normal',
-    lineHeight: 16, // Added line height for better readability
+    lineHeight: 16,
   },
   moreButton: {
     padding: 5,
-    marginLeft: 'auto', // Added to ensure proper alignment
+    marginLeft: 'auto',
   },
   reminderDivider: {
     height: 1,
@@ -652,6 +852,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  bottomPadding: {
+    height: 20,
+  }
 });
 
 export default HomeScreen;

@@ -24,11 +24,14 @@ interface Prescription {
 const PrescriptionsScreen: React.FC = () => {
   const navigation = useNavigation();
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [filteredPrescriptions, setFilteredPrescriptions] = useState<Prescription[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [newPrescription, setNewPrescription] = useState({
     name: '',
     doctor: '',
@@ -43,6 +46,23 @@ const PrescriptionsScreen: React.FC = () => {
     fetchPrescriptions();
   }, []);
 
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredPrescriptions(prescriptions);
+    } else {
+      const lowercasedQuery = searchQuery.toLowerCase();
+      const filtered = prescriptions.filter(
+        prescription => 
+          prescription.name.toLowerCase().includes(lowercasedQuery) ||
+          prescription.doctor.toLowerCase().includes(lowercasedQuery) ||
+          prescription.medication.toLowerCase().includes(lowercasedQuery) ||
+          prescription.hospital.toLowerCase().includes(lowercasedQuery) ||
+          prescription.description.toLowerCase().includes(lowercasedQuery)
+      );
+      setFilteredPrescriptions(filtered);
+    }
+  }, [searchQuery, prescriptions]);
+
   const fetchPrescriptions = async () => {
     try {
       const username = await AsyncStorage.getItem('username');
@@ -51,6 +71,7 @@ const PrescriptionsScreen: React.FC = () => {
       }
       const response = await axios.get(`http://20.193.156.237:5000/prescriptions/${username}`);
       setPrescriptions(response.data);
+      setFilteredPrescriptions(response.data);
     } catch (error) {
       console.error('Error fetching prescriptions:', error);
       Alert.alert('Error', 'Failed to fetch prescriptions');
@@ -167,9 +188,7 @@ const PrescriptionsScreen: React.FC = () => {
           <View style={styles.prescriptionIconContainer}>
             <Icon name="medical" size={24} color="#4F46E5" />
           </View>
-          <TouchableOpacity style={styles.moreButton}>
-            <Icon name="ellipsis-horizontal" size={20} color="#64748B" />
-          </TouchableOpacity>
+          {/* Three dots menu removed */}
         </View>
 
         <View style={styles.prescriptionInfo}>
@@ -195,7 +214,7 @@ const PrescriptionsScreen: React.FC = () => {
         </View>
 
         <View style={styles.cardActions}>
-        <View style={styles.prescriptionIconContainer}>
+          <View style={styles.prescriptionIconContainer}>
             <Icon name="eye" size={24} color="#4F46E5" />
           </View>
           <TouchableOpacity 
@@ -209,8 +228,39 @@ const PrescriptionsScreen: React.FC = () => {
     </TouchableOpacity>
   );
 
-  return (
-    <View style={styles.container}>
+  const renderHeader = () => {
+    if (searchVisible) {
+      return (
+        <View style={styles.searchHeader}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => {
+              setSearchVisible(false);
+              setSearchQuery('');
+            }}
+          >
+            <Icon name="arrow-back" size={24} color="#4F46E5" />
+          </TouchableOpacity>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search prescriptions..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoFocus
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity 
+              style={styles.clearButton} 
+              onPress={() => setSearchQuery('')}
+            >
+              <Icon name="close-circle" size={20} color="#64748B" />
+            </TouchableOpacity>
+          )}
+        </View>
+      );
+    }
+
+    return (
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton} 
@@ -222,14 +272,27 @@ const PrescriptionsScreen: React.FC = () => {
           <Text style={styles.headerTitle}>My Prescriptions</Text>
           <Text style={styles.headerSubtitle}>View your medical prescriptions</Text>
         </View>
-        <TouchableOpacity style={styles.searchButton}>
+        <TouchableOpacity 
+          style={styles.searchButton}
+          onPress={() => setSearchVisible(true)}
+        >
           <Icon name="search-outline" size={24} color="#4F46E5" />
         </TouchableOpacity>
       </View>
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      {renderHeader()}
 
       <View style={styles.listContainer}>
         <View style={styles.listHeader}>
-          <Text style={styles.sectionTitle}>Recent Prescriptions</Text>
+          <Text style={styles.sectionTitle}>
+            {searchVisible 
+              ? `Results (${filteredPrescriptions.length})` 
+              : 'Recent Prescriptions'}
+          </Text>
           <TouchableOpacity 
             style={styles.addButton} 
             onPress={() => setUploadModalVisible(true)}
@@ -239,11 +302,19 @@ const PrescriptionsScreen: React.FC = () => {
         </View>
 
         <FlatList
-          data={prescriptions}
+          data={filteredPrescriptions}
           renderItem={renderItem}
           keyExtractor={(item) => item._id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Icon name="document-text-outline" size={60} color="#CBD5E1" />
+              <Text style={styles.emptyText}>
+                {searchQuery ? 'No prescriptions found' : 'No prescriptions added yet'}
+              </Text>
+            </View>
+          }
         />
       </View>
 
@@ -380,6 +451,28 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
+  searchHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  searchInput: {
+    flex: 1,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    padding: 12,
+    marginLeft: 12,
+    fontSize: 16,
+    color: '#1E293B',
+  },
+  clearButton: {
+    padding: 8,
+    marginLeft: 8,
+  },
   backButton: {
     padding: 8,
     borderRadius: 12,
@@ -427,6 +520,16 @@ const styles = StyleSheet.create({
   list: {
     paddingBottom: 20,
   },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#94A3B8',
+    marginTop: 16,
+  },
   card: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -450,10 +553,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#EEF2FF',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  moreButton: {
-    padding: 8,
-    borderRadius: 20,
   },
   prescriptionInfo: {
     marginBottom: 12,
