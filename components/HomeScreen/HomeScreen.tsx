@@ -143,18 +143,25 @@ const ReminderCard = ({ reminder, navigation }) => {
     const currentDay = now.toLocaleDateString('en-US', { weekday: 'short' });
     const currentTime = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
     
-    const todayTimes = reminder.times
-      .filter(t => !t.completed[currentDay])
-      .filter(t => t.time > currentTime);
-
-    if (todayTimes.length > 0) {
-      return {
-        day: currentDay,
-        time: todayTimes[0].time,
-        dose: todayTimes[0].dose
-      };
+    // Check if there are any reminders scheduled for later today
+    if (reminder.days.includes(currentDay)) {
+      const todayTimes = reminder.times
+        .filter(t => !t.completed[currentDay])
+        .filter(t => t.time > currentTime);
+  
+      if (todayTimes.length > 0) {
+        // Sort times to get the earliest next time
+        const nextTime = todayTimes.sort((a, b) => a.time.localeCompare(b.time))[0];
+        return {
+          day: currentDay,
+          time: nextTime.time,
+          // Calculate total doses for this time slot
+          dose: nextTime.dose
+        };
+      }
     }
-
+  
+    // If no reminders today or all are in the past, find the next day with a reminder
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const currentDayIndex = days.indexOf(currentDay);
     
@@ -163,14 +170,22 @@ const ReminderCard = ({ reminder, navigation }) => {
       const nextDay = days[nextDayIndex];
       
       if (reminder.days.includes(nextDay)) {
-        return {
-          day: nextDay,
-          time: reminder.times[0].time,
-          dose: reminder.times[0].dose
-        };
+        // Found the next day with a reminder
+        // Get the earliest time for that day
+        const sortedTimes = [...reminder.times].sort((a, b) => 
+          a.time.localeCompare(b.time)
+        );
+        
+        if (sortedTimes.length > 0) {
+          return {
+            day: nextDay,
+            time: sortedTimes[0].time,
+            dose: sortedTimes[0].dose
+          };
+        }
       }
     }
-
+  
     return null;
   };
 
@@ -350,6 +365,71 @@ const HomeMainScreen = ({ navigation }) => {
     setIsSearching(true);
   };
 
+  // Function to find the closest upcoming reminder
+  // Function to find the closest upcoming reminder
+const findClosestReminder = () => {
+  if (reminders.length === 0) return null;
+  
+  // Create a function to get the next reminder time for each reminder
+  const getNextTime = (reminder) => {
+    const now = new Date();
+    const currentDay = now.toLocaleDateString('en-US', { weekday: 'short' });
+    const currentTime = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+    
+    // Check today's reminders
+    if (reminder.days.includes(currentDay)) {
+      const todayTimes = reminder.times
+        .filter(t => !t.completed[currentDay])
+        .filter(t => t.time > currentTime);
+      
+      if (todayTimes.length > 0) {
+        const earliest = todayTimes.sort((a, b) => a.time.localeCompare(b.time))[0];
+        return { 
+          timestamp: now.setHours(parseInt(earliest.time.split(':')[0]), parseInt(earliest.time.split(':')[1])),
+          reminder,
+          timeSlot: earliest // Store the specific time slot
+        };
+      }
+    }
+    
+    // Find next day
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const currentDayIndex = days.indexOf(currentDay);
+    
+    for (let i = 1; i <= 7; i++) {
+      const nextDayIndex = (currentDayIndex + i) % 7;
+      const nextDay = days[nextDayIndex];
+      
+      if (reminder.days.includes(nextDay)) {
+        // Found the next day with a reminder
+        const sortedTimes = [...reminder.times].sort((a, b) => a.time.localeCompare(b.time));
+        
+        if (sortedTimes.length > 0) {
+          const futureDate = new Date(now);
+          futureDate.setDate(now.getDate() + i);
+          futureDate.setHours(parseInt(sortedTimes[0].time.split(':')[0]), parseInt(sortedTimes[0].time.split(':')[1]));
+          
+          return { 
+            timestamp: futureDate.getTime(), 
+            reminder,
+            timeSlot: sortedTimes[0] // Store the specific time slot
+          };
+        }
+      }
+    }
+    
+    return { timestamp: Infinity, reminder, timeSlot: null };
+  };
+  
+  // Find the reminder with the earliest upcoming time
+  const reminderTimes = reminders.map(getNextTime);
+  const sortedReminderTimes = reminderTimes
+    .filter(item => item.timestamp !== Infinity)
+    .sort((a, b) => a.timestamp - b.timestamp);
+  
+  return sortedReminderTimes.length > 0 ? sortedReminderTimes[0].reminder : null;
+};
+
   useEffect(() => {
     const fetchReminders = async () => {
       try {
@@ -403,6 +483,9 @@ const HomeMainScreen = ({ navigation }) => {
 
     return unsubscribe;
   }, [navigation]);
+
+  // Get the closest upcoming reminder
+  const closestReminder = findClosestReminder();
 
   if (loading) {
     return (
@@ -492,14 +575,12 @@ const HomeMainScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
 
-          {reminders.length > 0 ? (
-            reminders.map((reminder) => (
-              <ReminderCard 
-                key={reminder._id} 
-                reminder={reminder} 
-                navigation={navigation}
-              />
-            ))
+          {closestReminder ? (
+            <ReminderCard 
+              key={closestReminder._id} 
+              reminder={closestReminder} 
+              navigation={navigation}
+            />
           ) : (
             <View style={styles.emptyReminders}>
               <Icon name="notifications-none" size={48} color="#8E8E93" />

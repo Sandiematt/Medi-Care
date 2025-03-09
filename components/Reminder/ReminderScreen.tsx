@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, Button, RefreshControl, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, RefreshControl, Pressable } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { createStackNavigator } from '@react-navigation/stack';
 import NewReminderScreen from './NewReminderScreen';
@@ -31,7 +31,6 @@ const ReminderMainScreen = ({ navigation }) => {
   const [reminders, setReminders] = useState([]);
   const [selectedReminder, setSelectedReminder] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedTime, setSelectedTime] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [inventoryStats, setInventoryStats] = useState({
     lowStock: 0,
@@ -360,6 +359,10 @@ const ReminderMainScreen = ({ navigation }) => {
     }
   };
 
+  const handleAddMedication = () => {
+    navigation.navigate('NewReminder');
+  };
+
   return (
     <View style={styles.mainContainer}>
       <ScrollView 
@@ -376,7 +379,21 @@ const ReminderMainScreen = ({ navigation }) => {
       >
         <View style={styles.header}>
           <Text style={styles.date}>{getFormattedDate()}</Text>
-          <Text style={styles.appTitle}>MediReminder</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.appTitle}>MediReminder</Text>
+            <TouchableOpacity
+              style={styles.headerAddButton}
+              onPress={handleAddMedication}
+            >
+              <LinearGradient
+                colors={['#4A90E2', '#5C6BC0']}
+                style={styles.headerAddButtonGradient}
+              >
+                <Icon name="plus" size={16} color="#FFFFFF" />
+                
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* This is the main content container for reminders */}
@@ -398,12 +415,7 @@ const ReminderMainScreen = ({ navigation }) => {
                 <View style={styles.emptyStateContainer}>
                   <Icon name="medical-bag" size={48} color="#CBD5E0" />
                   <Text style={styles.emptyStateText}>No medications scheduled for today</Text>
-                  <TouchableOpacity
-                    style={styles.emptyStateButton}
-                    onPress={() => navigation.navigate('NewReminder')}
-                  >
-                    <Text style={styles.emptyStateButtonText}>Add Medication</Text>
-                  </TouchableOpacity>
+                  {/* Removed the duplicate Add Medication button here */}
                 </View>
               ) : (
                 reminders.map((item, index) => (
@@ -462,19 +474,6 @@ const ReminderMainScreen = ({ navigation }) => {
               )}
             </View>
           </View>
-          
-      {/* Floating Action Button */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.navigate('NewReminder')}
-      >
-        <LinearGradient
-          colors={['#4A90E2', '#5C6BC0']}
-          style={styles.fabGradient}
-        >
-          <Icon name="plus" size={28} color="#FFFFFF" />
-        </LinearGradient>
-      </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -554,7 +553,6 @@ const ReminderMainScreen = ({ navigation }) => {
         </View>
       </View>
 
-
       {/* Modal */}
       <Modal
         animationType="fade"
@@ -625,7 +623,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     paddingTop: 48,
-    paddingBottom: 20, // Reduced padding to make room for fixed section
+    paddingBottom: 120, // Increased padding to prevent content from being hidden behind fixed section
   },
   header: {
     paddingHorizontal: 20,
@@ -637,10 +635,40 @@ const styles = StyleSheet.create({
     color: '#718096',
     marginBottom: 4,
   },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    position: 'relative',
+  },
   appTitle: {
     fontSize: 28,
     fontFamily: 'Poppins-Bold',
     color: '#2D3748',
+  },
+  headerAddButton: {
+    shadowColor: '#4A90E2',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 1,
+    position: 'absolute',
+    right: 10,
+    bottom: 15,
+  },
+  headerAddButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    
+  },
+  headerAddButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'Poppins-SemiBold',
   },
   // Container for the main content sections
   contentContainer: {
@@ -658,6 +686,10 @@ const styles = StyleSheet.create({
   },
   // Fixed inventory section at bottom of screen
   fixedInventorySection: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 20,
@@ -697,19 +729,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Medium',
     color: '#718096',
     marginTop: 12,
-    marginBottom: 20,
     textAlign: 'center',
-  },
-  emptyStateButton: {
-    backgroundColor: '#4A90E2',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  emptyStateButtonText: {
-    fontSize: 16,
-    fontFamily: 'Poppins-SemiBold',
-    color: '#FFFFFF',
   },
   reminderCard: {
     backgroundColor: '#FFFFFF',
@@ -785,6 +805,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     color: '#718096',
     marginLeft: 8,
+    flex: 1, // Added to ensure text doesn't overflow
   },
   inventoryHeader: {
     flexDirection: 'row',
@@ -851,57 +872,36 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Medium',
   },
   noAlertsContainer: {
-    backgroundColor: '#F0FFF4',
-    borderRadius: 16, // Increased border radius to match
-    padding: 16,
-    alignItems: 'center',
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
     gap: 8,
-    borderWidth: 1,
-    borderColor: '#C6F6D5',
   },
   noAlertsText: {
     fontSize: 16,
     fontFamily: 'Poppins-Medium',
     color: '#4CAF50',
-    textAlign: 'center',
   },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 730, // Increased from 100 to 140 to place it higher above the fixed section
-    elevation: 5,
-    shadowColor: '#4A90E2',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.5,
-    shadowRadius: 6,
-  },
-  fabGradient: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  // Modal Styles
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
+    width: '85%',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    width: '100%',
-    maxWidth: 400,
-    padding: 24,
-    elevation: 5,
+    padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
+    elevation: 5,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -921,11 +921,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalOption: {
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    backgroundColor: '#F7F9FC',
     borderRadius: 12,
-    marginBottom: 12,
     padding: 16,
+    marginBottom: 12,
   },
   modalOptionInner: {
     flexDirection: 'row',
@@ -934,9 +933,8 @@ const styles = StyleSheet.create({
   },
   modalTimeText: {
     fontSize: 16,
-    fontFamily: 'Poppins-SemiBold',
+    fontFamily: 'Poppins-Medium',
     color: '#2D3748',
-    marginBottom: 4,
   },
   modalDoseText: {
     fontSize: 14,
@@ -944,11 +942,9 @@ const styles = StyleSheet.create({
     color: '#718096',
   },
   modalCancelButton: {
+    alignItems: 'center',
     marginTop: 8,
     paddingVertical: 12,
-    alignItems: 'center',
-    borderRadius: 8,
-    backgroundColor: '#F7FAFC',
   },
   modalCancelButtonText: {
     fontSize: 16,
