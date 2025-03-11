@@ -133,33 +133,40 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess }) => {
   const [error, setError] = useState<string>('');
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
 
-  const handleLogin = async () => {
-    if (!username || !password) {
-      setError('Username and Password are required.');
-      return;
+  // In your Login component
+// Update your handleLogin function in Login.tsx
+const handleLogin = async () => {
+  if (!username || !password) {
+    setError("Username and Password are required.");
+    return;
+  }
+
+  try {
+    const response = await axios.post("http://20.193.156.237:5000/login", {
+      username,
+      password,
+    });
+
+    const user = response.data;
+
+    if (user.username) {
+      await AsyncStorage.setItem("username", user.username);
     }
 
-    try {
-      const response = await axios.post('http://20.193.156.237:5000/login', {
-        username,
-        password,
-      });
-      const user = response.data;
+    const onLoginSuccess = navigation.getState()?.routes?.find((route: { name: string; }) => route.name === "Login")?.params?.onLoginSuccess;
 
-      if (user.username) {
-        await AsyncStorage.setItem('username', user.username);
-      }
-
+    if (onLoginSuccess) {
       onLoginSuccess();
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Main' }],
-      });
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('Invalid username or password');
     }
-  };
+
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "Main" }],
+    });
+  } catch (err) {
+    setError("Invalid username or password");
+  }
+};
 
   return (
     <SafeAreaView style={styles.container}>

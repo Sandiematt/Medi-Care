@@ -203,28 +203,28 @@ const ReminderMainScreen = ({ navigation }) => {
       } else if (!inventorySuccess) {
         Alert.alert('Partial Refresh', 'Your reminders were updated, but there was an issue refreshing inventory data.');
       } else {
-        console.log('Refresh completed successfully');
+     
         // Uncomment if you want to show success message
         // Alert.alert('Success', 'Data refreshed successfully');
       }
     } catch (error) {
-      console.error('Error during refresh operation:', error);
+     
       Alert.alert('Error', 'An unexpected error occurred while refreshing data.');
     } finally {
       setRefreshing(false);
-      console.log('Refresh operation completed');
+    
     }
   };
 
   useEffect(() => {
-    console.log('Component mounted, initializing data...');
+    
     
     const initializeData = async () => {
       setRefreshing(true);
       try {
         await Promise.all([
-          fetchReminders().catch(err => console.error('Initial reminders fetch error:', err)),
-          fetchInventoryData().catch(err => console.error('Initial inventory fetch error:', err))
+          fetchReminders(),
+          fetchInventoryData()
         ]);
       } catch (error) {
         console.error('Error during initial data load:', error);
