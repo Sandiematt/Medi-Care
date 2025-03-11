@@ -88,13 +88,37 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     setDays(prev => ({ ...prev, [day]: !prev[day] }));
   };
 
-  const handleDoseChange = (index: number, value: string) => {
+  const handleDoseChange = (index: number, value: number | string) => {
     const updatedTimes = [...times];
-    updatedTimes[index] = { 
-      ...updatedTimes[index], 
-      dose: parseInt(value, 10) || 1
-    };
+    
+    if (typeof value === 'number') {
+      // Direct numeric update (from buttons)
+      updatedTimes[index] = { 
+        ...updatedTimes[index], 
+        dose: value 
+      };
+    } else {
+      // Text input update
+      updatedTimes[index] = { 
+        ...updatedTimes[index], 
+        dose: value === '' ? '' : parseInt(value, 10) || 1
+      };
+    }
+    
     setTimes(updatedTimes);
+  };
+  
+  // Now let's create functions to increment and decrement the dose
+  const incrementDose = (index: number) => {
+    const currentDose = times[index].dose;
+    handleDoseChange(index, typeof currentDose === 'number' ? currentDose + 1 : 1);
+  };
+  
+  const decrementDose = (index: number) => {
+    const currentDose = times[index].dose;
+    if (typeof currentDose === 'number' && currentDose > 1) {
+      handleDoseChange(index, currentDose - 1);
+    }
   };
 
   // Time picker handlers
@@ -241,16 +265,33 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             <Icon name="chevron-down" size={14} color="#94A3B8" />
           </TouchableOpacity>
           
-          <View style={styles.doseInputWrapper}>
-            <Icon name="pills" size={18} color="#6366F1" style={styles.inputIcon} />
-            <TextInput
-              style={styles.doseInput}
-              value={time.dose.toString()}
-              onChangeText={(text) => handleDoseChange(index, text)}
-              placeholder="1"
-              placeholderTextColor="#94A3B8"
-              keyboardType="numeric"
-            />
+          <View style={styles.doseControlContainer}>
+            <TouchableOpacity 
+              onPress={() => decrementDose(index)}
+              style={styles.doseCounterButton}
+              disabled={time.dose <= 1}
+            >
+              <Icon name="minus" size={14} color={time.dose <= 1 ? "#CBD5E1" : "#6366F1"} />
+            </TouchableOpacity>
+            
+            <View style={styles.doseInputWrapper}>
+              <Icon name="pills" size={18} color="#6366F1" style={styles.inputIcon} />
+              <TextInput
+                style={styles.doseInput}
+                value={String(time.dose)}
+                onChangeText={(text) => handleDoseChange(index, text)}
+                placeholder="1"
+                placeholderTextColor="#94A3B8"
+                keyboardType="numeric"
+              />
+            </View>
+            
+            <TouchableOpacity 
+              onPress={() => incrementDose(index)}
+              style={styles.doseCounterButton}
+            >
+              <Icon name="plus" size={14} color="#6366F1" />
+            </TouchableOpacity>
           </View>
           
           <TouchableOpacity 
@@ -647,6 +688,40 @@ const styles = StyleSheet.create({
     color: '#475569',
     fontSize: 16,
     fontWeight: '600',
+  },
+  doseControlContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  doseCounterButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doseInputWrapper: {
+    width: 70,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    backgroundColor: '#F8FAFC',
+    marginHorizontal: 6,
+  },
+  doseInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#1E293B',
+    padding: 0,
+    textAlign: 'center',
   },
 });
 
