@@ -1,4 +1,4 @@
-const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
+const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
 
 /**
  * Metro configuration
@@ -6,6 +6,15 @@ const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
  *
  * @type {import('metro-config').MetroConfig}
  */
-const config = {};
+const defaultConfig = getDefaultConfig(__dirname);
 
-module.exports = mergeConfig(getDefaultConfig(__dirname), config);
+const customConfig = {
+  watchFolders: [],
+  resolver: {
+    blockList: [
+      /node_modules\/.*\/android\/build\/generated\/source\/codegen\/.*/,
+    ],
+  },
+};
+
+module.exports = mergeConfig(defaultConfig, customConfig);

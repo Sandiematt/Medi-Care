@@ -16,6 +16,8 @@ import {
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 
 // TypeScript interfaces
 interface TimeSlot {
@@ -48,6 +50,11 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [times, setTimes] = useState<TimeSlot[]>([{ time: '12:00', dose: 1 }]);
   const [totalDoses, setTotalDoses] = useState(30);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Time picker state
+  const [isTimePickerVisible, setTimePickerVisible] = useState(false);
+  const [selectedTimeIndex, setSelectedTimeIndex] = useState(0);
+  const [selectedTime, setSelectedTime] = useState(new Date());
 
   // Authentication check
   useEffect(() => {
@@ -81,13 +88,49 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     setDays(prev => ({ ...prev, [day]: !prev[day] }));
   };
 
-  const handleTimeChange = (index: number, key: 'time' | 'dose', value: string) => {
+  const handleDoseChange = (index: number, value: string) => {
     const updatedTimes = [...times];
     updatedTimes[index] = { 
       ...updatedTimes[index], 
-      [key]: key === 'dose' ? parseInt(value, 10) || 1 : value 
+      dose: parseInt(value, 10) || 1
     };
     setTimes(updatedTimes);
+  };
+
+  // Time picker handlers
+  const showTimePicker = (index: number) => {
+    // Parse the existing time string to set initial picker value
+    const timeStr = times[index].time;
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    
+    const date = new Date();
+    date.setHours(hours || 0);
+    date.setMinutes(minutes || 0);
+    
+    setSelectedTime(date);
+    setSelectedTimeIndex(index);
+    setTimePickerVisible(true);
+  };
+
+  const handleTimeChange = (event: any, date?: Date) => {
+    if (Platform.OS === 'android') {
+      setTimePickerVisible(false);
+    }
+    
+    if (date) {
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      const timeString = `${hours}:${minutes}`;
+      
+      const updatedTimes = [...times];
+      updatedTimes[selectedTimeIndex] = {
+        ...updatedTimes[selectedTimeIndex],
+        time: timeString
+      };
+      
+      setSelectedTime(date);
+      setTimes(updatedTimes);
+    }
   };
 
   const addTime = () => setTimes(prev => [...prev, { time: '00:00', dose: 1 }]);
@@ -189,27 +232,27 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       <Text style={styles.label}>When? (Time & Dose)</Text>
       {times.map((time, index) => (
         <View key={index} style={styles.timeSlotContainer}>
-          <View style={styles.timeInputWrapper}>
+          <TouchableOpacity 
+            style={styles.timeInputWrapper}
+            onPress={() => showTimePicker(index)}
+          >
             <Icon name="clock" size={18} color="#6366F1" style={styles.inputIcon} />
-            <TextInput
-              style={styles.timeInput}
-              value={time.time}
-              onChangeText={(text) => handleTimeChange(index, 'time', text)}
-              placeholder="00:00"
-              placeholderTextColor="#94A3B8"
-            />
-          </View>
+            <Text style={styles.timeInput}>{time.time}</Text>
+            <Icon name="chevron-down" size={14} color="#94A3B8" />
+          </TouchableOpacity>
+          
           <View style={styles.doseInputWrapper}>
             <Icon name="pills" size={18} color="#6366F1" style={styles.inputIcon} />
             <TextInput
               style={styles.doseInput}
               value={time.dose.toString()}
-              onChangeText={(text) => handleTimeChange(index, 'dose', text)}
+              onChangeText={(text) => handleDoseChange(index, text)}
               placeholder="1"
               placeholderTextColor="#94A3B8"
               keyboardType="numeric"
             />
           </View>
+          
           <TouchableOpacity 
             onPress={() => removeTime(index)} 
             style={styles.iconButton}
@@ -219,6 +262,20 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       ))}
+      
+      {isTimePickerVisible && (
+        <DateTimePickerModal
+          isVisible={isTimePickerVisible}
+          mode="time"
+          date={selectedTime}
+          onConfirm={(date) => {
+            handleTimeChange(null, date);
+            setTimePickerVisible(false);
+          }}
+          onCancel={() => setTimePickerVisible(false)}
+        />
+      )}
+      
       <TouchableOpacity style={styles.addButton} onPress={addTime}>
         <Icon name="plus-circle" size={20} color="#6366F1" />
         <Text style={styles.addButtonText}>Add time</Text>
@@ -333,6 +390,33 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             )}
           </TouchableOpacity>
         </View>
+{Platform.OS === 'android' && isTimePickerVisible && (
+  <DateTimePicker
+    value={selectedTime}
+    mode="time"
+    is24Hour={true}
+    display="default"
+    onChange={(event, date) => {
+      if (event.type === 'dismissed') {
+        setTimePickerVisible(false);
+        return;
+      }
+      handleTimeChange(event, date);
+    }}
+  />
+)}
+{Platform.OS === 'ios' && isTimePickerVisible && (
+  <DateTimePickerModal
+    isVisible={isTimePickerVisible}
+    mode="time"
+    date={selectedTime}
+    onConfirm={(date) => {
+      handleTimeChange(null, date);
+      setTimePickerVisible(false);
+    }}
+    onCancel={() => setTimePickerVisible(false)}
+  />
+)}
       </ScrollView>
     </View>
   );
@@ -456,6 +540,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: '#F8FAFC',
     marginRight: 12,
+    justifyContent: 'space-between',
   },
   doseInputWrapper: {
     width: 100,
@@ -474,6 +559,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#1E293B',
     padding: 0,
+    marginLeft: 8,
   },
   doseInput: {
     flex: 1,
