@@ -1,17 +1,18 @@
+/* eslint-disable react/no-unstable-nested-components */
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
   Alert,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
   StatusBar,
-  ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -31,11 +32,11 @@ interface DaysState {
 
 const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
-  
+
   // State management
   const [medicationInfo, setMedicationInfo] = useState({
     name: '',
-    description: ''
+    description: '',
   });
   const [username, setUsername] = useState('');
   const [days, setDays] = useState<DaysState>({
@@ -50,7 +51,7 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [times, setTimes] = useState<TimeSlot[]>([{ time: '12:00', dose: 1 }]);
   const [totalDoses, setTotalDoses] = useState(30);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Time picker state
   const [isTimePickerVisible, setTimePickerVisible] = useState(false);
   const [selectedTimeIndex, setSelectedTimeIndex] = useState(0);
@@ -65,8 +66,8 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           setUsername(storedUsername);
         } else {
           Alert.alert(
-            'Account Required', 
-            'Please log in to create reminders', 
+            'Account Required',
+            'Please log in to create reminders',
             [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
           );
         }
@@ -90,30 +91,30 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   const handleDoseChange = (index: number, value: number | string) => {
     const updatedTimes = [...times];
-    
+
     if (typeof value === 'number') {
       // Direct numeric update (from buttons)
-      updatedTimes[index] = { 
-        ...updatedTimes[index], 
-        dose: value 
+      updatedTimes[index] = {
+        ...updatedTimes[index],
+        dose: value,
       };
     } else {
       // Text input update
-      updatedTimes[index] = { 
-        ...updatedTimes[index], 
-        dose: value === '' ? '' : parseInt(value, 10) || 1
+      updatedTimes[index] = {
+        ...updatedTimes[index],
+        dose: value === '' ? '' : parseInt(value, 10) || 1,
       };
     }
-    
+
     setTimes(updatedTimes);
   };
-  
+
   // Now let's create functions to increment and decrement the dose
   const incrementDose = (index: number) => {
     const currentDose = times[index].dose;
     handleDoseChange(index, typeof currentDose === 'number' ? currentDose + 1 : 1);
   };
-  
+
   const decrementDose = (index: number) => {
     const currentDose = times[index].dose;
     if (typeof currentDose === 'number' && currentDose > 1) {
@@ -126,11 +127,11 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     // Parse the existing time string to set initial picker value
     const timeStr = times[index].time;
     const [hours, minutes] = timeStr.split(':').map(Number);
-    
+
     const date = new Date();
     date.setHours(hours || 0);
     date.setMinutes(minutes || 0);
-    
+
     setSelectedTime(date);
     setSelectedTimeIndex(index);
     setTimePickerVisible(true);
@@ -140,18 +141,18 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     if (Platform.OS === 'android') {
       setTimePickerVisible(false);
     }
-    
+
     if (date) {
       const hours = date.getHours().toString().padStart(2, '0');
       const minutes = date.getMinutes().toString().padStart(2, '0');
       const timeString = `${hours}:${minutes}`;
-      
+
       const updatedTimes = [...times];
       updatedTimes[selectedTimeIndex] = {
         ...updatedTimes[selectedTimeIndex],
-        time: timeString
+        time: timeString,
       };
-      
+
       setSelectedTime(date);
       setTimes(updatedTimes);
     }
@@ -170,18 +171,18 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   // Form submission
   const handleSubmit = async () => {
     const selectedDays = Object.keys(days).filter(day => days[day]);
-    
+
     // Validation
     if (!username) {
       Alert.alert('Error', 'You need to be logged in to add reminders.');
       return;
     }
-    
+
     if (!medicationInfo.name || !medicationInfo.description || selectedDays.length === 0) {
       Alert.alert('Missing Information', 'Please fill all the required fields.');
       return;
     }
-    
+
     const reminderData = {
       username,
       name: medicationInfo.name,
@@ -190,7 +191,7 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       times,
       totalDoses,
     };
-    
+
     try {
       setIsLoading(true);
       const response = await fetch('http://20.193.156.237:5000/addReminder', {
@@ -203,7 +204,7 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
       if (response.ok) {
         Alert.alert('Success', 'Reminder added successfully.', [
-          { text: 'OK', onPress: () => navigation.navigate('Reminders') }
+          { text: 'OK', onPress: () => navigation.navigate('Reminders') },
         ]);
         resetForm();
       } else {
@@ -232,9 +233,9 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     <View style={styles.sectionContainer}>
       <Text style={styles.sectionTitle}>Schedule</Text>
       <Text style={styles.label}>Which days?</Text>
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false} 
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.daysContainer}
       >
         {Object.keys(days).map((day) => (
@@ -251,12 +252,13 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     </View>
   );
 
+  // eslint-disable-next-line react/no-unstable-nested-components
   const TimePicker = () => (
     <View style={styles.sectionContainer}>
       <Text style={styles.label}>When? (Time & Dose)</Text>
       {times.map((time, index) => (
         <View key={index} style={styles.timeSlotContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.timeInputWrapper}
             onPress={() => showTimePicker(index)}
           >
@@ -264,16 +266,16 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             <Text style={styles.timeInput}>{time.time}</Text>
             <Icon name="chevron-down" size={14} color="#94A3B8" />
           </TouchableOpacity>
-          
+
           <View style={styles.doseControlContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => decrementDose(index)}
               style={styles.doseCounterButton}
               disabled={time.dose <= 1}
             >
-              <Icon name="minus" size={14} color={time.dose <= 1 ? "#CBD5E1" : "#6366F1"} />
+              <Icon name="minus" size={14} color={time.dose <= 1 ? '#CBD5E1' : '#6366F1'} />
             </TouchableOpacity>
-            
+
             <View style={styles.doseInputWrapper}>
               <Icon name="pills" size={18} color="#6366F1" style={styles.inputIcon} />
               <TextInput
@@ -285,17 +287,17 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                 keyboardType="numeric"
               />
             </View>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               onPress={() => incrementDose(index)}
               style={styles.doseCounterButton}
             >
               <Icon name="plus" size={14} color="#6366F1" />
             </TouchableOpacity>
           </View>
-          
-          <TouchableOpacity 
-            onPress={() => removeTime(index)} 
+
+          <TouchableOpacity
+            onPress={() => removeTime(index)}
             style={styles.iconButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
@@ -303,7 +305,7 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       ))}
-      
+
       {isTimePickerVisible && (
         <DateTimePickerModal
           isVisible={isTimePickerVisible}
@@ -316,7 +318,7 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           onCancel={() => setTimePickerVisible(false)}
         />
       )}
-      
+
       <TouchableOpacity style={styles.addButton} onPress={addTime}>
         <Icon name="plus-circle" size={20} color="#6366F1" />
         <Text style={styles.addButtonText}>Add time</Text>
@@ -333,15 +335,15 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           <Text style={styles.label}>Total Pills/Doses</Text>
         </View>
         <View style={styles.counterControl}>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => totalDoses > 1 && setTotalDoses(prev => prev - 1)}
             style={styles.counterButton}
             disabled={totalDoses <= 1}
           >
-            <Icon name="minus" size={16} color={totalDoses <= 1 ? "#CBD5E1" : "#6366F1"} />
+            <Icon name="minus" size={16} color={totalDoses <= 1 ? '#CBD5E1' : '#6366F1'} />
           </TouchableOpacity>
           <Text style={styles.counterValue}>{totalDoses}</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => setTotalDoses(prev => prev + 1)}
             style={styles.counterButton}
           >
@@ -356,7 +358,7 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
@@ -365,7 +367,7 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         {/* Medication Details Card */}
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Medication Details</Text>
-          
+
           <View style={styles.inputGroup}>
             <View style={styles.labelContainer}>
               <Icon name="prescription-bottle-alt" size={16} color="#6366F1" />
@@ -410,14 +412,14 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
         {/* Action Buttons */}
         <View style={styles.buttonGroup}>
-          <TouchableOpacity 
-            style={styles.secondaryButton} 
+          <TouchableOpacity
+            style={styles.secondaryButton}
             onPress={resetForm}
           >
             <Text style={styles.secondaryButtonText}>Reset</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.primaryButton, isLoading && styles.disabledButton]} 
+          <TouchableOpacity
+            style={[styles.primaryButton, isLoading && styles.disabledButton]}
             onPress={handleSubmit}
             disabled={isLoading}
           >

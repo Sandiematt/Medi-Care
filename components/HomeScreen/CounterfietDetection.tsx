@@ -1,10 +1,12 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  Image, 
-  StyleSheet, 
+/* eslint-disable no-catch-shadow */
+/* eslint-disable @typescript-eslint/no-shadow */
+import React, { useState, useCallback, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
   ActivityIndicator,
   Dimensions,
   PermissionsAndroid,
@@ -12,10 +14,10 @@ import {
   ScrollView,
   StatusBar,
   Alert,
-  Linking
-} from "react-native";
+  Linking,
+} from 'react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
-import axios from "axios";
+import axios from 'axios';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'react-native-linear-gradient';
@@ -67,29 +69,29 @@ const CounterfeitDetection = () => {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.CAMERA,
           {
-            title: "Camera Permission",
-            message: "This app needs access to your camera to verify medications",
-            buttonNeutral: "Ask Me Later",
-            buttonNegative: "Cancel",
-            buttonPositive: "OK"
+            title: 'Camera Permission',
+            message: 'This app needs access to your camera to verify medications',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
           }
         );
 
         setCameraPermission(granted === PermissionsAndroid.RESULTS.GRANTED);
-        
+
         if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
           Alert.alert(
-            "Permission Required", 
-            "Camera permission is required to take photos. Would you like to enable it in your device settings?",
+            'Permission Required',
+            'Camera permission is required to take photos. Would you like to enable it in your device settings?',
             [
-              { 
-                text: "No thanks", 
-                style: "cancel"
+              {
+                text: 'No thanks',
+                style: 'cancel',
               },
-              { 
-                text: "Open Settings", 
-                onPress: () => Linking.openSettings() 
-              }
+              {
+                text: 'Open Settings',
+                onPress: () => Linking.openSettings(),
+              },
             ]
           );
           return false;
@@ -130,13 +132,13 @@ const CounterfeitDetection = () => {
           setError(errorMsg);
           return;
         }
-        
+
         if (response.assets && response.assets.length > 0) {
           const selectedImage = response.assets[0];
           setImage(selectedImage.uri);
           setResult(null);
           setError(null);
-          
+
           uploadImageFile(selectedImage);
         }
       });
@@ -149,7 +151,7 @@ const CounterfeitDetection = () => {
   const takePicture = async () => {
     try {
       const hasPermission = await requestCameraPermission();
-      
+
       if (!hasPermission) {
         return;
       }
@@ -178,13 +180,13 @@ const CounterfeitDetection = () => {
           setError(errorMsg);
           return;
         }
-        
+
         if (response.assets && response.assets.length > 0) {
           const selectedImage = response.assets[0];
           setImage(selectedImage.uri);
           setResult(null);
           setError(null);
-          
+
           uploadImageFile(selectedImage);
         }
       });
@@ -193,45 +195,45 @@ const CounterfeitDetection = () => {
       console.error(error);
     }
   };
-  
+
   const uploadImageFile = async (imageFile) => {
     setLoading(true);
-  
+
     try {
       // Create form data
       const formData = new FormData();
-      
+
       formData.append('image', {
         uri: Platform.OS === 'android' ? imageFile.uri : imageFile.uri.replace('file://', ''),
         type: imageFile.type || 'image/jpeg',
-        name: imageFile.fileName || 'upload.jpg'
+        name: imageFile.fileName || 'upload.jpg',
       });
-      
+
       console.log('Uploading image:', imageFile.uri);
-      
+
       const response = await axios.post(
-        "http://20.193.156.237:5000/detect-counterfeit", 
+        'http://20.193.156.237:5000/detect-counterfeit',
         formData,
-        { 
-          headers: { 
+        {
+          headers: {
             'Content-Type': 'multipart/form-data',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
           },
-          timeout: 30000 // 30 seconds timeout - increased for slower connections
+          timeout: 30000, // 30 seconds timeout - increased for slower connections
         }
       );
-      
+
       setResult(response.data);
-      
+
     } catch (error) {
       let errorMessage = 'Server error';
-      
+
       if (error.code === 'ECONNABORTED') {
         errorMessage = 'Request timed out. Please try again with a stronger connection.';
       } else if (error.response) {
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
-        errorMessage = error.response.data?.message || 
+        errorMessage = error.response.data?.message ||
                       `Server error (${error.response.status}): Please try again.`;
       } else if (error.request) {
         // The request was made but no response was received
@@ -240,7 +242,7 @@ const CounterfeitDetection = () => {
         // Something happened in setting up the request that triggered an Error
         errorMessage = error.message || 'An unknown error occurred';
       }
-      
+
       setError(errorMessage);
       console.error('Upload error:', error);
     } finally {
@@ -250,60 +252,60 @@ const CounterfeitDetection = () => {
 
   // Format confidence percentage
   const formatConfidence = (confidence) => {
-    if (!confidence && confidence !== 0) return null;
+    if (!confidence && confidence !== 0) {return null;}
     return `${Math.round(confidence * 100)}%`;
   };
 
   // Get result color based on authenticity
   const getResultColor = () => {
-    if (!result) return '#808080';
+    if (!result) {return '#808080';}
     return !result.isCounterfeit ? '#10B981' : '#EF4444';
   };
 
   // Get result text based on authenticity
   const getResultText = () => {
-    if (!result) return '';
+    if (!result) {return '';}
     return !result.isCounterfeit ? 'AUTHENTIC' : 'COUNTERFEIT';
   };
 
   // Get result details to display
   const getResultDetails = () => {
-    if (!result) return null;
-    
+    if (!result) {return null;}
+
     const details = [];
-    
+
     if (result.confidence) {
       details.push({
         label: 'Confidence',
         value: formatConfidence(result.confidence),
-        icon: 'analytics'
+        icon: 'analytics',
       });
     }
-    
+
     if (result.currencyType) {
       details.push({
         label: 'Medicine Type',
         value: result.currencyType,
-        icon: 'medkit'
+        icon: 'medkit',
       });
     }
-    
+
     if (result.denomination) {
       details.push({
         label: 'Dosage',
         value: result.denomination,
-        icon: 'fitness'
+        icon: 'fitness',
       });
     }
-    
+
     if (result.features && result.features.length > 0) {
       details.push({
         label: 'Features Detected',
         value: Array.isArray(result.features) ? result.features.join(', ') : result.features,
-        icon: 'scan'
+        icon: 'scan',
       });
     }
-    
+
     return details;
   };
 
@@ -313,11 +315,11 @@ const CounterfeitDetection = () => {
     setResult(null);
     setError(null);
   };
-  
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0891B2" />
-      
+
       <LinearGradient
         colors={['#0891B2', '#0E7490']}
         start={{x: 0, y: 0}}
@@ -330,8 +332,8 @@ const CounterfeitDetection = () => {
         </View>
         <Text style={styles.headerSubtitle}>Instant authenticity check</Text>
       </LinearGradient>
-      
-      <ScrollView 
+
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
         showsVerticalScrollIndicator={false}
@@ -390,13 +392,13 @@ const CounterfeitDetection = () => {
               )}
             </View>
           )}
-          
+
           {error && (
             <View style={styles.errorContainer}>
               <Icon name="alert-circle" size={24} color="#EF4444" />
               <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity 
-                onPress={() => setError(null)} 
+              <TouchableOpacity
+                onPress={() => setError(null)}
                 style={styles.dismissButton}
                 hitSlop={{top: 10, right: 10, bottom: 10, left: 10}}
               >
@@ -404,38 +406,38 @@ const CounterfeitDetection = () => {
               </TouchableOpacity>
             </View>
           )}
-          
+
           {result && !loading && (
             <View style={styles.resultContainer}>
               <View style={[styles.resultCard, { backgroundColor: !result.isCounterfeit ? '#ECFDF5' : '#FEF2F2' }]}>
                 <View style={styles.resultHeaderContainer}>
                   <View style={[styles.resultIndicator, { backgroundColor: getResultColor() }]}>
-                    <Icon 
-                      name={!result.isCounterfeit ? "checkmark-circle" : "alert-circle"} 
-                      size={24} 
-                      color="#FFFFFF" 
+                    <Icon
+                      name={!result.isCounterfeit ? 'checkmark-circle' : 'alert-circle'}
+                      size={24}
+                      color="#FFFFFF"
                     />
                   </View>
                   <Text style={[styles.resultText, { color: getResultColor() }]}>
                     {getResultText()}
                   </Text>
                 </View>
-                
+
                 <View style={styles.resultIconContainer}>
                   <View style={[styles.iconCircleLarge, { borderColor: getResultColor() }]}>
-                    <Icon 
-                      name={!result.isCounterfeit ? "shield-checkmark" : "warning"} 
-                      size={48} 
-                      color={getResultColor()} 
+                    <Icon
+                      name={!result.isCounterfeit ? 'shield-checkmark' : 'warning'}
+                      size={48}
+                      color={getResultColor()}
                     />
                   </View>
                 </View>
-                
+
                 <View style={styles.resultDetailsContainer}>
                   {getResultDetails()?.map((detail, index) => (
                     <View key={index} style={[
-                      styles.detailRow, 
-                      index === getResultDetails().length - 1 ? { borderBottomWidth: 0 } : {}
+                      styles.detailRow,
+                      index === getResultDetails().length - 1 ? { borderBottomWidth: 0 } : {},
                     ]}>
                       <View style={styles.detailLabelContainer}>
                         <View style={[styles.detailIconCircle, { backgroundColor: !result.isCounterfeit ? '#059669' : '#B91C1C' }]}>
@@ -447,7 +449,7 @@ const CounterfeitDetection = () => {
                     </View>
                   ))}
                 </View>
-                
+
                 {result.isCounterfeit && (
                   <View style={styles.warningContainer}>
                     <Icon name="warning" size={20} color="#EF4444" />
@@ -456,8 +458,8 @@ const CounterfeitDetection = () => {
                     </Text>
                   </View>
                 )}
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={[styles.actionButton, { backgroundColor: !result.isCounterfeit ? '#10B981' : '#4B5563' }]}
                   onPress={handleReset}
                   activeOpacity={0.7}
@@ -470,13 +472,13 @@ const CounterfeitDetection = () => {
           )}
         </View>
       </ScrollView>
-      
+
       <View style={styles.footerContainer}>
         <LinearGradient
           colors={['#FFFFFF', '#F9FAFB']}
           style={styles.buttonsGradient}
         >
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.cameraButton, { opacity: loading ? 0.7 : 1 }]}
             onPress={takePicture}
             activeOpacity={0.7}
@@ -492,8 +494,8 @@ const CounterfeitDetection = () => {
               <Text style={styles.buttonText}>Take Photo</Text>
             </LinearGradient>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={[styles.galleryButton, { opacity: loading ? 0.7 : 1 }]}
             onPress={pickImage}
             activeOpacity={0.7}
