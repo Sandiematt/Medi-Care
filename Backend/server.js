@@ -44,7 +44,7 @@ app.post('/login', async (req, res) => {
     const { username, password } = req.body;
     const user = await usersCollection.findOne({ username });
     
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (!user) {return res.status(404).json({ error: 'User not found' });}
     
     // You should ideally use bcrypt to compare the password securely
     if (user.password !== password) {
@@ -53,9 +53,9 @@ app.post('/login', async (req, res) => {
 
     // Include the username in the response
     res.status(200).json({ 
-      message: 'Login successful', 
-      isAdmin: user.isadmin, 
-      username: user.username // Include username
+      message: 'Login successful',
+      isAdmin: user.isadmin,
+      username: user.username, // Include username
     });
   } catch (error) {
     console.error('Error during login:', error);
