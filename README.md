@@ -14,7 +14,7 @@
 - 📋 Digital Medical Records
 - 🎥 Finding Nearby Hospitals
 - ⚡ Real-time Health Monitoring
-- 🔍 **Fake Medicine Detection using CNN/YOLO** - Verify pill authenticity with AI
+- 🔍 **Fake Medicine Detection using CNN/YOLO** - Verify pill authenticity with ML
 
 ## 🚀 Getting Started
 ### Prerequisites
