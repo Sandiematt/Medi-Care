@@ -513,12 +513,12 @@ const styles = StyleSheet.create({
     color: '#0F172A',
   },
   addButton: {
-    backgroundColor: '#0EA5E9',
+    backgroundColor: '#4b90e2',
     padding: 10,
     borderRadius: 12,
     ...Platform.select({
       ios: {
-        shadowColor: '#0EA5E9',
+        shadowColor: '#4b90e2',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 4,
@@ -590,11 +590,11 @@ const styles = StyleSheet.create({
   },
   filterButton: {
     padding: 12,
-    backgroundColor: '#0EA5E9',
+    backgroundColor: '#4b90e2',
     borderRadius: 12,
     ...Platform.select({
       ios: {
-        shadowColor: '#0EA5E9',
+        shadowColor: '#4b90e2',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.15,
         shadowRadius: 4,
@@ -605,7 +605,7 @@ const styles = StyleSheet.create({
     }),
   },
   filterButtonActive: {
-    backgroundColor: '#0284C7',
+    backgroundColor: '#3a72b4', // Darker shade of #4b90e2
   },
   filterIndicator: {
     flexDirection: 'row',
@@ -623,7 +623,7 @@ const styles = StyleSheet.create({
   clearFiltersText: {
     fontSize: 14,
     fontFamily: 'Poppins-Normal',
-    color: '#0EA5E9',
+    color: '#4b90e2',
     fontWeight: '500',
   },
   section: {
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
   viewAllText: {
     fontSize: 14,
     fontFamily: 'Poppins-Normal',
-    color: '#0EA5E9',
+    color: '#4b90e2',
     fontWeight: '500',
   },
   itemCard: {
@@ -682,7 +682,7 @@ const styles = StyleSheet.create({
   itemIconContainer: {
     width: 40,
     height: 40,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#EFF6FF', // Light blue background that complements #4b90e2
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -809,7 +809,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   optionButtonSelected: {
-    borderColor: '#0EA5E9',
+    borderColor: '#4b90e2',
     backgroundColor: '#EFF6FF',
   },
   optionText: {
@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   optionTextSelected: {
-    color: '#0EA5E9',
+    color: '#4b90e2',
     fontWeight: '500',
   },
   priceRangeContainer: {
@@ -875,13 +875,13 @@ const styles = StyleSheet.create({
   },
   applyButton: {
     flex: 2,
-    backgroundColor: '#0EA5E9',
+    backgroundColor: '#4b90e2',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     ...Platform.select({
       ios: {
-        shadowColor: '#0EA5E9',
+        shadowColor: '#4b90e2',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.2,
         shadowRadius: 4,

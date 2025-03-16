@@ -202,7 +202,7 @@ const ReminderCard = ({ reminder, navigation }) => {
       <View style={styles.reminderHeader}>
         <View style={styles.reminderInfo}>
           <View style={[styles.reminderIcon, { backgroundColor: '#5856D615' }]}>
-            <Icon name="medication" size={24} color="#5856D6" />
+            <Icon name="medication" size={24} color="#1e948b" />
           </View>
           <View style={styles.reminderDetails}>
             <Text style={styles.reminderName}>{reminder.name}</Text>
@@ -222,15 +222,15 @@ const ReminderCard = ({ reminder, navigation }) => {
       
       <View style={styles.reminderFooter}>
         <View style={styles.reminderTimeInfo}>
-          <Icon name="event" size={20} color="#5856D6" />
+          <Icon name="event" size={20} color="#1e948b" />
           <Text style={styles.reminderTimeText}>{nextReminder.day}</Text>
         </View>
         <View style={styles.reminderTimeInfo}>
-          <Icon name="access-time" size={20} color="#5856D6" />
+          <Icon name="access-time" size={20} color="#1e948b" />
           <Text style={styles.reminderTimeText}>{nextReminder.time}</Text>
         </View>
         <View style={styles.reminderTimeInfo}>
-          <Icon name="medication" size={20} color="#5856D6" />
+          <Icon name="medication" size={20} color="#1e948b" />
           <Text style={styles.reminderTimeText}>{nextReminder.dose} dose(s)</Text>
         </View>
       </View>
@@ -260,7 +260,7 @@ const SearchResults = ({ searchResults, navigation }) => {
                 <Text style={styles.searchResultName}>{service.name}</Text>
                 <Text style={styles.searchResultDescription}>{service.description}</Text>
               </View>
-              <Icon name="chevron-right" size={20} color="#8E8E93" />
+              <Icon name="chevron-right" size={20} color="##1e948b" />
             </TouchableOpacity>
           ))}
         </>
@@ -275,14 +275,14 @@ const SearchResults = ({ searchResults, navigation }) => {
               style={styles.searchResultItem}
               onPress={() => navigation.navigate('Reminder', { reminder })}
             >
-              <View style={[styles.searchResultIcon, { backgroundColor: '#5856D615' }]}>
-                <Icon name="medication" size={22} color="#5856D6" />
+              <View style={[styles.searchResultIcon, { backgroundColor: '#1e948b' }]}>
+                <Icon name="medication" size={22} color="#1e948b" />
               </View>
               <View style={styles.searchResultInfo}>
                 <Text style={styles.searchResultName}>{reminder.name}</Text>
                 <Text style={styles.searchResultDescription} numberOfLines={1}>{reminder.description}</Text>
               </View>
-              <Icon name="chevron-right" size={20} color="#8E8E93" />
+              <Icon name="chevron-right" size={20} color="#1e948b" />
             </TouchableOpacity>
           ))}
         </>
@@ -290,7 +290,7 @@ const SearchResults = ({ searchResults, navigation }) => {
       
       {searchResults.services.length === 0 && searchResults.reminders.length === 0 && (
         <View style={styles.noResultsContainer}>
-          <Icon name="search-off" size={40} color="#8E8E93" />
+          <Icon name="search-off" size={40} color="#1e948b" />
           <Text style={styles.noResultsText}>No results found</Text>
         </View>
       )}
@@ -324,7 +324,7 @@ const HomeMainScreen = ({ navigation }) => {
     { 
       name: 'Prescriptions', 
       icon: 'description', 
-      color: '#5856D6', 
+      color: '#8a00ff', 
       route: 'Prescriptions',
       description: 'View your prescriptions'
     },
@@ -490,7 +490,7 @@ const findClosestReminder = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#5856D6" />
+        <ActivityIndicator size="large" color="#1e948b" />
       </View>
     );
   }
@@ -503,14 +503,14 @@ const findClosestReminder = () => {
           <Text style={styles.userName}>{userData?.username || 'Guest'} 👋</Text>
         </View>
         <TouchableOpacity style={styles.profileButton} onPress={() => navigation.navigate('Profile')}>
-          <Ionicons name="person-circle" size={40} color="#6200EE" />
+          <Ionicons name="person-circle" size={40} color="#1e948b" />
           <View style={styles.notificationBadge} />
         </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
-          <Icon name="search" size={24} color="#8E8E93" />
+          <Icon name="search" size={24} color="#1e948b" />
           <TextInput
             placeholder="Search medical services..."
             placeholderTextColor="#8E8E93"
@@ -529,7 +529,7 @@ const findClosestReminder = () => {
                 setIsSearching(false);
               }}
             >
-              <Icon name="cancel" size={20} color="#8E8E93" />
+              <Icon name="cancel" size={20} color="#1e948b" />
             </TouchableOpacity>
           )}
         </View>
@@ -583,7 +583,7 @@ const findClosestReminder = () => {
             />
           ) : (
             <View style={styles.emptyReminders}>
-              <Icon name="notifications-none" size={48} color="#8E8E93" />
+              <Icon name="notifications-none" size={48} color="#1e948b" />
               <Text style={styles.emptyRemindersText}>No upcoming reminders</Text>
             </View>
           )}
@@ -682,7 +682,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#1e948b',
   },
   searchContainer: {
     marginTop: 20,
@@ -788,7 +788,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#5856D6',
+    backgroundColor: '#1e948b',
     marginHorizontal: 5,
   },
   sectionHeader: {
@@ -810,7 +810,7 @@ const styles = StyleSheet.create({
   },
   sectionLink: {
     fontSize: 14,
-    color: '#5856D6',
+    color: '#1e948b',
     fontWeight: 'bold',
   },
   servicesGrid: {

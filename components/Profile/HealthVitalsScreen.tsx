@@ -9,7 +9,7 @@ import axios from 'axios';
 
 // Define the color palette
 const COLORS = {
-  primary: '#3F51B5', // Indigo as primary color
+  primary: '#1d948b', // Indigo as primary color
   secondary: '#FF9800', // Orange as secondary color
   background: '#F8F9FA',
   cardBackground: '#FFFFFF',

@@ -122,7 +122,7 @@ const AddInventoryScreen = () => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Icon name="arrow-left" size={22} color="#6D28D9" />
+          <Icon name="arrow-left" size={22} color="#4b90e2" />
         </TouchableOpacity>
         <Text style={styles.title}>Add New Item</Text>
       </View>
@@ -132,7 +132,7 @@ const AddInventoryScreen = () => {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Item Name</Text>
             <View style={styles.inputWrapper}>
-              <Icon name="package" size={20} color="#6D28D9" style={styles.inputIcon} />
+              <Icon name="package" size={20} color="#4b90e2" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Enter item name"
@@ -146,7 +146,7 @@ const AddInventoryScreen = () => {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Price</Text>
             <View style={styles.inputWrapper}>
-              <Icon name="dollar-sign" size={20} color="#6D28D9" style={styles.inputIcon} />
+              <Icon name="dollar-sign" size={20} color="#4b90e2" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="$0.00"
@@ -161,7 +161,7 @@ const AddInventoryScreen = () => {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Stock</Text>
             <View style={styles.inputWrapper}>
-              <Icon name="box" size={20} color="#6D28D9" style={styles.inputIcon} />
+              <Icon name="box" size={20} color="#4b90e2" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Enter quantity"
@@ -176,7 +176,7 @@ const AddInventoryScreen = () => {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Type</Text>
             <View style={styles.inputWrapper}>
-              <Icon name="tag" size={20} color="#6D28D9" style={styles.inputIcon} />
+              <Icon name="tag" size={20} color="#4b90e2" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Select item type"
@@ -190,7 +190,7 @@ const AddInventoryScreen = () => {
           {/* Optional: Display the username */}
           {username && (
             <View style={styles.userInfoContainer}>
-              <Icon name="user" size={16} color="#6D28D9" />
+              <Icon name="user" size={16} color="#4b90e2" />
               <Text style={styles.userInfoText}>Adding as: {username}</Text>
             </View>
           )}
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
   saveButton: {
     flex: 1,
     height: 56,
-    backgroundColor: '#6D28D9',
+    backgroundColor: '#4b90e2',
     borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',

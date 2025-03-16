@@ -96,7 +96,7 @@ const EditHealthVitalsScreen: React.FC<Props> = ({ navigation }) => {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <StatusBar barStyle="dark-content" backgroundColor="#1d948b" />
       <ScrollView 
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -107,7 +107,7 @@ const EditHealthVitalsScreen: React.FC<Props> = ({ navigation }) => {
             style={styles.backButton}
             onPress={handleGoBack}
           >
-            <Icon name="chevron-back" size={24} color="#333" />
+            <Icon name="chevron-back" size={24} color="#1d948b" />
           </TouchableOpacity>
           <Text style={styles.title}>Health Vitals</Text>
           <View style={styles.placeholder} />
@@ -196,7 +196,7 @@ const VitalInputField: React.FC<VitalInputFieldProps> = ({
   return (
     <View style={styles.inputContainer}>
       <View style={styles.labelContainer}>
-        <Icon name={icon} size={18} color="#4551C5" />
+        <Icon name={icon} size={18} color="#1d948b" />
         <Text style={styles.label}>{label}</Text>
       </View>
       <TextInput
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   saveButton: {
-    backgroundColor: '#4551C5',
+    backgroundColor: '#1d948b',
     paddingVertical: 16,
     borderRadius: 12,
     marginHorizontal: 20,

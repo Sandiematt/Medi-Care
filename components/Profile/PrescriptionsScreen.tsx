@@ -69,60 +69,108 @@ const PrescriptionsScreen: React.FC = () => {
       if (!username) {
         throw new Error('Username not found');
       }
-      const response = await axios.get(`http://20.193.156.237:5000/prescriptions/${username}`);
+      
+      const response = await axios.get(
+        `http://20.193.156.237:5000/prescriptions/${username}`,
+        {
+          timeout: 10000 // Add timeout to prevent infinite loading
+        }
+      );
+      
       setPrescriptions(response.data);
       setFilteredPrescriptions(response.data);
     } catch (error) {
       console.error('Error fetching prescriptions:', error);
-      Alert.alert('Error', 'Failed to fetch prescriptions');
+      
+      // More specific error messages
+      if (error.response) {
+        Alert.alert('Server Error', `Error code: ${error.response.status}`);
+      } else if (error.request) {
+        Alert.alert('Network Error', 'Server is unreachable. Check your connection.');
+      } else {
+        Alert.alert('Error', 'Failed to fetch prescriptions');
+      }
     }
   };
-
+  
   const handleImagePick = async () => {
     try {
       const result = await launchImageLibrary({
         mediaType: 'photo',
-        quality: 0.8,
+        quality: 0.5, // Reduced quality for smaller file size
         includeBase64: true,
+        maxWidth: 800, // Limit image dimensions
+        maxHeight: 800
       });
-
+      
       if (result.didCancel || !result.assets?.[0]) return;
-
+      
       const imageUri = result.assets[0].uri;
       const imageBase64 = result.assets[0].base64;
-
+      
       if (!imageBase64) {
         throw new Error('No image data received');
       }
-
+      
+      // Check image size - large base64 strings can cause issues
+      if (imageBase64.length > 5000000) { // ~5MB
+        Alert.alert('Image Too Large', 'Please select a smaller image or reduce the quality.');
+        return;
+      }
+      
       setNewPrescription(prev => ({
         ...prev,
         image: `data:image/jpeg;base64,${imageBase64}`
       }));
-
+      
       setSelectedImage(imageUri);
     } catch (error) {
       console.error('Error picking image:', error);
       Alert.alert('Error', 'Failed to pick image');
     }
   };
-
+  
   const handleUpload = async () => {
     try {
+      // Validate required fields
+      const requiredFields = ['name', 'doctor', 'medication'];
+      const missingFields = requiredFields.filter(field => !newPrescription[field]);
+      
+      if (missingFields.length > 0) {
+        Alert.alert('Missing Information', `Please fill in: ${missingFields.join(', ')}`);
+        return;
+      }
+      
+      // Validate image
+      if (!newPrescription.image) {
+        Alert.alert('Missing Image', 'Please add a prescription image');
+        return;
+      }
+      
       setIsUploading(true);
       const username = await AsyncStorage.getItem('username');
       
       if (!username) {
         throw new Error('Username not found');
       }
-
+      
       const prescriptionData = {
         username,
         ...newPrescription,
       };
-
-      const response = await axios.post('http://20.193.156.237:5000/prescriptions', prescriptionData);
-
+      
+      // Add proper headers and increase timeout
+      const response = await axios.post(
+        'http://20.193.156.237:5000/prescriptions', 
+        prescriptionData,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          timeout: 30000 // 30 seconds timeout for large uploads
+        }
+      );
+      
       if (response.status === 200) {
         setUploadModalVisible(false);
         setNewPrescription({
@@ -134,18 +182,31 @@ const PrescriptionsScreen: React.FC = () => {
           date: '',
           image: '',
         });
+        setSelectedImage(null); // Clear selected image
         await fetchPrescriptions();
         Alert.alert('Success', 'Prescription uploaded successfully');
       }
     } catch (error) {
       console.error('Error posting prescription:', error);
-      Alert.alert('Error', 'Failed to upload prescription');
+      
+      // More specific error messages
+      if (error.response) {
+        if (error.response.status === 413) {
+          Alert.alert('Upload Failed', 'Image file is too large. Please use a smaller image.');
+        } else {
+          Alert.alert('Server Error', `Error code: ${error.response.status}`);
+        }
+      } else if (error.request) {
+        Alert.alert('Network Error', 'Server is unreachable. Check your connection.');
+      } else {
+        Alert.alert('Error', 'Failed to upload prescription');
+      }
     } finally {
       setIsUploading(false);
     }
   };
-
-  const handleDelete = async (id: string) => {
+  
+  const handleDelete = async (id) => {
     try {
       Alert.alert(
         'Delete Prescription',
@@ -156,18 +217,30 @@ const PrescriptionsScreen: React.FC = () => {
             text: 'Delete',
             style: 'destructive',
             onPress: async () => {
-              const response = await axios.delete(`http://20.193.156.237:5000/prescriptions/${id}`);
-              if (response.status === 200) {
-                setPrescriptions(prev => prev.filter(prescription => prescription._id !== id));
-                Alert.alert('Success', 'Prescription deleted successfully');
+              try {
+                const response = await axios.delete(
+                  `http://20.193.156.237:5000/prescriptions/${id}`,
+                  {
+                    timeout: 10000
+                  }
+                );
+                
+                if (response.status === 200) {
+                  setPrescriptions(prev => prev.filter(prescription => prescription._id !== id));
+                  setFilteredPrescriptions(prev => prev.filter(prescription => prescription._id !== id));
+                  Alert.alert('Success', 'Prescription deleted successfully');
+                }
+              } catch (error) {
+                console.error('Error deleting prescription:', error);
+                Alert.alert('Error', 'Failed to delete prescription');
               }
             }
           }
         ]
       );
     } catch (error) {
-      console.error('Error deleting prescription:', error);
-      Alert.alert('Error', 'Failed to delete prescription');
+      console.error('Error in delete dialog:', error);
+      Alert.alert('Error', 'Failed to process delete request');
     }
   };
 
@@ -186,7 +259,7 @@ const PrescriptionsScreen: React.FC = () => {
       <View style={styles.cardContent}>
         <View style={styles.cardTop}>
           <View style={styles.prescriptionIconContainer}>
-            <Icon name="medical" size={24} color="#4F46E5" />
+            <Icon name="medical" size={24} color="#1e948b" />
           </View>
           {/* Three dots menu removed */}
         </View>
@@ -194,20 +267,20 @@ const PrescriptionsScreen: React.FC = () => {
         <View style={styles.prescriptionInfo}>
           <Text style={styles.prescriptionName}>{item.name} Prescription</Text>
           <View style={styles.infoRow}>
-            <Icon name="medical-outline" size={16} color="#4F46E5" />
+            <Icon name="medical-outline" size={16} color="#1e948b" />
             <Text style={styles.detailText}>{item.medication}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Icon name="business-outline" size={16} color="#4F46E5" />
+            <Icon name="business-outline" size={16} color="#1e948b" />
             <Text style={styles.detailText}>{item.hospital} Hospital</Text>
           </View>
           <View style={styles.doctorInfo}>
             <View style={styles.infoRow}>
-              <Icon name="person" size={16} color="#4F46E5" />
+              <Icon name="person" size={16} color="#1e948b" />
               <Text style={styles.doctorText}>Dr. {item.doctor}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Icon name="document-text" size={16} color="#4F46E5" />
+              <Icon name="document-text" size={16} color="#1e948b" />
               <Text style={styles.dateText}>{item.description}</Text>
             </View>
           </View>
@@ -215,13 +288,13 @@ const PrescriptionsScreen: React.FC = () => {
 
         <View style={styles.cardActions}>
           <View style={styles.prescriptionIconContainer}>
-            <Icon name="eye" size={24} color="#4F46E5" />
+            <Icon name="eye" size={24} color="#1e948b" />
           </View>
           <TouchableOpacity 
             style={[styles.actionButton, styles.deleteButton]} 
             onPress={() => handleDelete(item._id)}
           >
-            <Icon name="trash-outline" size={20} color="#DC2626" />
+            <Icon name="trash-outline" size={20} color="#eb4034" />
           </TouchableOpacity>
         </View>
       </View>
@@ -239,7 +312,7 @@ const PrescriptionsScreen: React.FC = () => {
               setSearchQuery('');
             }}
           >
-            <Icon name="arrow-back" size={24} color="#4F46E5" />
+            <Icon name="arrow-back" size={24} color="#1e948b" />
           </TouchableOpacity>
           <TextInput
             style={styles.searchInput}
@@ -253,7 +326,7 @@ const PrescriptionsScreen: React.FC = () => {
               style={styles.clearButton} 
               onPress={() => setSearchQuery('')}
             >
-              <Icon name="close-circle" size={20} color="#64748B" />
+              <Icon name="close-circle" size={20} color="#1e948b" />
             </TouchableOpacity>
           )}
         </View>
@@ -266,7 +339,7 @@ const PrescriptionsScreen: React.FC = () => {
           style={styles.backButton} 
           onPress={() => navigation.goBack()}
         >
-          <Icon name="chevron-back" size={24} color="#4F46E5" />
+          <Icon name="chevron-back" size={24} color="#1e948b" />
         </TouchableOpacity>
         <View style={styles.headerTextContainer}>
           <Text style={styles.headerTitle}>My Prescriptions</Text>
@@ -276,7 +349,7 @@ const PrescriptionsScreen: React.FC = () => {
           style={styles.searchButton}
           onPress={() => setSearchVisible(true)}
         >
-          <Icon name="search-outline" size={24} color="#4F46E5" />
+          <Icon name="search-outline" size={24} color="#1e948b" />
         </TouchableOpacity>
       </View>
     );
@@ -297,7 +370,7 @@ const PrescriptionsScreen: React.FC = () => {
             style={styles.addButton} 
             onPress={() => setUploadModalVisible(true)}
           >
-            <Icon name="add" size={24} color="#4F46E5" />
+            <Icon name="add" size={24} color="#1e948b" />
           </TouchableOpacity>
         </View>
 
@@ -309,7 +382,7 @@ const PrescriptionsScreen: React.FC = () => {
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Icon name="document-text-outline" size={60} color="#CBD5E1" />
+              <Icon name="document-text-outline" size={60} color="#1e948b" />
               <Text style={styles.emptyText}>
                 {searchQuery ? 'No prescriptions found' : 'No prescriptions added yet'}
               </Text>
@@ -356,7 +429,7 @@ const PrescriptionsScreen: React.FC = () => {
             <View style={styles.uploadModalHeader}>
               <Text style={styles.uploadModalTitle}>Add New Prescription</Text>
               <TouchableOpacity onPress={() => setUploadModalVisible(false)}>
-                <Icon name="close" size={24} color="#1E293B" />
+                <Icon name="close" size={24} color="#1e948b" />
               </TouchableOpacity>
             </View>
 
@@ -366,7 +439,7 @@ const PrescriptionsScreen: React.FC = () => {
                 onPress={handleImagePick}
                 disabled={isUploading}
               >
-                <Icon name="camera" size={24} color="#4F46E5" />
+                <Icon name="camera" size={24} color="#1e948b" />
                 <Text style={styles.imageUploadText}>
                   {isUploading ? 'Uploading...' : 'Upload Prescription Image'}
                 </Text>
@@ -515,7 +588,7 @@ const styles = StyleSheet.create({
   addButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#e6f5f3', // Lighter version of #1e948b
   },
   list: {
     paddingBottom: 20,
@@ -550,7 +623,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#e6f5f3', // Lighter version of #1e948b
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -601,10 +674,10 @@ const styles = StyleSheet.create({
     padding: 8,
     marginLeft: 12,
     borderRadius: 8,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#e6f5f3', // Lighter version of #1e948b
   },
   deleteButton: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: '#FEE2E2', // Keeping red for delete
   },
   modalContainer: {
     flex: 1,
@@ -662,16 +735,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#e6f5f3', // Lighter version of #1e948b
     padding: 20,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#4F46E5',
+    borderColor: '#1e948b', // New primary color
     borderStyle: 'dashed',
     marginBottom: 20,
   },
   imageUploadText: {
-    color: '#4F46E5',
+    color: '#1e948b', // New primary color
     fontSize: 16,
     fontWeight: '500',
     marginLeft: 10,
@@ -699,7 +772,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   submitButton: {
-    backgroundColor: '#4F46E5',
+    backgroundColor: '#1e948b', // New primary color
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
