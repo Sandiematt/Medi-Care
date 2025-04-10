@@ -362,7 +362,7 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.screenTitle}>Add Medication Reminder</Text>
+        {/* <Text style={styles.screenTitle}>Add Medication Reminder</Text> */}
 
         {/* Medication Details Card */}
         <View style={styles.card}>
@@ -397,16 +397,10 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               textAlignVertical="top"
             />
           </View>
-        </View>
 
-        {/* Schedule Card */}
-        <View style={styles.card}>
+          {/* Move Schedule and Supply inside this card */}
           <DayPicker />
           <TimePicker />
-        </View>
-
-        {/* Supply Card */}
-        <View style={styles.card}>
           <DoseCounter />
         </View>
 
@@ -485,6 +479,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
+    marginTop: 10,
     shadowColor: '#64748B',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
