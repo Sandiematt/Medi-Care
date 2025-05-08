@@ -66,7 +66,7 @@ const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
   };
 
   const labelStyle = {
-    position: 'absolute',
+    position: 'absolute' as 'absolute',
     left: 30,
     top: animatedValue.interpolate({
       inputRange: [0, 1],
@@ -117,7 +117,7 @@ const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
           </TouchableOpacity>
         )}
       </View>
-      <Animated.View 
+      <Animated.View
         style={[
           styles.inputUnderline,
           isFocused && styles.inputUnderlineFocused
@@ -127,46 +127,44 @@ const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
   );
 };
 
-const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess }) => {
+const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess: _onLoginSuccess }) => {
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
 
-  // In your Login component
-// Update your handleLogin function in Login.tsx
-const handleLogin = async () => {
-  if (!username || !password) {
-    setError("Username and Password are required.");
-    return;
-  }
-
-  try {
-    const response = await axios.post("http://20.193.156.237:5000/login", {
-      username,
-      password,
-    });
-
-    const user = response.data;
-
-    if (user.username) {
-      await AsyncStorage.setItem("username", user.username);
+  const handleLogin = async () => {
+    if (!username || !password) {
+      setError("Username and Password are required.");
+      return;
     }
 
-    const onLoginSuccess = navigation.getState()?.routes?.find((route: { name: string; }) => route.name === "Login")?.params?.onLoginSuccess;
+    try {
+      const response = await axios.post("http://20.193.156.237:5000/login", {
+        username,
+        password,
+      });
 
-    if (onLoginSuccess) {
-      onLoginSuccess();
+      const user = response.data;
+
+      if (user.username) {
+        await AsyncStorage.setItem("username", user.username);
+      }
+
+      const onLoginSuccess = navigation.getState()?.routes?.find((route: { name: string; }) => route.name === "Login")?.params?.onLoginSuccess;
+
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      }
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Main" }],
+      });
+    } catch (err) {
+      setError("Invalid username or password");
     }
-
-    navigation.reset({
-      index: 0,
-      routes: [{ name: "Main" }],
-    });
-  } catch (err) {
-    setError("Invalid username or password");
-  }
-};
+  };
 
   return (
     <SafeAreaView style={styles.container}>

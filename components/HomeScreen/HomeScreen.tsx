@@ -27,10 +27,10 @@ import axios from 'axios';
 // NOTE: Verify these paths match your project structure!
 import InventoryScreen from '../Reminder/InventoryScreen'; // Check: Is InventoryScreen really inside Reminder folder?
 import HospitalScreen from './CounterfietDetection'; // Check: Ensure filename matches 'CounterfietDetection.js/ts'
-import SymptomCheckerScreen from './SymptomCheckerScreen';
 import PrescriptionsScreen from '../Profile/PrescriptionsScreen';
 import ProfileScreenApp from '../Profile/ProfileScreen';
 import ReminderScreen from '../Reminder/ReminderScreen'; // Check: Ensure this screen handles both single reminder view and list view if needed
+import AI_ChatBot from './AI_ChatBot';
 
 const Stack = createStackNavigator();
 const { width } = Dimensions.get('window');
@@ -508,7 +508,7 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
     { name: 'Inventory', icon: 'inventory-2', color: '#5856D6', route: 'Medicines', description: 'Track your medications' },
     { name: 'Counterfeit', icon: 'verified-user', color: '#FF2D55', route: 'Hospital', description: 'Verify your medicine' },
     { name: 'Prescriptions', icon: 'description', color: '#AF52DE', route: 'Prescriptions', description: 'View prescriptions' },
-    { name: 'Symptom Check', icon: 'local-hospital', color: '#FF9500', route: 'Symptom', description: 'Check your symptoms' },
+    { name: 'AI ChatBot', icon: 'chat', color: '#FF9500', route: 'AI_ChatBot', description: 'Get AI assistance' },
   ];
 
   // --- Search Logic ---
@@ -932,7 +932,7 @@ const HomeOptionsNavigator = () => (
     <Stack.Screen name="HomeMain" component={HomeMainScreen} />
     <Stack.Screen name="Medicines" component={InventoryScreen} />
     <Stack.Screen name="Hospital" component={HospitalScreen} />
-    <Stack.Screen name="Symptom" component={SymptomCheckerScreen} />
+    <Stack.Screen name="AI_ChatBot" component={AI_ChatBot} />
     <Stack.Screen name="Prescriptions" component={PrescriptionsScreen} />
     <Stack.Screen name="Profile" component={ProfileScreenApp} />
     {/* Ensure ReminderScreen can handle both viewing a single reminder (with param) and the list */}

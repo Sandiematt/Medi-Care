@@ -771,12 +771,14 @@ app.post('/logout', (req, res) => {
     // For token-based auth, you might blacklist the token (using a database or in-memory storage)
     res.status(200).json({ message: 'User logged out successfully' });
   });
+
+  
   
   // Start the server
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on http://20.193.156.237:${PORT}`);
-});
+  app.listen(PORT, '20.193.156.237', () => {
+    console.log(`Server running on http://20.193.156.237:${PORT}`);
+  });
 };
 
 // Start the main function
