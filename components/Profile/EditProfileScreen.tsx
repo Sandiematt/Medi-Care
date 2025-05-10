@@ -48,7 +48,7 @@ const EditProfileScreen: React.FC = () => {
 
   // State for tracking which fields are currently editable
   const [editableFields, setEditableFields] = useState<EditableFields>({
-    username: false,
+    username: false, // Username will always be false/non-editable
     email: false,
     contact: false,
     gender: false,
@@ -269,9 +269,32 @@ const EditProfileScreen: React.FC = () => {
 
         {/* Form Fields Section */}
         <View style={styles.formContainer}>
+          {/* Username field with special non-editable UI */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Username</Text>
+            <View style={[styles.inputWrapper, styles.usernameWrapper]}>
+              <Icon
+                name="person-outline"
+                size={22}
+                color="#888888"
+                style={styles.fieldIcon}
+              />
+              <TextInput
+                style={[styles.input, styles.inputDisabled]}
+                value={formData.username}
+                editable={false}
+                placeholder="Username"
+                placeholderTextColor="#AAAAAA"
+              />
+              <View style={styles.lockedBadge}>
+                <Icon name="lock-closed" size={16} color="#888888" />
+              </View>
+            </View>
+          </View>
+
           {Object.keys(formData)
-            // Filter out internal fields like _id and potentially password if handled differently
-            .filter((key) => key !== '_id')
+            // Filter out internal fields like _id and username (now handled separately)
+            .filter((key) => key !== '_id' && key !== 'username')
             .map((key) => (
               <View style={styles.fieldContainer} key={key}>
                 {/* Field Label */}
@@ -535,6 +558,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF', // White text
     fontSize: 16,
     fontWeight: '600', // Semibold
+  },
+  usernameWrapper: {
+    backgroundColor: '#F5F7FA', // Lighter background to indicate non-editable
+    borderColor: '#E0E4E9',
+  },
+  lockedBadge: {
+    paddingLeft: 10,
+    paddingVertical: 5,
   },
 });
 

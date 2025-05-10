@@ -13,7 +13,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
-  Dimensions,
   Alert,
   Easing,
   Modal,
@@ -22,7 +21,6 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
-import DocumentPicker from 'react-native-document-picker';
 
 // Define the Message interface
 interface Message {
@@ -108,9 +106,9 @@ const AttachmentModal: React.FC<{
   visible: boolean;
   onClose: () => void;
   onCameraPress: () => void;
-  onFilesPress: () => void;
+  onGalleryPress: () => void;
   styles: any;
-}> = ({ visible, onClose, onCameraPress, onFilesPress, styles }) => {
+}> = ({ visible, onClose, onCameraPress, onGalleryPress, styles }) => {
   return (
     <Modal
       animationType="slide"
@@ -129,9 +127,9 @@ const AttachmentModal: React.FC<{
             <Ionicons name="camera-outline" size={24} color={styles.modalButtonText.color} style={styles.modalButtonIcon} />
             <Text style={styles.modalButtonText}>Open Camera</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.modalButton} onPress={onFilesPress}>
-            <Ionicons name="folder-open-outline" size={24} color={styles.modalButtonText.color} style={styles.modalButtonIcon} />
-            <Text style={styles.modalButtonText}>Choose from Files</Text>
+          <TouchableOpacity style={styles.modalButton} onPress={onGalleryPress}>
+            <Ionicons name="images-outline" size={24} color={styles.modalButtonText.color} style={styles.modalButtonIcon} />
+            <Text style={styles.modalButtonText}>Choose from Gallery</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.modalButton, styles.modalCancelButton]}
@@ -270,6 +268,64 @@ const AI_ChatBot: React.FC = () => {
     }
   };
 
+  // Function to request storage permissions for Android
+  const requestStoragePermission = async (): Promise<boolean> => {
+    if (Platform.OS !== 'android') return true;
+
+    try {
+      if (Platform.Version >= 33) { // Android 13 (API level 33) and above
+        console.log('Requesting READ_MEDIA_IMAGES and READ_MEDIA_VIDEO permissions for Android 13+');
+        const statuses = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
+          PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO,
+        ]);
+        console.log('Permission statuses:', statuses);
+
+        const imagesGranted = statuses[PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES];
+        const videoGranted = statuses[PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO];
+
+        if (imagesGranted === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN || videoGranted === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+          Alert.alert(
+            "Permission Required",
+            "Storage permission is needed to select files. Please enable it in app settings.",
+            [{ text: "OK" }]
+          );
+          // Optionally, you could add a button to open app settings:
+          // { text: "Open Settings", onPress: () => Linking.openSettings() }
+          return false;
+        }
+        return imagesGranted === PermissionsAndroid.RESULTS.GRANTED && videoGranted === PermissionsAndroid.RESULTS.GRANTED;
+      } else { // Android versions below 13
+        console.log('Requesting READ_EXTERNAL_STORAGE permission for Android < 13');
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+          {
+            title: "Storage Permission",
+            message: "MediCare needs access to your storage to select files",
+            buttonNeutral: "Ask Me Later",
+            buttonNegative: "Cancel",
+            buttonPositive: "OK"
+          }
+        );
+        console.log('Permission status for READ_EXTERNAL_STORAGE:', granted);
+        if (granted === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+          Alert.alert(
+            "Permission Required",
+            "Storage permission is needed to select files. Please enable it in app settings.",
+            [{ text: "OK" }]
+          );
+          // Optionally, Linking.openSettings()
+          return false;
+        }
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      }
+    } catch (err) {
+      console.warn('Error during permission request:', err);
+      Alert.alert("Permission Error", "An error occurred while requesting storage permissions.");
+      return false;
+    }
+  };
+
   // Toggle attachment modal
   const handleAttachButtonPress = () => {
     Keyboard.dismiss();
@@ -336,24 +392,46 @@ const AI_ChatBot: React.FC = () => {
     }
   };
 
-  const handleFilesOption = async () => {
+  const handleGalleryOption = async () => {
     setIsAttachmentModalVisible(false);
-    console.log('Files selected');
+    console.log('Gallery selected');
+    
+    // Check storage permission for Android
+    if (Platform.OS === 'android') {
+      const hasPermission = await requestStoragePermission();
+      if (!hasPermission) {
+        Alert.alert('Permission Denied', 'Storage permission is required to access gallery.');
+        return;
+      }
+    }
+    
+    // Launch image library
+    const options = {
+      mediaType: 'mixed' as const, // Allow both photos and videos
+      includeBase64: false,
+      maxHeight: 2000,
+      maxWidth: 2000,
+      selectionLimit: 1, // Allow only one file selection
+    };
     
     try {
-      // Using document picker to select files
-      const results = await DocumentPicker.pick({
-        type: [DocumentPicker.types.allFiles],
-        allowMultiSelection: false,
-      });
+      const result = await launchImageLibrary(options);
       
-      // Process the selected file
-      if (results.length > 0) {
-        const selectedFile = results[0];
+      if (result.didCancel) {
+        console.log('User cancelled image picker');
+      } else if (result.errorCode) {
+        console.log('ImagePicker Error: ', result.errorMessage);
+        Alert.alert('Gallery Error', result.errorMessage || 'Unknown error occurred');
+      } else if (result.assets && result.assets.length > 0) {
+        const selectedFile = result.assets[0];
+        
+        // Determine if it's an image or video
+        const fileType = selectedFile.type?.startsWith('image/') ? 'Image' : 'File';
+        
         // Create message with file indication
         const fileMessage: Message = {
           id: Date.now().toString(),
-          text: `[File sent: ${selectedFile.name || 'Document'}]`,
+          text: `[${fileType} sent: ${selectedFile.fileName || 'Media file'}]`,
           isUser: true,
           timestamp: new Date()
         };
@@ -366,20 +444,16 @@ const AI_ChatBot: React.FC = () => {
         setTimeout(() => {
           const botResponse: Message = {
             id: (Date.now() + 1).toString(),
-            text: "I've received your file. How can I help you with this document?",
+            text: `I've received your ${fileType.toLowerCase()}. How can I help you with this?`,
             isUser: false,
             timestamp: new Date()
           };
           setMessages(prevMessages => [...prevMessages, botResponse]);
         }, 1000);
       }
-    } catch (err) {
-      if (DocumentPicker.isCancel(err)) {
-        console.log('User cancelled the picker');
-      } else {
-        console.error('Error picking file:', err);
-        Alert.alert('Error', 'Failed to select file. Please try again.');
-      }
+    } catch (error) {
+      console.error('Error selecting from gallery:', error);
+      Alert.alert('Error', 'Failed to select file. Please try again.');
     }
   };
 
@@ -483,7 +557,7 @@ const AI_ChatBot: React.FC = () => {
         visible={isAttachmentModalVisible}
         onClose={() => setIsAttachmentModalVisible(false)}
         onCameraPress={handleCameraOption}
-        onFilesPress={handleFilesOption}
+        onGalleryPress={handleGalleryOption}
         styles={styles}
       />
     </SafeAreaView>
