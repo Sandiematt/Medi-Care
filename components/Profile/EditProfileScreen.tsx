@@ -45,6 +45,7 @@ const EditProfileScreen: React.FC = () => {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true); // Start loading initially
   const [saving, setSaving] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null); // State for profile photo
 
   // State for tracking which fields are currently editable
   const [editableFields, setEditableFields] = useState<EditableFields>({
@@ -78,10 +79,21 @@ const EditProfileScreen: React.FC = () => {
       const storedUsername = await AsyncStorage.getItem('username');
       if (storedUsername) {
         // Make API call to get user data
-        const response = await axios.get(`http://20.193.156.237:5000/users/${storedUsername}`);
+        const response = await axios.get(`http://10.0.2.2:5000/users/${storedUsername}`);
         // Exclude password from being pre-filled for security, unless necessary
         const userData = { ...response.data, password: '' };
         setFormData(userData);
+        
+        // Fetch profile photo from separate endpoint
+        try {
+          const profileResponse = await axios.get(`http://10.0.2.2:5000/api/users/${storedUsername}/profile`);
+          if (profileResponse.data.success && profileResponse.data.profilePhoto) {
+            setProfilePhoto(profileResponse.data.profilePhoto);
+          }
+        } catch (profileError) {
+          console.error('Error fetching profile photo:', profileError);
+          // Continue with default photo if profile fetch fails
+        }
       } else {
         // Handle case where username is not found in storage
          Alert.alert('Error', 'User session not found. Please log in again.');
@@ -140,7 +152,7 @@ const EditProfileScreen: React.FC = () => {
 
       // Make the API call to update the user profile
       const response = await axios.put(
-        `http://20.193.156.237:5000/users/${storedUsername}`,
+        `http://10.0.2.2:5000/users/${storedUsername}`,
         updateData,
         {
           headers: { 'Content-Type': 'application/json' },
@@ -252,14 +264,9 @@ const EditProfileScreen: React.FC = () => {
         {/* Profile Image Section */}
         <View style={styles.profileImageContainer}>
           <Image
-            // Placeholder image - replace with actual user image logic if available
-            source={{ uri: 'https://img.freepik.com/premium-vector/man-professional-business-casual-young-avatar-icon-illustration_1277826-623.jpg?w=740' }}
+            source={{ uri: profilePhoto || 'https://img.freepik.com/premium-vector/man-professional-business-casual-young-avatar-icon-illustration_1277826-623.jpg?w=740' }}
             style={styles.profileImage}
           />
-          {/* Edit Image Button - Add functionality if needed */}
-          <TouchableOpacity style={styles.editImageButton}>
-            <Icon name="camera-outline" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
         </View>
 
         {/* User Name Display */}
@@ -294,7 +301,7 @@ const EditProfileScreen: React.FC = () => {
 
           {Object.keys(formData)
             // Filter out internal fields like _id and username (now handled separately)
-            .filter((key) => key !== '_id' && key !== 'username')
+            .filter((key) => key !== '_id' && key !== 'username' && key !== 'image')
             .map((key) => (
               <View style={styles.fieldContainer} key={key}>
                 {/* Field Label */}
@@ -436,21 +443,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 5, // Android shadow
-  },
-  editImageButton: {
-    position: 'absolute',
-    bottom: 5, // Position adjustment
-    right: '35%', // Position adjustment relative to container width
-    transform: [{ translateX: 18 }], // Center the button better under the image edge
-    backgroundColor: '#199A8E', // Primary color
-    width: 36,
-    height: 36,
-    borderRadius: 18, // Circular button
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF', // White border
-    elevation: 6, // Shadow for the button
   },
   // User Info Display Styles
   userNameDisplay: {

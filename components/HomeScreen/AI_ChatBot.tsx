@@ -17,10 +17,19 @@ import {
   Easing,
   Modal,
   PermissionsAndroid,
+  ScrollView,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Define the UserProfile interface
+interface UserProfile {
+  username: string;
+  name: string;
+  profilePhoto: string | null;
+}
 
 // Define the Message interface
 interface Message {
@@ -30,12 +39,58 @@ interface Message {
   timestamp: Date;
 }
 
-// AnimatedMessageItem component (remains the same)
+// Helper function to parse and format message text
+const formatMessageText = (text: string) => {
+  if (!text) return null;
+  
+  // Split the text by newlines first to handle paragraphs
+  const paragraphs = text.split('\n\n');
+  
+  return (
+    <>
+      {paragraphs.map((paragraph, pIndex) => {
+        // For each paragraph, check for ** markers
+        const parts = paragraph.split(/(\*\*.*?\*\*)/g);
+        
+        return (
+          <View key={`p-${pIndex}`} style={{ marginBottom: pIndex < paragraphs.length - 1 ? 10 : 0 }}>
+            {parts.map((part, index) => {
+              // Check if this part is enclosed in ** markers
+              if (part.startsWith('**') && part.endsWith('**')) {
+                // Remove the ** markers and apply bold styling
+                const content = part.slice(2, -2);
+                return (
+                  <Text key={`p-${pIndex}-${index}`} style={{
+                    fontWeight: 'bold',
+                    color: '#AD1457', // Deep pink color for important notes
+                    backgroundColor: 'rgba(173, 20, 87, 0.08)', // Very light pink background
+                    paddingHorizontal: 6,
+                    paddingVertical: 2,
+                    borderRadius: 4,
+                    marginVertical: 2,
+                    lineHeight: 22,
+                  }}>
+                    {content}
+                  </Text>
+                );
+              }
+              // Return regular text
+              return part ? <Text key={`p-${pIndex}-${index}`}>{part}</Text> : null;
+            })}
+          </View>
+        );
+      })}
+    </>
+  );
+};
+
+// Add AnimatedMessageItem component with profile photo support
 const AnimatedMessageItem: React.FC<{
   item: Message;
   formatTime: (date: Date) => string;
   styles: any;
-}> = ({ item, formatTime, styles }) => {
+  userProfile: UserProfile | null;
+}> = ({ item, formatTime, styles, userProfile }) => {
   const animation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -79,7 +134,7 @@ const AnimatedMessageItem: React.FC<{
               styles.messageText,
               item.isUser ? styles.userMessageText : styles.botMessageText
             ]}>
-              {item.text}
+              {item.isUser ? item.text : formatMessageText(item.text)}
             </Text>
           </View>
           <Text style={[
@@ -91,7 +146,9 @@ const AnimatedMessageItem: React.FC<{
         </View>
         {item.isUser && (
           <Image
-            source={{ uri: 'https://img.icons8.com/pastel-glyph/64/user-male-circle.png' }}
+            source={{ 
+              uri: userProfile?.profilePhoto || 'https://img.icons8.com/pastel-glyph/64/user-male-circle.png' 
+            }}
             style={styles.avatar}
             onError={(e) => console.log("Failed to load user avatar in AnimatedItem", e.nativeEvent.error)}
           />
@@ -143,26 +200,142 @@ const AttachmentModal: React.FC<{
   );
 };
 
+// Add DisclaimerBanner component
+const DisclaimerBanner: React.FC<{styles: any}> = ({ styles }) => {
+  const [expanded, setExpanded] = useState(false);
+  
+  return (
+    <TouchableOpacity 
+      style={styles.disclaimerBanner}
+      onPress={() => setExpanded(!expanded)}
+      activeOpacity={0.9}
+    >
+      <View style={styles.disclaimerHeader}>
+        <Ionicons name="alert-circle" size={16} color="#AD1457" style={{marginRight: 6}} />
+        <Text style={styles.disclaimerTitle}>
+          Medical Information Disclaimer
+        </Text>
+        <Ionicons 
+          name={expanded ? "chevron-up" : "chevron-down"} 
+          size={16} 
+          color="#777" 
+          style={{marginLeft: 'auto'}} 
+        />
+      </View>
+      
+      {expanded && (
+        <Text style={styles.disclaimerText}>
+          Information provided is for general knowledge only and not medical advice. 
+          Always consult a healthcare professional for specific concerns.
+        </Text>
+      )}
+    </TouchableOpacity>
+  );
+};
+
+// SuggestionChips component
+const SuggestionChips: React.FC<{
+  onSuggestionPress: (suggestion: string) => void;
+  styles: any;
+}> = ({ onSuggestionPress, styles }) => {
+  const suggestions = [
+    "COVID symptoms",
+    "Headache remedies",
+    "Blood pressure advice",
+    "Diabetes management",
+    "Allergy medication",
+    "Heart health tips",
+    "First aid for burns",
+    "Prenatal vitamins"
+  ];
+
+  return (
+    <View style={styles.suggestionContainer}>
+      <View style={styles.suggestionTitleContainer}>
+        <Ionicons name="medical" size={16} color="#008080" style={{marginRight: 6}} />
+        <Text style={styles.suggestionTitle}>Ask me about medical topics:</Text>
+      </View>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.suggestionScrollContent}
+      >
+        {suggestions.map((suggestion, index) => (
+          <TouchableOpacity 
+            key={index} 
+            style={styles.suggestionChip}
+            onPress={() => onSuggestionPress(suggestion)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.suggestionChipText}>{suggestion}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+};
+
 const AI_ChatBot: React.FC = () => {
   const navigation = useNavigation();
   const [input, setInput] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "Hello! I'm your MediCare assistant. How can I help you today?",
+      text: "Hello! I'm your MediCare assistant. I can help you with medical questions, health concerns, medication information, and general wellness advice. You can also share images of medications or symptoms for identification. How can I assist with your health today?",
       isUser: false,
       timestamp: new Date()
     },
   ]);
   const [isTyping, setIsTyping] = useState(false);
   const [isAttachmentModalVisible, setIsAttachmentModalVisible] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const flatListRef = useRef<FlatList>(null);
   const typingDots = useRef(new Animated.Value(0)).current;
 
   const GEMINI_API_KEY = 'AIzaSyBfD0AG0TcAtVqZfADH1uqT9Qh8Q0VIzX8';
   const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
+  // New state variable to track the last uploaded image
+  const [currentImage, setCurrentImage] = useState<{uri: string, base64: string} | null>(null);
+
+  // Fetch user profile
+  const fetchUserProfile = async () => {
+    try {
+      // Get username from AsyncStorage
+      const username = await AsyncStorage.getItem('username');
+      
+      if (!username) {
+        console.log('No username found in AsyncStorage');
+        return;
+      }
+      
+      // Call the API to fetch profile data
+      const response = await fetch(`http://10.0.2.2:5000/api/users/${username}/profile`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch profile');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setUserProfile({
+          username: data.username,
+          name: data.name || data.username,
+          profilePhoto: data.profilePhoto
+        });
+      } else {
+        console.log('Profile fetch unsuccessful:', data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
+
   useEffect(() => {
+    // Fetch user profile when component mounts
+    fetchUserProfile();
+    
     if (isTyping) {
       Animated.loop(
         Animated.sequence([
@@ -199,28 +372,103 @@ const AI_ChatBot: React.FC = () => {
     setIsTyping(true);
     
     try {
-      const response = await fetch(GEMINI_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: userMessageText }] }] }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'API request failed');
-      }
-
-      const data = await response.json();
-      const botResponseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't get a response.";
-
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: botResponseText,
-        isUser: false,
-        timestamp: new Date()
-      };
+      // Create a system prompt to constrain the model to medical context
+      const systemPrompt = "You are a medical assistant for MediCare. Only answer questions related to medical topics, health advice, symptoms, treatments, medications, and general wellness. If a user asks a non-medical question, politely explain that you can only help with medical and health-related inquiries. Provide informative, concise responses about medical topics without including disclaimers in every message - a persistent disclaimer is already shown to users. Keep your answers focused on factual medical information.";
       
-      setMessages(prevMessages => [...prevMessages, botMessage]);
+      let requestBody;
+      
+      // Check if we're dealing with an image query
+      if (currentImage && currentImage.base64) {
+        console.log('Sending image to Gemini API');
+        // Use the image API endpoint for Gemini Pro Vision
+        const visionApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        
+        // Format the request for image + text
+        requestBody = {
+          contents: [
+            {
+              role: "user",
+              parts: [
+                { text: systemPrompt },
+                {
+                  inline_data: {
+                    mime_type: "image/jpeg",
+                    data: currentImage.base64
+                  }
+                },
+                { text: userMessageText }
+              ]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.4,
+            topP: 0.95,
+            topK: 40,
+          }
+        };
 
+        // Clear the image after sending to avoid reusing it
+        setCurrentImage(null);
+        
+        const response = await fetch(visionApiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error?.message || 'API request failed');
+        }
+
+        const data = await response.json();
+        const botResponseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't analyze this image.";
+
+        const botMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: botResponseText,
+          isUser: false,
+          timestamp: new Date()
+        };
+        
+        setMessages(prevMessages => [...prevMessages, botMessage]);
+      } else {
+        // Regular text-only query
+        requestBody = {
+          contents: [
+            { role: 'user', parts: [{ text: systemPrompt }] },
+            { role: 'user', parts: [{ text: userMessageText }] }
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            topP: 0.95,
+            topK: 40,
+          }
+        };
+        
+        const response = await fetch(GEMINI_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error?.message || 'API request failed');
+        }
+
+        const data = await response.json();
+        const botResponseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't get a response.";
+
+        const botMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: botResponseText,
+          isUser: false,
+          timestamp: new Date()
+        };
+        
+        setMessages(prevMessages => [...prevMessages, botMessage]);
+      }
     } catch (error) {
       console.error('Error calling Gemini API:', error);
       const errorMessage: Message = {
@@ -348,9 +596,10 @@ const AI_ChatBot: React.FC = () => {
     // Launch camera
     const options = {
       mediaType: 'photo' as const,
-      includeBase64: false,
-      maxHeight: 2000,
-      maxWidth: 2000,
+      includeBase64: true, // Get base64 data for Gemini API
+      maxHeight: 1024, // Reduce image size for faster upload
+      maxWidth: 1024,
+      quality: 0.8 as const, // Fix type error with as const
     };
     
     try {
@@ -363,28 +612,34 @@ const AI_ChatBot: React.FC = () => {
         Alert.alert('Camera Error', result.errorMessage || 'Unknown error occurred');
       } else if (result.assets && result.assets.length > 0) {
         const selectedImage = result.assets[0];
-        // Create message with image indication
-        const imageMessage: Message = {
-          id: Date.now().toString(),
-          text: `[Image sent: ${selectedImage.fileName || 'Photo'}]`,
-          isUser: true,
-          timestamp: new Date()
-        };
-        setMessages(prevMessages => [...prevMessages, imageMessage]);
         
-        // In a real app, you would upload the image to a server here
-        console.log('Selected image:', selectedImage.uri);
-        
-        // Simulated bot response to the image
-        setTimeout(() => {
-          const botResponse: Message = {
-            id: (Date.now() + 1).toString(),
-            text: "I've received your image. How can I help you with this?",
+        if (selectedImage.base64) {
+          // Store the image to use with the next message
+          setCurrentImage({
+            uri: selectedImage.uri || '',
+            base64: selectedImage.base64
+          });
+          
+          // Create message with image indication
+          const imageMessage: Message = {
+            id: Date.now().toString(),
+            text: `[Image sent: ${selectedImage.fileName || 'Photo'}]`,
+            isUser: true,
+            timestamp: new Date()
+          };
+          setMessages(prevMessages => [...prevMessages, imageMessage]);
+          
+          // Inform user to ask a question about the image
+          const botPromptMessage: Message = {
+            id: (Date.now() + 2).toString(),
+            text: "I can now see your image. Please ask me a specific question about it, like 'What medication is this?' or 'What might these symptoms indicate?'",
             isUser: false,
             timestamp: new Date()
           };
-          setMessages(prevMessages => [...prevMessages, botResponse]);
-        }, 1000);
+          setMessages(prevMessages => [...prevMessages, botPromptMessage]);
+        } else {
+          Alert.alert('Error', 'Could not process image data. Please try again.');
+        }
       }
     } catch (error) {
       console.error('Error using camera:', error);
@@ -407,10 +662,11 @@ const AI_ChatBot: React.FC = () => {
     
     // Launch image library
     const options = {
-      mediaType: 'mixed' as const, // Allow both photos and videos
-      includeBase64: false,
-      maxHeight: 2000,
-      maxWidth: 2000,
+      mediaType: 'photo' as const, // Focus on photos for medical analysis
+      includeBase64: true, // Get base64 data for Gemini API
+      maxHeight: 1024, // Reduce image size for faster upload
+      maxWidth: 1024,
+      quality: 0.8 as const, // Fix type error with as const
       selectionLimit: 1, // Allow only one file selection
     };
     
@@ -425,31 +681,33 @@ const AI_ChatBot: React.FC = () => {
       } else if (result.assets && result.assets.length > 0) {
         const selectedFile = result.assets[0];
         
-        // Determine if it's an image or video
-        const fileType = selectedFile.type?.startsWith('image/') ? 'Image' : 'File';
-        
-        // Create message with file indication
-        const fileMessage: Message = {
-          id: Date.now().toString(),
-          text: `[${fileType} sent: ${selectedFile.fileName || 'Media file'}]`,
-          isUser: true,
-          timestamp: new Date()
-        };
-        setMessages(prevMessages => [...prevMessages, fileMessage]);
-        
-        // In a real app, you would upload the file to a server here
-        console.log('Selected file:', selectedFile.uri);
-        
-        // Simulated bot response to the file
-        setTimeout(() => {
-          const botResponse: Message = {
-            id: (Date.now() + 1).toString(),
-            text: `I've received your ${fileType.toLowerCase()}. How can I help you with this?`,
+        if (selectedFile.base64) {
+          // Store the image to use with the next message
+          setCurrentImage({
+            uri: selectedFile.uri || '',
+            base64: selectedFile.base64
+          });
+          
+          // Create message with file indication
+          const fileMessage: Message = {
+            id: Date.now().toString(),
+            text: `[Image sent: ${selectedFile.fileName || 'Photo from gallery'}]`,
+            isUser: true,
+            timestamp: new Date()
+          };
+          setMessages(prevMessages => [...prevMessages, fileMessage]);
+          
+          // Inform user to ask a question about the image
+          const botPromptMessage: Message = {
+            id: (Date.now() + 2).toString(),
+            text: "I can now see your image. Please ask me a specific question about it, like 'What medication is this?' or 'What might these symptoms indicate?'",
             isUser: false,
             timestamp: new Date()
           };
-          setMessages(prevMessages => [...prevMessages, botResponse]);
-        }, 1000);
+          setMessages(prevMessages => [...prevMessages, botPromptMessage]);
+        } else {
+          Alert.alert('Error', 'Could not process image data. Please try again.');
+        }
       }
     } catch (error) {
       console.error('Error selecting from gallery:', error);
@@ -457,8 +715,17 @@ const AI_ChatBot: React.FC = () => {
     }
   };
 
+  const handleSuggestionPress = (suggestion: string) => {
+    setInput(suggestion);
+  };
+
   const renderMessage = ({ item }: { item: Message }) => (
-    <AnimatedMessageItem item={item} formatTime={formatTime} styles={styles} />
+    <AnimatedMessageItem 
+      item={item} 
+      formatTime={formatTime} 
+      styles={styles} 
+      userProfile={userProfile}
+    />
   );
 
   const renderTypingIndicator = () => {
@@ -508,6 +775,15 @@ const AI_ChatBot: React.FC = () => {
           <Text style={styles.headerText}>MediCare Assistant</Text>
           <Text style={styles.headerSubText}>Online</Text>
         </View>
+        {userProfile && (
+          <Image
+            source={{ 
+              uri: userProfile.profilePhoto || 'https://img.icons8.com/pastel-glyph/64/user-male-circle.png' 
+            }}
+            style={styles.userHeaderAvatar}
+            onError={(e) => console.log("Failed to load user header avatar", e.nativeEvent.error)}
+          />
+        )}
       </View>
 
       <KeyboardAvoidingView
@@ -515,6 +791,8 @@ const AI_ChatBot: React.FC = () => {
         style={styles.chatContainer}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
+        <DisclaimerBanner styles={styles} />
+        
         <FlatList
           ref={flatListRef}
           data={messages}
@@ -527,6 +805,11 @@ const AI_ChatBot: React.FC = () => {
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
         />
 
+        <SuggestionChips 
+          onSuggestionPress={handleSuggestionPress} 
+          styles={styles} 
+        />
+
         <View style={styles.inputContainer}>
           <TouchableOpacity style={styles.attachButton} onPress={handleAttachButtonPress}>
             <Ionicons name="add-circle-outline" size={30} color={styles.sendButton.backgroundColor} />
@@ -536,7 +819,7 @@ const AI_ChatBot: React.FC = () => {
               style={styles.input}
               value={input}
               onChangeText={setInput}
-              placeholder="Type your message..."
+              placeholder="Type your medical question..."
               placeholderTextColor="#888888"
               multiline
               maxLength={500}
@@ -792,6 +1075,86 @@ const styles = StyleSheet.create({
   modalCancelButtonText: {
     color: '#757575', // Darker grey for cancel text
     fontWeight: '600',
+  },
+  suggestionContainer: {
+    padding: 12,
+    backgroundColor: '#F0F4F8',
+    borderTopWidth: 1,
+    borderTopColor: '#DDE2E5',
+  },
+  suggestionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    marginLeft: 5,
+  },
+  suggestionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#555555',
+  },
+  suggestionScrollContent: {
+    paddingBottom: 5,
+  },
+  suggestionChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    backgroundColor: '#E6F2F2',
+    borderWidth: 1,
+    borderColor: '#008080',
+    borderRadius: 20,
+    marginRight: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 1,
+  },
+  suggestionChipText: {
+    fontSize: 14,
+    color: '#008080',
+    fontWeight: '500',
+  },
+  disclaimerBanner: {
+    backgroundColor: 'rgba(173, 20, 87, 0.08)',
+    borderLeftWidth: 3,
+    borderLeftColor: '#AD1457',
+    marginHorizontal: 10,
+    marginTop: 10,
+    marginBottom: 5,
+    borderRadius: 6,
+    overflow: 'hidden',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+  },
+  disclaimerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+  },
+  disclaimerTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+  },
+  disclaimerText: {
+    fontSize: 12,
+    color: '#444',
+    paddingHorizontal: 10,
+    paddingBottom: 10,
+    paddingTop: 0,
+    lineHeight: 18,
+  },
+  userHeaderAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginLeft: 10,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.6)',
   },
 });
 

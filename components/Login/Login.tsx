@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   TextInput,
@@ -133,6 +133,14 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess: _onLoginSucce
   const [error, setError] = useState<string>('');
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
 
+  // Hide the tab bar on the login screen
+  useEffect(() => {
+    // Set tab bar visibility to false for this screen
+    navigation.setOptions({
+      tabBarVisible: false,
+    });
+  }, [navigation]);
+
   const handleLogin = async () => {
     if (!username || !password) {
       setError("Username and Password are required.");
@@ -140,7 +148,7 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess: _onLoginSucce
     }
 
     try {
-      const response = await axios.post("http://20.193.156.237:5000/login", {
+      const response = await axios.post("http://10.0.2.2:5000/login", {
         username,
         password,
       });

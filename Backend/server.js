@@ -772,13 +772,82 @@ app.post('/logout', (req, res) => {
     res.status(200).json({ message: 'User logged out successfully' });
   });
 
-  
+    // User profile image upload endpoint
+app.post('/users/:username/upload-profile-image', upload.single('image'), async (req, res) => {
+  try {
+    const { username } = req.params;
+    
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image uploaded' });
+    }
+    
+    // Read the uploaded image file and convert it to base64
+    const imageBase64 = fs.readFileSync(req.file.path, {
+      encoding: 'base64'
+    });
+    
+    // Create the image data URL
+    const imageData = `data:${req.file.mimetype};base64,${imageBase64}`;
+    
+    // Update user document with the image
+    const result = await usersCollection.findOneAndUpdate(
+      { username },
+      { $set: { image: imageData } },
+      { returnDocument: 'after' }
+    );
+    
+    // Delete temp file
+    fs.unlinkSync(req.file.path);
+    
+    if (!result) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Profile image uploaded successfully'
+    });
+  } catch (error) {
+    console.error('Error uploading profile image:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to upload profile image'
+    });
+  }
+});
+
+
+// GET user profile including profile photo
+app.get('/api/users/:username/profile', async (req, res) => {
+  try {
+    const { username } = req.params;
+    
+    // Query MongoDB for the user
+    const user = await usersCollection.findOne({ username });
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    // Return profile data, mapping 'image' to 'profilePhoto' for the client
+    return res.json({
+      success: true,
+      username: user.username,
+      name: user.name,
+      profilePhoto: user.image || null  // Map your existing 'image' field to 'profilePhoto'
+    });
+    
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
   
   // Start the server
   const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running and accessible via http://20.193.156.237:${PORT}`);
-});
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running and accessible via http://10.0.2.2:${PORT}`);
+  });
 };
 
 // Start the main function

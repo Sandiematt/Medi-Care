@@ -52,7 +52,7 @@ const EditHealthVitalsScreen: React.FC<Props> = ({ navigation }) => {
 
         // Fetch health vitals from the API
         // *** IMPORTANT: Replace with your actual API endpoint ***
-        const response = await axios.get(`http://20.193.156.237:5000/healthvitals/${storedUsername}`);
+        const response = await axios.get(`http://10.0.2.2:5000/healthvitals/${storedUsername}`);
         const data = response.data;
 
         // Update state with fetched data, providing empty strings as fallbacks
@@ -100,7 +100,7 @@ const EditHealthVitalsScreen: React.FC<Props> = ({ navigation }) => {
 
       // Send POST request to the API to save/update data
       // *** IMPORTANT: Replace with your actual API endpoint ***
-      const response = await axios.post(`http://20.193.156.237:5000/healthvitals/${storedUsername}`, payload);
+      const response = await axios.post(`http://10.0.2.2:5000/healthvitals/${storedUsername}`, payload);
 
       // Check if the request was successful (status code 2xx)
       if (response.status >= 200 && response.status < 300) {

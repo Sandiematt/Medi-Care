@@ -9,6 +9,8 @@ import {
   Dimensions,
   Animated,
   Easing,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import TextRecognition from '@react-native-ml-kit/text-recognition';
@@ -50,6 +52,9 @@ const PillIdentifierScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const [imprint, setImprint] = useState('');
   const [ocrResult, setOcrResult] = useState('');
   
+  // State and ref for tab bar visibility
+  const [isTabBarVisible, setIsTabBarVisible] = useState(true);
+  const lastScrollY = useRef(0);
   
   // Animation values using useRef
   const headerAnimation = useRef(new Animated.Value(0)).current;
@@ -125,6 +130,59 @@ const PillIdentifierScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     };
   }, []);
 
+  // Scroll handler to show/hide tab bar
+  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const currentScrollY = event.nativeEvent.contentOffset.y;
+    const contentHeight = event.nativeEvent.contentSize.height;
+    const layoutHeight = event.nativeEvent.layoutMeasurement.height;
+
+    const canScroll = contentHeight > layoutHeight + 5; // 5px threshold
+    const isEffectivelyAtBottom = canScroll && (layoutHeight + currentScrollY >= contentHeight - 20); // 20px threshold
+
+    if (isEffectivelyAtBottom) {
+      if (isTabBarVisible) {
+        setIsTabBarVisible(false);
+      }
+    } else {
+      if (canScroll && currentScrollY > lastScrollY.current && currentScrollY > 20) {
+        if (isTabBarVisible) {
+          setIsTabBarVisible(false);
+        }
+      } else {
+        if (!isTabBarVisible) {
+          setIsTabBarVisible(true);
+        }
+      }
+    }
+    lastScrollY.current = currentScrollY;
+  }, [isTabBarVisible]);
+
+  // Effect to update parent navigator's tab bar visibility
+  useEffect(() => {
+    navigation.getParent()?.setOptions({
+      tabBarVisible: isTabBarVisible,
+    });
+  }, [isTabBarVisible, navigation]);
+
+  // Effect to handle screen focus and blur for tab bar visibility
+  useEffect(() => {
+    const unsubscribeFocus = navigation.addListener('focus', () => {
+      setIsTabBarVisible(true); // Show tab bar on focus, scroll will adjust
+    });
+
+    const unsubscribeBlur = navigation.addListener('blur', () => {
+      // Ensure tab bar is visible for the next screen when this one blurs
+      navigation.getParent()?.setOptions({ tabBarVisible: true });
+    });
+
+    return () => {
+      unsubscribeFocus();
+      unsubscribeBlur();
+      // Ensure tab bar is visible if component unmounts
+      navigation.getParent()?.setOptions({ tabBarVisible: true });
+    };
+  }, [navigation]);
+
   const handlePressIn = useCallback((scaleAnim: Animated.Value) => {
     Animated.spring(scaleAnim, {
       toValue: 0.95,
@@ -185,7 +243,14 @@ const PillIdentifierScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      onScroll={handleScroll}
+      scrollEventThrottle={16}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      contentInsetAdjustmentBehavior="never"
+    >
       {/* Gradient Header */}
       <Animated.View style={{
         opacity: headerAnimation,

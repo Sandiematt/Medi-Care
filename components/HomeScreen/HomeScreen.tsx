@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,8 +13,9 @@ import {
   SafeAreaView,
   Platform,
   StatusBar,
-  FlatList, // Although FlatList is imported, it's not used. Keep for now or remove if definitely not needed.
   Easing, // Import Easing for animation curves
+  NativeScrollEvent,
+  NativeSyntheticEvent,
 } from 'react-native';
 // Use specific icons for clarity
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
@@ -35,7 +36,7 @@ import AI_ChatBot from './AI_ChatBot';
 const Stack = createStackNavigator();
 const { width } = Dimensions.get('window');
 // Define API base URL - Move to config/env variables in a real app
-const API_BASE_URL = 'http://20.193.156.237:5000';
+const API_BASE_URL = 'http://10.0.2.2:5000';
 
 // --- Banner Images ---
 // NOTE: Verify these image paths are correct relative to this file
@@ -301,13 +302,13 @@ const SearchResults = ({ searchResults, navigation }: { searchResults: { service
   const itemAnims = useRef(new Map<string, Animated.Value>()).current;
 
   // Function to get or create an animation value for a given item key
-  const getItemAnimationValue = (key: string) => {
-      if (!itemAnims.has(key)) {
-          // If animation doesn't exist for this key, create it (initially 0)
-          itemAnims.set(key, new Animated.Value(0));
-      }
-      return itemAnims.get(key)!; // Return the existing or new Animated.Value
-  };
+  const getItemAnimationValue = useCallback((key: string, itemAnims: Map<string, Animated.Value>) => {
+    if (!itemAnims.has(key)) {
+      // If animation doesn't exist for this key, create it (initially 0)
+      itemAnims.set(key, new Animated.Value(0));
+    }
+    return itemAnims.get(key)!; // Return the existing or new Animated.Value
+  }, []);
 
   // Effect to run animations when searchResults change
   useEffect(() => {
@@ -333,7 +334,7 @@ const SearchResults = ({ searchResults, navigation }: { searchResults: { service
 
       // 3. Create individual item animations (fade-in + slide-up)
       const animations = allItems.map(item => {
-          const animValue = getItemAnimationValue(item.key);
+          const animValue = getItemAnimationValue(item.key, itemAnims);
           animValue.setValue(0); // Reset item animation
           return Animated.timing(animValue, {
               toValue: 1, duration: 400, easing: Easing.out(Easing.ease), useNativeDriver: true, // Opacity+Transform safe for native driver
@@ -346,8 +347,8 @@ const SearchResults = ({ searchResults, navigation }: { searchResults: { service
   }, [searchResults, fadeAnim, getItemAnimationValue, itemAnims]); // Added missing dependencies
 
   // Function to get the style object for an animated item
-  const getItemAnimationStyle = (key: string) => {
-      const animValue = getItemAnimationValue(key);
+  const getItemAnimationStyle = useCallback((key: string) => {
+      const animValue = getItemAnimationValue(key, itemAnims);
       return {
           opacity: animValue, // Apply opacity directly
           transform: [
@@ -359,7 +360,7 @@ const SearchResults = ({ searchResults, navigation }: { searchResults: { service
               },
           ],
       };
-  };
+  }, [getItemAnimationValue, itemAnims]);
 
   // Check if there are any results
   const hasServices = searchResults?.services?.length > 0;
@@ -450,7 +451,8 @@ const SearchResults = ({ searchResults, navigation }: { searchResults: { service
 
 
 // --- Animated Service Card ---
-const AnimatedServiceCard = ({ service, index, navigation }: { service: any, index: number, navigation: any }) => {
+const AnimatedServiceCard = ({ service, index: _index, navigation }: { service: any, index: number, navigation: any }) => {
+  // Rename 'index' to '_' to mark it as unused
   // Animation value for press-down scale effect
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -489,12 +491,14 @@ const AnimatedServiceCard = ({ service, index, navigation }: { service: any, ind
 // --- Main Home Screen Component ---
 const HomeMainScreen = ({ navigation }: { navigation: any }) => {
   // State variables
-  const [userData, setUserData] = useState<{ username: string } | null>(null);
+  const [userData, setUserData] = useState<{ username: string; profilePhoto?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<{ services: any[], reminders: Reminder[] }>({ services: [], reminders: [] });
+  const [isTabBarVisible, setIsTabBarVisible] = useState(true);
+  const lastScrollY = useRef(0);
 
   // Animation values for different sections
   const headerFadeAnim = useRef(new Animated.Value(0)).current;
@@ -502,21 +506,80 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
   const servicesAnim = useRef(new Animated.Value(0)).current;
   const reminderAnim = useRef(new Animated.Value(0)).current;
 
-  // Static data for services
-  // NOTE: Ensure these MaterialIcon names are correct ('inventory-2', 'verified-user', etc.)
-  const services = [
+  // Static data for services - wrap in useMemo to prevent recreation on each render
+  const services = useMemo(() => [
     { name: 'Inventory', icon: 'inventory-2', color: '#5856D6', route: 'Medicines', description: 'Track your medications' },
     { name: 'Counterfeit', icon: 'verified-user', color: '#FF2D55', route: 'Hospital', description: 'Verify your medicine' },
     { name: 'Prescriptions', icon: 'description', color: '#AF52DE', route: 'Prescriptions', description: 'View prescriptions' },
     { name: 'AI ChatBot', icon: 'chat', color: '#FF9500', route: 'AI_ChatBot', description: 'Get AI assistance' },
-  ];
+  ], []);
 
   // --- Search Logic ---
   // Ref to store the debounce timer
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // --- Item animations map - create at top level
+  const itemAnims = useRef(new Map<string, Animated.Value>()).current;
+  
+  // Function to get or create an animation value for a given item key
+  const getItemAnimationValue = useCallback((key: string) => {
+    if (!itemAnims.has(key)) {
+      // If animation doesn't exist for this key, create it (initially 0)
+      itemAnims.set(key, new Animated.Value(0));
+    }
+    return itemAnims.get(key)!; // Return the existing or new Animated.Value
+  }, [itemAnims]);
+
+  // Creates the style object for opacity and translateY animation
+  const getSectionAnimationStyle = useCallback((animValue: Animated.Value) => {
+    return {
+      opacity: animValue, // Bind opacity to animation value
+      transform: [{ // Bind transform to animation value
+        translateY: animValue.interpolate({
+          inputRange: [0, 1],
+          outputRange: [20, 0], // Slide up from 20px below to 0
+          extrapolate: 'clamp',
+        })
+      }]
+    };
+  }, []);
+
+  // --- Render Profile Button ---
+  const renderProfileButton = useCallback(() => {
+    if (userData?.profilePhoto) {
+      return (
+        <TouchableOpacity
+          activeOpacity={0.9}
+          style={styles.profileButton}
+          onPress={() => navigation.navigate('Profile')}
+        >
+          <Image 
+            source={{ uri: userData.profilePhoto }} 
+            style={styles.profilePhoto} 
+            onError={() => {
+              // If image fails to load, fall back to the icon
+              console.warn('Profile photo failed to load, using default icon');
+              // You could update state here to use the default icon instead
+            }}
+          />
+        </TouchableOpacity>
+      );
+    }
+
+    // Fallback to default icon if no profile photo
+    return (
+      <TouchableOpacity
+        activeOpacity={0.2}
+        style={styles.profileButton}
+        onPress={() => navigation.navigate('Profile')}
+      >
+        <Ionicons name="person-circle-outline" size={40} color="#1e948b" />
+      </TouchableOpacity>
+    );
+  }, [navigation, userData]);
+
   // Function to perform the actual search based on the query
-  const performSearch = (query: string) => {
+  const performSearch = useCallback((query: string) => {
     // If query is empty or whitespace, clear search results
     if (!query.trim()) {
       setIsSearching(false);
@@ -537,81 +600,126 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
     setSearchResults({ services: filteredServices, reminders: filteredReminders });
     // Set searching flag to true to display results
     setIsSearching(true);
-  };
+  }, [reminders, services]);
 
   // Handler for text input changes (debounced)
-  const handleSearchChange = (text: string) => {
-      setSearchQuery(text); // Update input value immediately
-      // Clear existing debounce timer if any
-      if (debounceTimeoutRef.current) {
-          clearTimeout(debounceTimeoutRef.current);
+  const handleSearchChange = useCallback((text: string) => {
+    setSearchQuery(text); // Update input value immediately
+    // Clear existing debounce timer if any
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    // Set a new timer to perform search after a short delay (e.g., 150ms)
+    debounceTimeoutRef.current = setTimeout(() => {
+      performSearch(text);
+    }, 150);
+  }, [performSearch]);
+
+  // Handle scroll to show/hide tab bar - wrapped in useCallback to avoid recreation on each render
+  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const currentScrollY = event.nativeEvent.contentOffset.y;
+    const contentHeight = event.nativeEvent.contentSize.height;
+    const layoutHeight = event.nativeEvent.layoutMeasurement.height;
+
+    // Determine if the content is actually scrollable by more than a few pixels
+    const canScroll = contentHeight > layoutHeight + 5; // 5px threshold for scrollability
+    // Determine if effectively at the bottom of scrollable content
+    const isEffectivelyAtBottom = canScroll && (layoutHeight + currentScrollY >= contentHeight - 20); // 20px threshold from bottom
+
+    if (isEffectivelyAtBottom) {
+      // Rule 1: At the bottom of scrollable content, tab bar should be hidden
+      if (isTabBarVisible) {
+        setIsTabBarVisible(false);
       }
-      // Set a new timer to perform search after a short delay (e.g., 150ms)
-      debounceTimeoutRef.current = setTimeout(() => {
-          performSearch(text);
-      }, 150);
-  };
+    } else {
+      // Rule 2: Not at the bottom (or content isn't significantly scrollable)
+      // Apply original scroll direction logic, or ensure visible if not scrollable/at top.
+      if (canScroll && currentScrollY > lastScrollY.current && currentScrollY > 20) {
+        // Scrolling down on scrollable content (and not at the very top)
+        if (isTabBarVisible) {
+          setIsTabBarVisible(false);
+        }
+      } else {
+        // Scrolling up, or at the top of scrollable content, or content isn't scrollable
+        if (!isTabBarVisible) {
+          setIsTabBarVisible(true);
+        }
+      }
+    }
+    
+    // Update last scroll position
+    lastScrollY.current = currentScrollY;
+  }, [isTabBarVisible]);
+
+  // Update tab bar visibility
+  useEffect(() => {
+    navigation.getParent()?.setOptions({
+      tabBarVisible: isTabBarVisible,
+    });
+  }, [isTabBarVisible, navigation]);
 
   // --- Reminder Logic ---
   // Function to find the *single closest* upcoming reminder across all items
   // Returns the full info object { timestamp, reminder } or null
-  const findClosestReminderInfo = (): { timestamp: number; reminder: Reminder } | null => {
-      // Return null if no reminders loaded
-      if (!reminders || reminders.length === 0) return null;
+  const findClosestReminderInfo = useCallback(() => {
+    // Return null if no reminders loaded
+    if (!reminders || reminders.length === 0) return null;
 
-      let closestInfo: { timestamp: number; reminder: Reminder } | null = null;
-      const now = new Date();
-      const currentTime = now.getTime(); // Current time as timestamp
+    let closestInfo: { timestamp: number; reminder: Reminder } | null = null;
+    const now = new Date();
+    const currentTime = now.getTime(); // Current time as timestamp
 
-      // Iterate through each reminder
-      reminders.forEach(reminder => {
-          // Validate structure
-          if (!reminder || !Array.isArray(reminder.days) || !Array.isArray(reminder.times)) {
-              console.warn(`Skipping invalid reminder structure in findClosestReminderInfo: ${reminder?._id}`);
-              return; // Skip to next reminder
-          }
+    // Iterate through each reminder
+    reminders.forEach(reminder => {
+      // Validate structure
+      if (!reminder || !Array.isArray(reminder.days) || !Array.isArray(reminder.times)) {
+        console.warn(`Skipping invalid reminder structure in findClosestReminderInfo: ${reminder?._id}`);
+        return; // Skip to next reminder
+      }
 
-          // Check next 7 days for this reminder
-          for (let i = 0; i < 7; i++) {
-              const checkDate = new Date(now);
-              checkDate.setDate(now.getDate() + i);
-              const checkDay = checkDate.toLocaleDateString('en-US', { weekday: 'short' });
+      // Check next 7 days for this reminder
+      for (let i = 0; i < 7; i++) {
+        const checkDate = new Date(now);
+        checkDate.setDate(now.getDate() + i);
+        const checkDay = checkDate.toLocaleDateString('en-US', { weekday: 'short' });
 
-              // If reminder is scheduled for this day
-              if (reminder.days.includes(checkDay)) {
-                  // Get sorted, valid times for this day
-                  const sortedTimes = reminder.times
-                      .filter(t => typeof t === 'object' && t !== null && typeof t.time === 'string' && /^\d{2}:\d{2}$/.test(t.time))
-                      .sort((a, b) => a.time.localeCompare(b.time));
+        // If reminder is scheduled for this day
+        if (reminder.days.includes(checkDay)) {
+          // Get sorted, valid times for this day
+          const sortedTimes = reminder.times
+            .filter(t => typeof t === 'object' && t !== null && typeof t.time === 'string' && /^\d{2}:\d{2}$/.test(t.time))
+            .sort((a, b) => a.time.localeCompare(b.time));
 
-                  // Check each time slot on this day
-                  for (const timeSlot of sortedTimes) {
-                      const [hour, minute] = timeSlot.time.split(':').map(Number);
-                      const reminderDateTime = new Date(checkDate);
-                      reminderDateTime.setHours(hour, minute, 0, 0);
-                      const reminderTimestamp = reminderDateTime.getTime();
+          // Check each time slot on this day
+          for (const timeSlot of sortedTimes) {
+            const [hour, minute] = timeSlot.time.split(':').map(Number);
+            const reminderDateTime = new Date(checkDate);
+            reminderDateTime.setHours(hour, minute, 0, 0);
+            const reminderTimestamp = reminderDateTime.getTime();
 
-                      // If this time is in the future
-                      if (reminderTimestamp > currentTime) {
-                          // Check if it's the closest one found *so far* across all reminders
-                          if (closestInfo === null || reminderTimestamp < closestInfo.timestamp) {
-                              // Update the overall closest reminder found
-                              closestInfo = { timestamp: reminderTimestamp, reminder: reminder };
-                          }
-                          // Optimization: Since times are sorted for *this day*, we could break the inner `timeSlot` loop here
-                          // if we only cared about the first time on this day for this reminder.
-                          // However, we need the absolute minimum across all reminders and days, so we must continue checking
-                          // all potential future times. The previous `goto` was incorrect here.
-                      }
-                  } // End timeSlot loop
-              } // End day check
-          } // End day loop (0-6)
-      }); // End reminders.forEach
+            // If this time is in the future
+            if (reminderTimestamp > currentTime) {
+              // Check if it's the closest one found *so far* across all reminders
+              if (closestInfo === null || reminderTimestamp < closestInfo.timestamp) {
+                // Update the overall closest reminder found
+                closestInfo = { timestamp: reminderTimestamp, reminder: reminder };
+              }
+              // Optimization: Since times are sorted for *this day*, we could break the inner `timeSlot` loop here
+              // if we only cared about the first time on this day for this reminder.
+              // However, we need the absolute minimum across all reminders and days, so we must continue checking
+              // all potential future times. The previous `goto` was incorrect here.
+            }
+          } // End timeSlot loop
+        } // End day check
+      } // End day loop (0-6)
+    }); // End reminders.forEach
 
-      // Return the closest info found (or null)
-      return closestInfo;
-  };
+    // Return the closest info found (or null)
+    return closestInfo;
+  }, [reminders]);
 
+  // Calculate closest reminder - memoize the result to avoid recalculating on every render
+  const closestReminderInfo = useMemo(() => findClosestReminderInfo(), [findClosestReminderInfo]);
 
   // --- Data Fetching and Initial Animation ---
   useEffect(() => {
@@ -631,7 +739,24 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
         if (storedUser) {
             // If user found, set state and fetch reminders
             username = storedUser;
-            setUserData({ username: username });
+            
+            try {
+                // Fetch user profile data including profile photo
+                const profileResponse = await axios.get(`${API_BASE_URL}/api/users/${username}/profile`);
+                
+                if (profileResponse.data.success) {
+                    setUserData({ 
+                        username: username,
+                        profilePhoto: profileResponse.data.profilePhoto || null 
+                    });
+                } else {
+                    console.warn('Failed to fetch profile data:', profileResponse.data.message);
+                    setUserData({ username: username });
+                }
+            } catch (profileError) {
+                console.error('Error fetching profile data:', profileError);
+                setUserData({ username: username });
+            }
 
             try {
                 console.log(`Fetching reminders for user: ${username}`); // Log username
@@ -730,10 +855,6 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
     return unsubscribe;
   }, [navigation]);
 
-  // --- Calculate Closest Reminder ---
-  // Call the function to get the closest reminder info object
-  const closestReminderInfo = findClosestReminderInfo();
-
   // --- Loading State ---
   if (loading) {
     return (
@@ -746,19 +867,19 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
     );
   }
 
-  // --- Helper for Section Animation Style ---
-  // Creates the style object for opacity and translateY animation
-  const getSectionAnimationStyle = (animValue: Animated.Value) => {
-      return {
-          opacity: animValue, // Bind opacity to animation value
-          transform: [{ // Bind transform to animation value
-              translateY: animValue.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [20, 0], // Slide up from 20px below to 0
-                  extrapolate: 'clamp',
-              })
-          }]
-      };
+  // Function to get the style object for an animated item
+  const getItemAnimationStyle = (key: string) => {
+    const animValue = getItemAnimationValue(key);
+    return {
+      opacity: animValue, // Apply opacity directly
+      transform: [{ // Apply translateY transformation
+        translateY: animValue.interpolate({
+          inputRange: [0, 1],
+          outputRange: [15, 0], // Slide up from 15px below
+          extrapolate: 'clamp',
+        }),
+      }],
+    };
   };
 
   // --- Render Main Screen UI ---
@@ -773,6 +894,8 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
             keyboardShouldPersistTaps="handled"
             contentInsetAdjustmentBehavior="never"
             contentContainerStyle={styles.scrollContentContainer} // Use general padding
+            onScroll={handleScroll}
+            scrollEventThrottle={16} // Important for smooth scroll event handling
         >
             {/* Header */}
             <Animated.View style={[styles.header, { opacity: headerFadeAnim }]}>
@@ -780,12 +903,7 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
                 <Text style={styles.greeting}>Hello,</Text>
                 <Text style={styles.userName}>{userData?.username || 'Guest'} 👋</Text>
                 </View>
-                <TouchableOpacity
-                    style={styles.profileButton}
-                    onPress={() => navigation.navigate('Profile')}
-                >
-                <Ionicons name="person-circle-outline" size={40} color="#1e948b" />
-                </TouchableOpacity>
+                {renderProfileButton()}
             </Animated.View>
 
             {/* Search Bar */}
@@ -826,6 +944,8 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
           keyboardShouldPersistTaps="handled"
           contentInsetAdjustmentBehavior="never"
           contentContainerStyle={styles.scrollContentContainer}
+          onScroll={handleScroll}
+          scrollEventThrottle={16} // Important for smooth scroll event handling
         >
           {/* Header */}
           <Animated.View style={[styles.header, { opacity: headerFadeAnim }]}>
@@ -833,12 +953,7 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
               <Text style={styles.greeting}>Hello,</Text>
               <Text style={styles.userName}>{userData?.username || 'Guest'} 👋</Text>
             </View>
-            <TouchableOpacity
-                style={styles.profileButton}
-                onPress={() => navigation.navigate('Profile')}
-            >
-              <Ionicons name="person-circle-outline" size={40} color="#1e948b" />
-            </TouchableOpacity>
+            {renderProfileButton()}
           </Animated.View>
 
           {/* Search Bar */}
@@ -925,13 +1040,16 @@ const HomeOptionsNavigator = () => (
   <Stack.Navigator
     screenOptions={{
         headerShown: false, // Hide default header for all screens in this stack
-        animationEnabled: true, // Enable default screen transitions
+        // animationEnabled: true, // Removed due to linter error, not a standard option here
     }}
   >
     {/* Define screens in the stack */}
     <Stack.Screen name="HomeMain" component={HomeMainScreen} />
     <Stack.Screen name="Medicines" component={InventoryScreen} />
-    <Stack.Screen name="Hospital" component={HospitalScreen} />
+    <Stack.Screen 
+      name="Hospital" 
+      component={HospitalScreen} 
+    />
     <Stack.Screen name="AI_ChatBot" component={AI_ChatBot} />
     <Stack.Screen name="Prescriptions" component={PrescriptionsScreen} />
     <Stack.Screen name="Profile" component={ProfileScreenApp} />
@@ -997,6 +1115,13 @@ const styles = StyleSheet.create({
   },
   profileButton: {
     padding: 5,
+  },
+  profilePhoto: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#1e948b',
   },
   searchContainer: { // Moved inside ScrollView
     marginTop: 10,

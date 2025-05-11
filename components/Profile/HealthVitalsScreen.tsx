@@ -55,7 +55,7 @@ const HealthVitalsScreen = () => {
           throw new Error('Username not found in storage.');
         }
   
-        const response = await axios.get(`http://20.193.156.237:5000/healthvitals/${storedUsername}`);
+        const response = await axios.get(`http://10.0.2.2:5000/healthvitals/${storedUsername}`);
   
         const data = response.data || {};
         setUserData(data);
@@ -200,9 +200,6 @@ const HealthVitalsScreen = () => {
                 <Text style={styles.bloodGroupLabel}>Blood Group</Text>
                 <Text style={styles.bloodGroupValue}>{bloodgroup}</Text>
               </View>
-            </View>
-            <View style={styles.bloodGroupIconContainer}>
-              <Icon name="information-circle-outline" size={22} color={COLORS.primary} />
             </View>
           </View>
         </View>
@@ -397,14 +394,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: COLORS.textPrimary,
-  },
-  bloodGroupIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(63, 81, 181, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   actionButton: {
     marginVertical: 10,

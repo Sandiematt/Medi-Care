@@ -19,12 +19,13 @@ import {
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'react-native-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
 
 const CounterfeitDetection = () => {
+  const navigation = useNavigation();
   const [image, setImage] = useState(null);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -41,13 +42,19 @@ const CounterfeitDetection = () => {
     })();
   }, []);
 
-  // Reset states when screen is focused
+  // Hide tab bar on focus, show on blur
   useFocusEffect(
     useCallback(() => {
+      const tabNavigatorScreenNavigation = navigation.getParent()?.getParent();
+      
+      tabNavigatorScreenNavigation?.setOptions({ tabBarVisible: false });
+      // console.log('[CounterfeitDetection] Focus: Set tabBarVisible to false for', tabNavigatorScreenNavigation);
+
       return () => {
-        // Clean up any resources if needed
+        tabNavigatorScreenNavigation?.setOptions({ tabBarVisible: true });
+        // console.log('[CounterfeitDetection] Blur: Set tabBarVisible to true for', tabNavigatorScreenNavigation);
       };
-    }, [])
+    }, [navigation])
   );
 
   const checkCameraPermission = async () => {
@@ -212,7 +219,7 @@ const CounterfeitDetection = () => {
       console.log('Uploading image:', imageFile.uri);
 
       const response = await axios.post(
-        'http://20.193.156.237:5000/detect-counterfeit',
+        'http://10.0.2.2:5000/detect-counterfeit',
         formData,
         {
           headers: {
@@ -327,7 +334,10 @@ const CounterfeitDetection = () => {
         style={styles.header}
       >
         <View style={styles.headerContent}>
-          <Icon name="shield-checkmark" size={28} color="#FFFFFF" />
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Icon name="arrow-back" size={28} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Icon name="shield-checkmark" size={28} color="#FFFFFF" style={styles.headerIconLeft} />
           <Text style={styles.headerTitle}>Medication Verify</Text>
         </View>
         <Text style={styles.headerSubtitle}>Instant authenticity check</Text>
@@ -518,7 +528,7 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: Platform.OS === 'ios' ? 50 : 16,
     paddingBottom: 16,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
     ...Platform.select({
@@ -536,14 +546,21 @@ const styles = StyleSheet.create({
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+  },
+  backButton: {
+    paddingRight: 12,
+    paddingLeft: 4,
+    paddingVertical: 8,
+  },
+  headerIconLeft: {
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#FFFFFF',
     textAlign: 'center',
-    marginLeft: 10,
+    flex: 1,
+    marginRight: 30,
   },
   headerSubtitle: {
     fontSize: 14,

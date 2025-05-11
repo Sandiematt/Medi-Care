@@ -194,7 +194,7 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
     try {
       setIsLoading(true);
-      const response = await fetch('http://20.193.156.237:5000/addReminder', {
+      const response = await fetch('http://10.0.2.2:5000/addReminder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(reminderData),

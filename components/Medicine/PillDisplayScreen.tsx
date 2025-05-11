@@ -81,13 +81,28 @@ const PillDisplayScreen: React.FC<Props> = ({ route, navigation }) => {
     const [error, setError] = useState<string | null>(null);
     const { query } = route.params;
 
+    // Hide the tab bar when this screen is focused
+    useEffect(() => {
+        // Set tab bar visibility to false for this screen
+        navigation.setOptions({
+            tabBarVisible: false,
+        });
+
+        // Return a cleanup function to show the tab bar when navigating away
+        return () => {
+            navigation.setOptions({
+                tabBarVisible: true,
+            });
+        };
+    }, [navigation]);
+
     useEffect(() => {
         const fetchMedicineDetails = async () => {
             setLoading(true);
             setError(null);
             
             try {
-                const response = await axios.get('http://20.193.156.237:5000/api/medicine', {
+                const response = await axios.get('http://10.0.2.2:5000/api/medicine', {
                     params: { query },
                     timeout: 5000
                 });
@@ -199,12 +214,12 @@ const PillDisplayScreen: React.FC<Props> = ({ route, navigation }) => {
                         <InfoCard 
                             title="Uses" 
                             content={medicine?.uses}
-                            iconName="information-outline"
+                            iconName="pill"
                         />
                         <InfoCard 
                             title="Side Effects" 
                             content={medicine?.sideeffects}
-                            iconName="alert-outline"
+                            iconName="alert-circle-outline"
                         />
                     </View>
                 </View>

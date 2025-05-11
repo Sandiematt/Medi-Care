@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,11 +11,15 @@ import {
   ActivityIndicator,
   Animated, // Import Animated
   Easing, // Import Easing for animation curves
+  NativeScrollEvent, // Added
+  NativeSyntheticEvent, // Added
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { createStackNavigator } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import { launchImageLibrary, launchCamera, CameraOptions, ImageLibraryOptions } from 'react-native-image-picker'; // Import image picker
+import { NavigationProp } from '@react-navigation/native';
 
 // --- Import your actual screens ---
 // Ensure these files exist in your project relative to this file,
@@ -29,8 +33,29 @@ import PrescriptionsScreen from './PrescriptionsScreen';
 
 const Stack = createStackNavigator();
 
+// Define interface for menu item props
+interface MenuItemProps {
+  icon: string;
+  label: string;
+  onPress: () => void;
+  index: number;
+}
+
+// Define interface for ProfileMainScreen props
+interface ProfileMainScreenProps {
+  navigation: NavigationProp<any> & { replace: (name: string) => void };
+}
+
+// Define interface for user data
+interface UserData {
+  username?: string;
+  email?: string;
+  image?: string;
+  [key: string]: any;
+}
+
 // --- Animated Menu Item Component ---
-const AnimatedMenuItem = ({ icon, label, onPress, index }) => {
+const AnimatedMenuItem = ({ icon, label, onPress, index }: MenuItemProps) => {
   // Animation value for slide/fade-in effect
   const slideAnim = useRef(new Animated.Value(50)).current; // Start slightly below
   const opacityAnim = useRef(new Animated.Value(0)).current; // Start transparent
@@ -99,11 +124,17 @@ const AnimatedMenuItem = ({ icon, label, onPress, index }) => {
 };
 
 // --- Main Profile Screen Component ---
-const ProfileMainScreen = ({ navigation }) => {
-  const [userData, setUserData] = useState(null);
+const ProfileMainScreen = ({ navigation }: ProfileMainScreenProps) => {
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [uploading, setUploading] = useState(false);
+
+  // --- Tab Bar Visibility Logic ---
+  const [isTabBarVisible, setIsTabBarVisible] = useState(true);
+  const lastScrollY = useRef(0);
+  // --- End Tab Bar Visibility Logic ---
 
   // Animation values for the profile card
   const cardScaleAnim = useRef(new Animated.Value(0.95)).current; // Start slightly smaller
@@ -117,7 +148,7 @@ const ProfileMainScreen = ({ navigation }) => {
         if (storedUsername) {
           try {
             // Replace with your actual API endpoint
-            const response = await axios.get(`http://20.193.156.237:5000/users/${storedUsername}`);
+            const response = await axios.get(`http://10.0.2.2:5000/users/${storedUsername}`);
             const data = response.data;
             setUserData(data);
             setUsername(data.username || storedUsername); // Fallback username
@@ -147,6 +178,194 @@ const ProfileMainScreen = ({ navigation }) => {
 
     fetchUserData();
   }, [navigation]); // Add navigation as dependency if used for redirection
+
+  // --- Tab Bar Scroll Handler ---
+  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const currentScrollY = event.nativeEvent.contentOffset.y;
+    const contentHeight = event.nativeEvent.contentSize.height;
+    const layoutHeight = event.nativeEvent.layoutMeasurement.height;
+
+    const canScroll = contentHeight > layoutHeight + 5;
+    const isEffectivelyAtBottom = canScroll && (layoutHeight + currentScrollY >= contentHeight - 20);
+
+    if (isEffectivelyAtBottom) {
+      if (isTabBarVisible) {
+        setIsTabBarVisible(false);
+      }
+    } else {
+      if (canScroll && currentScrollY > lastScrollY.current && currentScrollY > 20) {
+        if (isTabBarVisible) {
+          setIsTabBarVisible(false);
+        }
+      } else {
+        if (!isTabBarVisible) {
+          setIsTabBarVisible(true);
+        }
+      }
+    }
+    lastScrollY.current = currentScrollY;
+  }, [isTabBarVisible]);
+  // --- End Tab Bar Scroll Handler ---
+
+  // --- Tab Bar Visibility Effects ---
+  useEffect(() => {
+    // This effect ensures the parent navigator (TabNavigator) is updated
+    // whenever our local isTabBarVisible state changes.
+    navigation.getParent()?.getParent()?.setOptions({
+      tabBarVisible: isTabBarVisible,
+    });
+  }, [isTabBarVisible, navigation]); // Runs when isTabBarVisible or navigation changes
+
+  useEffect(() => {
+    // This effect handles screen focus and blur events.
+    const unsubscribeFocus = navigation.addListener('focus', () => {
+      // When the screen comes into focus, we want the tab bar to be initially visible.
+      // The scroll handler will then adjust visibility based on scrolling.
+      if (!isTabBarVisible) { // Only set if it's currently false, to avoid unnecessary re-renders/effect runs
+        setIsTabBarVisible(true);
+      } else {
+        // If it's already true, still ensure the parent is synced, 
+        // in case this screen gained focus without isTabBarVisible changing from true.
+        navigation.getParent()?.getParent()?.setOptions({
+          tabBarVisible: true,
+        });
+      }
+    });
+
+    const unsubscribeBlur = navigation.addListener('blur', () => {
+      // When the screen loses focus, ensure the tab bar is visible for the next screen.
+      navigation.getParent()?.getParent()?.setOptions({ tabBarVisible: true });
+    });
+
+    return () => {
+      // Cleanup listeners when the component unmounts.
+      unsubscribeFocus();
+      unsubscribeBlur();
+      // Also ensure tab bar is visible if component unmounts while it was hidden.
+      navigation.getParent()?.getParent()?.setOptions({ tabBarVisible: true });
+    };
+  }, [navigation, isTabBarVisible]); // Added isTabBarVisible to dependencies of focus/blur effect
+  // --- End Tab Bar Visibility Effects ---
+
+  // Function to handle image selection
+  const handleImagePicker = () => {
+    Alert.alert(
+      'Profile Picture',
+      'Choose an option',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Take Photo',
+          onPress: () => captureImage(),
+        },
+        {
+          text: 'Choose from Gallery',
+          onPress: () => selectImage(),
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  // Function to capture a photo with the camera
+  const captureImage = () => {
+    const options: CameraOptions = {
+      mediaType: 'photo',
+      includeBase64: false,
+      maxHeight: 800,
+      maxWidth: 800,
+      quality: 0.7,
+    };
+
+    launchCamera(options, (response) => {
+      if (response.didCancel) {
+        console.log('User cancelled camera picker');
+        return;
+      } else if (response.errorCode) {
+        console.log('Camera Error: ', response.errorMessage);
+        Alert.alert('Error', response.errorMessage || 'Something went wrong');
+        return;
+      }
+      
+      if (response.assets && response.assets[0]) {
+        // Upload image
+        uploadImage(response.assets[0]);
+      }
+    });
+  };
+
+  // Function to select an image from the gallery
+  const selectImage = () => {
+    const options: ImageLibraryOptions = {
+      mediaType: 'photo',
+      includeBase64: false,
+      maxHeight: 800,
+      maxWidth: 800,
+      quality: 0.7,
+    };
+
+    launchImageLibrary(options, (response) => {
+      if (response.didCancel) {
+        console.log('User cancelled image picker');
+        return;
+      } else if (response.errorCode) {
+        console.log('ImagePicker Error: ', response.errorMessage);
+        Alert.alert('Error', response.errorMessage || 'Something went wrong');
+        return;
+      }
+      
+      if (response.assets && response.assets[0]) {
+        // Upload image
+        uploadImage(response.assets[0]);
+      }
+    });
+  };
+
+  // Function to upload the selected image to the server
+  const uploadImage = async (imageAsset: any) => {
+    if (!username) {
+      Alert.alert('Error', 'Username not found');
+      return;
+    }
+
+    setUploading(true);
+
+    const formData = new FormData();
+    formData.append('image', {
+      uri: imageAsset.uri,
+      type: imageAsset.type,
+      name: imageAsset.fileName || 'photo.jpg',
+    });
+
+    try {
+      const response = await axios.post(
+        `http://10.0.2.2:5000/users/${username}/upload-profile-image`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      if (response.data.success) {
+        // Refresh user data to get the updated image
+        const userResponse = await axios.get(`http://10.0.2.2:5000/users/${username}`);
+        setUserData(userResponse.data);
+        Alert.alert('Success', 'Profile picture updated successfully');
+      } else {
+        Alert.alert('Error', 'Failed to update profile picture');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      Alert.alert('Error', 'Failed to upload image');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // Trigger card animation when loading is finished
   useEffect(() => {
@@ -220,7 +439,14 @@ const ProfileMainScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={styles.scrollContent}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        keyboardShouldPersistTaps="handled"
+        contentInsetAdjustmentBehavior="never"
+      >
       
         <Animated.View
           style={[
@@ -234,12 +460,28 @@ const ProfileMainScreen = ({ navigation }) => {
           <View style={styles.profileImageContainer}>
             <Image
               source={{
-                // Consider using a user-specific avatar URL if available from userData
-                uri: userData?.avatarUrl || 'https://img.freepik.com/premium-vector/man-professional-business-casual-young-avatar-icon-illustration_1277826-623.jpg',
+                uri: userData?.image || 'https://img.freepik.com/premium-vector/man-professional-business-casual-young-avatar-icon-illustration_1277826-623.jpg',
               }}
               style={styles.profileImage}
             />
-           
+            
+            {/* Image upload button overlay */}
+            <TouchableOpacity 
+              style={styles.editImageButton}
+              onPress={handleImagePicker}
+              disabled={uploading}
+            >
+              <View style={styles.editImageIconContainer}>
+                <Icon name="camera" size={14} color="#FFFFFF" />
+              </View>
+            </TouchableOpacity>
+            
+            {/* Upload indicator */}
+            {uploading && (
+              <View style={styles.uploadingOverlay}>
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              </View>
+            )}
           </View>
           <Text style={styles.profileName}>{username || 'Username'}</Text>
           <Text style={styles.profileEmail}>{email || 'Email Address'}</Text> 
@@ -336,6 +578,41 @@ const styles = StyleSheet.create({
     borderRadius: 55, // Keep it circular
     borderWidth: 3, // Add a subtle border
     borderColor: '#E0F2F1', // Border color matching theme
+  },
+  // New style for the edit image button
+  editImageButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#199A8E',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  editImageIconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Overlay for when image is uploading
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 55,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   badgeContainer: { // Style for the optional checkmark badge
     position: 'absolute',

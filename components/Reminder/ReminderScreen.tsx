@@ -190,12 +190,12 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
 
       // Fetch inventory stats (assuming endpoint doesn't need username)
       // If stats are needed later, fetch them here. Removed setInventoryStats if unused.
-      // const statsResponse = await fetch('http://20.193.156.237:5000/stats');
+      // const statsResponse = await fetch('http://10.0.2.2:5000/stats');
       // if (!statsResponse.ok) throw new Error(`Stats fetch failed: ${statsResponse.status}`);
       // const statsData = await statsResponse.json();
       // setInventoryStats(statsData); // Uncomment if needed
 
-      const inventoryResponse = await fetch(`http://20.193.156.237:5000/inventory?username=${username}`);
+      const inventoryResponse = await fetch(`http://10.0.2.2:5000/inventory?username=${username}`);
       if (!inventoryResponse.ok) throw new Error(`Inventory fetch failed: ${inventoryResponse.status}`);
       const inventoryData = await inventoryResponse.json();
 
@@ -218,7 +218,7 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
       const username = await AsyncStorage.getItem('username');
       if (!username) return false;
 
-      const response = await fetch(`http://20.193.156.237:5000/reminders/${username}`);
+      const response = await fetch(`http://10.0.2.2:5000/reminders/${username}`);
       if (!response.ok) throw new Error(`Reminders fetch failed: ${response.status}`);
       const data = await response.json();
 
@@ -386,7 +386,7 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
       await notifee.cancelNotification(notificationId);
 
       // Update backend
-      const response = await fetch(`http://20.193.156.237:5000/reminders/${reminderId}`, {
+      const response = await fetch(`http://10.0.2.2:5000/reminders/${reminderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

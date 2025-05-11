@@ -71,7 +71,7 @@ const PrescriptionsScreen: React.FC = () => {
       }
       
       const response = await axios.get(
-        `http://20.193.156.237:5000/prescriptions/${username}`,
+        `http://10.0.2.2:5000/prescriptions/${username}`,
         {
           timeout: 10000 // Add timeout to prevent infinite loading
         }
@@ -161,7 +161,7 @@ const PrescriptionsScreen: React.FC = () => {
       
       // Add proper headers and increase timeout
       const response = await axios.post(
-        'http://20.193.156.237:5000/prescriptions', 
+        'http://10.0.2.2:5000/prescriptions', 
         prescriptionData,
         {
           headers: {
@@ -219,7 +219,7 @@ const PrescriptionsScreen: React.FC = () => {
             onPress: async () => {
               try {
                 const response = await axios.delete(
-                  `http://20.193.156.237:5000/prescriptions/${id}`,
+                  `http://10.0.2.2:5000/prescriptions/${id}`,
                   {
                     timeout: 10000
                   }
