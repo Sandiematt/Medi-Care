@@ -590,6 +590,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     flex: 1,
     marginRight: 30,
+    fontFamily: 'Poppins-Bold',
   },
   headerSubtitle: {
     fontSize: 14,
@@ -597,6 +598,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     textAlign: 'center',
     marginTop: 5,
+    fontFamily: 'Poppins-Regular',
   },
   scrollView: {
     flex: 1,
@@ -651,6 +653,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1F2937',
     marginBottom: 8,
+    fontFamily: 'Poppins-Bold',
   },
   placeholderText: {
     textAlign: 'center',
@@ -658,6 +661,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     marginBottom: 24,
+    fontFamily: 'Poppins-Regular',
   },
   placeholderSteps: {
     flexDirection: 'row',
@@ -682,6 +686,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#4B5563',
     fontWeight: '500',
+    fontFamily: 'Poppins-Medium',
   },
   stepDivider: {
     height: 1,
@@ -744,6 +749,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Poppins-SemiBold',
   },
   errorContainer: {
     flexDirection: 'row',
@@ -762,6 +768,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     lineHeight: 20,
+    fontFamily: 'Poppins-Regular',
   },
   dismissButton: {
     padding: 4,
@@ -814,6 +821,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     letterSpacing: 1,
+    fontFamily: 'Poppins-Bold',
   },
   resultIconContainer: {
     alignItems: 'center',
@@ -870,11 +878,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#4B5563',
     fontWeight: '500',
+    fontFamily: 'Poppins-Medium',
   },
   detailValue: {
     fontSize: 14,
     color: '#1F2937',
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Bold',
   },
   warningContainer: {
     flexDirection: 'row',
@@ -892,6 +902,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     lineHeight: 20,
+    fontFamily: 'Poppins-Regular',
   },
   actionButton: {
     marginTop: 20,
@@ -917,6 +928,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 8,
     fontSize: 16,
+    fontFamily: 'Poppins-SemiBold',
   },
   footerContainer: {
     width: width,
@@ -969,6 +981,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 10,
     fontSize: 16,
+    fontFamily: 'Poppins-Bold',
   },
   galleryButton: {
     width: '28%',
@@ -986,6 +999,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 6,
     fontSize: 14,
+    fontFamily: 'Poppins-SemiBold',
   },
 });
 

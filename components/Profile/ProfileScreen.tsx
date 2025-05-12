@@ -554,6 +554,7 @@ const styles = StyleSheet.create({
     fontSize: 22, // Slightly smaller title
     fontWeight: 'bold', // Use bold instead of 700
     color: '#1E293B',
+    fontFamily: 'Poppins-Bold',
   },
   profileCard: {
     backgroundColor: '#FFFFFF',
@@ -633,17 +634,20 @@ const styles = StyleSheet.create({
     color: '#0F172A', // Darker text
     marginBottom: 6,
     textAlign: 'center',
+    fontFamily: 'Poppins-SemiBold',
   },
   profileEmail: {
     fontSize: 15, // Slightly larger email
     color: '#64748B', // Muted color
     marginBottom: 8, // Add some space below email
     textAlign: 'center',
+    fontFamily: 'Poppins-Regular',
   },
   profileInfo: { // Style for additional info if added
-      fontSize: 14,
-      color: '#475569',
-      marginTop: 4,
+    fontSize: 14,
+    color: '#475569',
+    marginTop: 4,
+    fontFamily: 'Poppins-Regular',
   },
   menuContainer: {
     backgroundColor: '#FFFFFF',
@@ -682,6 +686,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1E293B',
     fontWeight: '500',
+    fontFamily: 'Poppins-Medium',
   },
   loadingContainer: {
     flex: 1,
@@ -690,9 +695,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   loadingText: {
-      marginTop: 10,
-      fontSize: 16,
-      color: '#64748B',
+    marginTop: 10,
+    fontSize: 16,
+    color: '#64748B',
+    fontFamily: 'Poppins-Regular',
   },
 });
 

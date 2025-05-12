@@ -456,11 +456,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
     marginLeft: 12,
+    fontFamily: 'Poppins-Bold',
   },
   headerSubtext: {
     fontSize: 16,
     color: '#E0E7FF',
     marginTop: 4,
+    fontFamily: 'Poppins-Regular',
   },
 
   // Main Content
@@ -504,6 +506,7 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     paddingVertical: 12,
     paddingRight: 12,
+    fontFamily: 'Poppins-Regular',
   },
   searchButton: {
     borderRadius: 12,
@@ -511,6 +514,17 @@ const styles = StyleSheet.create({
   },
 
   // Camera Card Styles
+  cameraCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    marginBottom: 20,
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
+    overflow: 'hidden',
+  },
   cameraButton: {
     width: '100%',
   },
@@ -535,11 +549,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1E293B',
     marginBottom: 8,
+    fontFamily: 'Poppins-Bold',
   },
   cameraSubtext: {
     fontSize: 14,
     color: '#64748B',
     textAlign: 'center',
+    fontFamily: 'Poppins-Regular',
   },
 
   // Instruction Card Styles
@@ -564,6 +580,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1E293B',
     marginLeft: 12,
+    fontFamily: 'Poppins-Bold',
   },
   tipRow: {
     flexDirection: 'row',
@@ -583,12 +600,14 @@ const styles = StyleSheet.create({
     color: '#4F46E5',
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Poppins-SemiBold',
   },
   tipText: {
     flex: 1,
     fontSize: 15,
     color: '#475569',
     lineHeight: 22,
+    fontFamily: 'Poppins-Regular',
   },
 
   // Result Card Styles
@@ -614,6 +633,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1E293B',
     marginLeft: 12,
+    fontFamily: 'Poppins-Bold',
   },
   resultContent: {
     backgroundColor: '#FFFFFF',
@@ -624,6 +644,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#475569',
     lineHeight: 24,
+    fontFamily: 'Poppins-Regular',
   },
 
   // Button Styles
@@ -639,6 +660,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginRight: 8,
+    fontFamily: 'Poppins-SemiBold',
   },
   buttonIcon: {
     marginLeft: 4,

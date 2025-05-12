@@ -257,6 +257,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 8,
+        fontFamily: 'Poppins-SemiBold',
     },
     verificationBadge: {
         flexDirection: 'row',
@@ -270,22 +271,26 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         fontSize: 14,
         marginLeft: 6,
+        fontFamily: 'Poppins-SemiBold',
     },
     title: {
         fontSize: 32,
         fontWeight: 'bold',
         color: '#1E293B',
         marginBottom: 4,
+        fontFamily: 'Poppins-Bold',
     },
     brand: {
         fontSize: 18,
         color: '#64748B',
         fontWeight: '500',
+        fontFamily: 'Poppins-Medium',
     },
     imprint: {
         fontSize: 14,
         color: '#64748B',
         marginTop: 4,
+        fontFamily: 'Poppins-Regular',
     },
     imageSection: {
         backgroundColor: 'white',
@@ -327,11 +332,13 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#1E293B',
         marginBottom: 8,
+        fontFamily: 'Poppins-SemiBold',
     },
     cardContent: {
         fontSize: 14,
         color: '#64748B',
         lineHeight: 20,
+        fontFamily: 'Poppins-Regular',
     },
     centerContainer: {
         flex: 1,
@@ -343,11 +350,13 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#64748B',
         textAlign: 'center',
+        fontFamily: 'Poppins-Regular',
     },
     errorText: {
         fontSize: 16,
         color: '#EF4444',
         textAlign: 'center',
+        fontFamily: 'Poppins-Regular',
     },
     imageLoader: {
         position: 'absolute',
@@ -373,6 +382,7 @@ const styles = StyleSheet.create({
         marginTop: 8,
         fontSize: 14,
         color: '#64748B',
+        fontFamily: 'Poppins-Regular',
     },
 });
 

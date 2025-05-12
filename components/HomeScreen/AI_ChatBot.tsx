@@ -928,10 +928,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: 'white',
+    fontFamily: 'Poppins-Bold',
   },
   headerSubText: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.9)',
+    fontFamily: 'Poppins-Regular',
   },
   chatContainer: {
     flex: 1,
@@ -988,18 +990,22 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: 15.5,
     lineHeight: 22,
+    fontFamily: 'Poppins-Regular',
   },
   userMessageText: {
     color: 'white',
+    fontFamily: 'Poppins-Regular',
   },
   botMessageText: {
     color: '#333333',
+    fontFamily: 'Poppins-Regular',
   },
   timestamp: {
     fontSize: 10.5,
     color: '#666666',
     marginTop: 6,
     paddingHorizontal: 5,
+    fontFamily: 'Poppins-Regular',
   },
   userTimestamp: {
     textAlign: 'right',
@@ -1054,6 +1060,7 @@ const styles = StyleSheet.create({
     color: '#222222',
     paddingTop: Platform.OS === 'ios' ? 0 : 2,
     paddingBottom: Platform.OS === 'ios' ? 0 : 2,
+    fontFamily: 'Poppins-Regular',
   },
   sendButton: {
     width: 48,
@@ -1093,6 +1100,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333333',
     marginBottom: 20, // Space below title
+    fontFamily: 'Poppins-Bold',
   },
   modalButton: {
     flexDirection: 'row', // Align icon and text
@@ -1111,6 +1119,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#008080', // Teal text color for options
     fontWeight: '500',
+    fontFamily: 'Poppins-Medium',
   },
   modalCancelButton: {
     backgroundColor: '#E0E0E0', // Different background for cancel
@@ -1119,6 +1128,7 @@ const styles = StyleSheet.create({
   modalCancelButtonText: {
     color: '#757575', // Darker grey for cancel text
     fontWeight: '600',
+    fontFamily: 'Poppins-SemiBold',
   },
   suggestionContainer: {
     padding: 12,
@@ -1136,6 +1146,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#555555',
+    fontFamily: 'Poppins-SemiBold',
   },
   suggestionScrollContent: {
     paddingBottom: 5,
@@ -1158,6 +1169,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#008080',
     fontWeight: '500',
+    fontFamily: 'Poppins-Medium',
   },
   disclaimerBanner: {
     backgroundColor: 'rgba(173, 20, 87, 0.08)',
@@ -1183,6 +1195,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#333',
+    fontFamily: 'Poppins-SemiBold',
   },
   disclaimerText: {
     fontSize: 12,
@@ -1191,6 +1204,7 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     paddingTop: 0,
     lineHeight: 18,
+    fontFamily: 'Poppins-Regular',
   },
   userHeaderAvatar: {
     width: 36,

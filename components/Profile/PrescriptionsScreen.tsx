@@ -585,6 +585,7 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontSize: 16,
     color: '#1E293B',
+    fontFamily: 'Poppins-Regular',
   },
   clearButton: {
     padding: 8,
@@ -608,11 +609,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: '#1E293B',
+    fontFamily: 'Poppins-Bold',
   },
   headerSubtitle: {
     fontSize: 14,
     color: '#64748B',
     marginTop: 4,
+    fontFamily: 'Poppins-Regular',
   },
   listContainer: {
     flex: 1,
@@ -628,6 +631,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#1E293B',
+    fontFamily: 'Poppins-SemiBold',
   },
   addButton: {
     padding: 8,
@@ -646,6 +650,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#94A3B8',
     marginTop: 16,
+    fontFamily: 'Poppins-Regular',
   },
   card: {
     backgroundColor: '#fff',
@@ -679,6 +684,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1E293B',
     marginBottom: 12,
+    fontFamily: 'Poppins-SemiBold',
   },
   infoRow: {
     flexDirection: 'row',
@@ -689,6 +695,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: '#475569',
     fontSize: 14,
+    fontFamily: 'Poppins-Regular',
   },
   doctorInfo: {
     borderTopWidth: 1,
@@ -700,11 +707,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#64748B',
     marginLeft: 8,
+    fontFamily: 'Poppins-Regular',
   },
   dateText: {
     fontSize: 14,
     color: '#64748B',
     marginLeft: 8,
+    fontFamily: 'Poppins-Regular',
   },
   cardActions: {
     flexDirection: 'row',
@@ -771,6 +780,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#1E293B',
+    fontFamily: 'Poppins-SemiBold',
   },
   uploadForm: {
     padding: 20,
@@ -792,6 +802,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     marginLeft: 10,
+    fontFamily: 'Poppins-Medium',
   },
   inputContainer: {
     marginBottom: 16,
@@ -801,6 +812,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#475569',
     marginBottom: 8,
+    fontFamily: 'Poppins-Medium',
   },
   input: {
     backgroundColor: '#F8FAFC',
@@ -810,6 +822,7 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     color: '#1E293B',
+    fontFamily: 'Poppins-Regular',
   },
   textArea: {
     height: 100,
@@ -827,6 +840,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Poppins-SemiBold',
   },
 });
 
