@@ -50,7 +50,7 @@ const AddInventoryScreen = () => {
     };
   
     getUserData();
-  }, []);
+  }, [navigation]);
 
   const validateForm = () => {
     if (!name.trim()) return 'Item name is required';
@@ -108,7 +108,7 @@ const AddInventoryScreen = () => {
           },
         ]
       );
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to add item');
     } finally {
       setLoading(false);
@@ -127,7 +127,11 @@ const AddInventoryScreen = () => {
         <Text style={styles.title}>Add New Item</Text>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.form}>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Item Name</Text>
@@ -255,6 +259,9 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
+  contentContainer: {
+    paddingBottom: 80,
+  },
   form: {
     gap: 24,
   },
@@ -299,6 +306,7 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     padding: 16,
+    paddingBottom:84 ,
     gap: 12,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
@@ -356,6 +364,9 @@ const styles = StyleSheet.create({
   userInfoText: {
     fontSize: 14,
     color: '#64748B',
+  },
+  saveIcon: {
+    marginRight: 5,
   },
 });
 

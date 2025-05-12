@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
     flexGrow: 1, // Ensure content can grow to fill space
     paddingHorizontal: 20,
     paddingTop: 25,
-    paddingBottom: 40, // More space at the bottom
+    paddingBottom: 84, // Increased from 40 to ensure button is visible above tab bar
   },
   // Card container for the form
   cardContainer: {

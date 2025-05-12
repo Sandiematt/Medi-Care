@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Image, TouchableWithoutFeedback, Dimensions, TextInput, ScrollView, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -41,6 +41,50 @@ const PrescriptionsScreen: React.FC = () => {
     description: '',
     image: '',
   });
+
+  // Hide tab bar on focus, show on blur
+  useFocusEffect(
+    React.useCallback(() => {
+      // Get all navigation parents to ensure we find the tab navigator
+      let parent = navigation;
+      
+      // Attempt to make tab bar invisible at the component level that renders it
+      while (parent) {
+        // Set options to hide the tab bar and mark as special screen
+        parent.setOptions({ 
+          tabBarVisible: false,
+          tabBarStyle: { display: 'none' },
+          tabBarShowLabel: false,
+          tabBarIconStyle: { display: 'none' },
+          isPrescriptionsScreen: true // Special flag for TabBar component
+        });
+        
+        // Try to navigate to parent
+        parent = parent.getParent();
+      }
+      
+      // Log for debugging
+      console.log('PrescriptionsScreen: Tab bar should be completely hidden now');
+      
+      // Cleanup function - restore tab bar visibility when leaving screen
+      return () => {
+        // Reset all the navigation parents
+        parent = navigation;
+        while (parent) {
+          parent.setOptions({ 
+            tabBarVisible: true,
+            tabBarStyle: undefined,
+            tabBarShowLabel: true,
+            tabBarIconStyle: undefined,
+            isPrescriptionsScreen: false // Reset the special flag
+          });
+          parent = parent.getParent();
+        }
+        
+        console.log('PrescriptionsScreen: Tab bar should be visible again');
+      };
+    }, [navigation])
+  );
 
   useEffect(() => {
     fetchPrescriptions();

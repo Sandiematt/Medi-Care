@@ -20,7 +20,7 @@ import {
   ScrollView,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -331,6 +331,50 @@ const AI_ChatBot: React.FC = () => {
       console.error('Error fetching user profile:', error);
     }
   };
+
+  // Hide tab bar on focus, show on blur
+  useFocusEffect(
+    React.useCallback(() => {
+      // Get all navigation parents to ensure we find the tab navigator
+      let parent = navigation;
+      
+      // Attempt to make tab bar invisible at the component level that renders it
+      while (parent) {
+        // Set options to hide the tab bar and mark as special screen
+        parent.setOptions({ 
+          tabBarVisible: false,
+          tabBarStyle: { display: 'none' },
+          tabBarShowLabel: false,
+          tabBarIconStyle: { display: 'none' },
+          isAIChatBotScreen: true // Special flag for TabBar component
+        });
+        
+        // Try to navigate to parent
+        parent = parent.getParent();
+      }
+      
+      // Log for debugging
+      console.log('AI_ChatBot: Tab bar should be completely hidden now');
+      
+      // Cleanup function - restore tab bar visibility when leaving screen
+      return () => {
+        // Reset all the navigation parents
+        parent = navigation;
+        while (parent) {
+          parent.setOptions({ 
+            tabBarVisible: true,
+            tabBarStyle: undefined,
+            tabBarShowLabel: true,
+            tabBarIconStyle: undefined,
+            isAIChatBotScreen: false // Reset the special flag
+          });
+          parent = parent.getParent();
+        }
+        
+        console.log('AI_ChatBot: Tab bar should be visible again');
+      };
+    }, [navigation])
+  );
 
   useEffect(() => {
     // Fetch user profile when component mounts

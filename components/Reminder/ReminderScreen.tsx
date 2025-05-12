@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'; // Added useMemo here
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -33,6 +33,33 @@ import Animated, {
   ZoomIn,     // Pre-built animation for modal
 } from 'react-native-reanimated';
 
+// --- Type Definitions (Add these for better type safety) ---
+interface TimeObject {
+  time: string;
+  dose: number;
+  completed?: { [key: string]: boolean };
+}
+
+interface Reminder {
+  _id: string; // Assuming MongoDB ObjectId string
+  name: string;
+  description?: string;
+  totalDoses: number;
+  days: string[];
+  times: TimeObject[];
+}
+
+interface InventoryItem {
+  _id: string; // Assuming MongoDB ObjectId string
+  name: string;
+  inStock: number;
+  // Add other inventory properties if needed
+}
+
+interface ReminderMainScreenProps {
+  navigation: any; // Replace 'any' with more specific navigation prop type if available
+}
+
 // --- Navigation Setup (Unchanged) ---
 const Stack = createStackNavigator();
 
@@ -51,10 +78,23 @@ const ReminderApp = () => {
   );
 };
 
+// --- Helper Function: isPastDue (FIXED: Removed useCallback) ---
+// This function now correctly calculates based on the current time each time it's called.
+const isPastDue = (timeString: string): boolean => {
+    const [hour, minute] = timeString.split(':');
+    const now = new Date(); // Get current time *inside* the function call
+    const reminderTimeToday = new Date(now); // Create a new date object based on 'now' for today
+    reminderTimeToday.setHours(parseInt(hour, 10), parseInt(minute, 10), 0, 0); // Set hours/mins for today
+
+    // Compare the reminder time for today with the current time
+    return reminderTimeToday < now;
+};
+
+
 // --- Animated Components ---
 
 // Animated component for Reminder Cards
-const AnimatedReminderCard = ({ item, index, onTickClick, today, getStatusIcon, getStatusColor, isPastDue }) => {
+const AnimatedReminderCard = ({ item, index, onTickClick, today, getStatusIcon, getStatusColor }) => {
   return (
     // Use entering animation for initial appearance
     <Animated.View
@@ -62,58 +102,58 @@ const AnimatedReminderCard = ({ item, index, onTickClick, today, getStatusIcon, 
       layout={Layout.springify()} // Animate layout changes (e.g., if list reorders)
     >
       <View style={styles.reminderCard}>
-         <View style={styles.cardTop}>
-           <View style={styles.nameContainer}>
-             <Text style={styles.medicineName}>{item.name}</Text>
-             <View style={styles.dosesContainer}>
-               <Icon name="pill" size={14} color="#4A90E2" />
-               <Text style={styles.totalDoses}>{item.totalDoses} doses</Text>
-             </View>
-           </View>
-           <TouchableOpacity
-             style={styles.checkButton}
-             onPress={() => onTickClick(item)} // Pass handler
-           >
-             <Icon name="check" size={20} color="#FFFFFF" />
-           </TouchableOpacity>
-         </View>
+          <View style={styles.cardTop}>
+            <View style={styles.nameContainer}>
+              <Text style={styles.medicineName}>{item.name}</Text>
+              <View style={styles.dosesContainer}>
+                <Icon name="pill" size={14} color="#4A90E2" />
+                <Text style={styles.totalDoses}>{item.totalDoses} doses</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.checkButton}
+              onPress={() => onTickClick(item)} // Pass handler
+            >
+              <Icon name="check" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
 
-         {item.description && (
-           <Text style={styles.medicineDescription}>{item.description}</Text>
-         )}
+          {item.description && (
+            <Text style={styles.medicineDescription}>{item.description}</Text>
+          )}
 
-         <View style={styles.timesList}>
-           {item.times.map((timeObj, timeIndex) => (
-             <View
-               key={`${item._id}-${timeIndex}`} // Use a unique key combining reminder ID and time index
-               style={styles.timeItem}
-             >
-               <Icon
-                 name={getStatusIcon(timeObj)} // Pass helper func result
-                 size={16}
-                 color={getStatusColor(timeObj)} // Pass helper func result
-               />
-               <Text
-                 style={[
-                   styles.time,
-                   { color: getStatusColor(timeObj) }, // Pass helper func result
-                   timeObj.completed && timeObj.completed[today] && styles.completedTime,
-                 ]}
-               >
-                 {timeObj.time}
-               </Text>
-               <Text style={styles.doseInfo}>
-                 {timeObj.dose} dose
-                 {timeObj.completed && timeObj.completed[today]
-                   ? ' • Taken'
-                   : isPastDue(timeObj.time) // Pass helper func result
-                   ? ' • Past Due'
-                   : ' • Upcoming'}
-               </Text>
-             </View>
-           ))}
-         </View>
-       </View>
+          <View style={styles.timesList}>
+            {item.times.map((timeObj, timeIndex) => (
+              <View
+                key={`${item._id}-${timeIndex}`} // Use a unique key combining reminder ID and time index
+                style={styles.timeItem}
+              >
+                <Icon
+                  name={getStatusIcon(timeObj)} // Pass helper func result
+                  size={16}
+                  color={getStatusColor(timeObj)} // Pass helper func result
+                />
+                <Text
+                  style={[
+                    styles.time,
+                    { color: getStatusColor(timeObj) }, // Pass helper func result
+                    timeObj.completed && timeObj.completed[today] && styles.completedTime,
+                  ]}
+                >
+                  {timeObj.time}
+                </Text>
+                <Text style={styles.doseInfo}>
+                  {timeObj.dose} dose
+                  {timeObj.completed && timeObj.completed[today]
+                    ? ' • Taken'
+                    : isPastDue(timeObj.time) // Call helper func directly
+                    ? ' • Past Due'
+                    : ' • Upcoming'}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
     </Animated.View>
   );
 };
@@ -179,21 +219,14 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
   const [refreshing, setRefreshing] = useState(false);
   const [lowStockItems, setLowStockItems] = useState<InventoryItem[]>([]);
 
-  // useMemo is now correctly imported
+  // useMemo is correctly imported and used for today's short weekday name
   const today = useMemo(() => new Date().toLocaleString('en-US', { weekday: 'short' }), []);
 
-  // --- Data Fetching Functions (Console logs removed, minor improvements) ---
-  const fetchInventoryData = useCallback(async () => { // Use useCallback
+  // --- Data Fetching Functions (Optimized with useCallback) ---
+  const fetchInventoryData = useCallback(async () => {
     try {
       const username = await AsyncStorage.getItem('username');
-      if (!username) return false;
-
-      // Fetch inventory stats (assuming endpoint doesn't need username)
-      // If stats are needed later, fetch them here. Removed setInventoryStats if unused.
-      // const statsResponse = await fetch('http://10.0.2.2:5000/stats');
-      // if (!statsResponse.ok) throw new Error(`Stats fetch failed: ${statsResponse.status}`);
-      // const statsData = await statsResponse.json();
-      // setInventoryStats(statsData); // Uncomment if needed
+      if (!username) return false; // Early exit if no username
 
       const inventoryResponse = await fetch(`http://10.0.2.2:5000/inventory?username=${username}`);
       if (!inventoryResponse.ok) throw new Error(`Inventory fetch failed: ${inventoryResponse.status}`);
@@ -201,47 +234,51 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
 
       if (Array.isArray(inventoryData)) {
         const lowItems = inventoryData.filter(item => item.inStock < 5 && item.inStock > 0);
-        setLowStockItems(lowItems); // Update state
+        setLowStockItems(lowItems); // Update state with low stock items
       } else {
-        setLowStockItems([]);
-        throw new Error('Invalid inventory data format received');
+        setLowStockItems([]); // Reset if data is not an array
+        console.warn('Invalid inventory data format received:', inventoryData); // Log warning
       }
-      return true;
+      return true; // Indicate success
     } catch (error) {
-      // Non-blocking error handling
-      return false;
+      console.error('Error fetching inventory data:', error); // Log the error
+      // Non-blocking error handling for UI
+      return false; // Indicate failure
     }
-  }, []); // Empty dependency array for useCallback
+  }, []); // Empty dependency array: function doesn't depend on props/state
 
-  const fetchReminders = useCallback(async () => { // Use useCallback
+  const fetchReminders = useCallback(async () => {
     try {
       const username = await AsyncStorage.getItem('username');
-      if (!username) return false;
+      if (!username) return false; // Early exit
 
       const response = await fetch(`http://10.0.2.2:5000/reminders/${username}`);
       if (!response.ok) throw new Error(`Reminders fetch failed: ${response.status}`);
       const data = await response.json();
 
-      const todaysReminders = data.filter((reminder) => reminder.days.includes(today));
+      // Filter reminders for the current day ('today' is stable due to useMemo)
+      const todaysReminders = data.filter((reminder: Reminder) => reminder.days.includes(today));
       setReminders(todaysReminders); // Update state
 
-      // Schedule notifications (can run in background)
+      // Schedule notifications (runs asynchronously, doesn't block UI)
       todaysReminders.forEach((reminder) => {
-        reminder.times.forEach((timeObj) => { // No need for async here unless scheduleNotification itself needs await inside loop
+        reminder.times.forEach((timeObj) => {
           if (!timeObj.completed || !timeObj.completed[today]) {
-             scheduleNotification(timeObj.time, reminder.name); // Fire and forget is okay here
+            // Schedule notification - fire and forget is okay here
+            scheduleNotification(timeObj.time, reminder.name);
           }
         });
       });
 
-      return true;
+      return true; // Indicate success
     } catch (error) {
-      return false;
+      console.error('Error fetching reminders:', error); // Log the error
+      return false; // Indicate failure
     }
-  }, [today]); // Add today as dependency
+  }, [today]); // Dependency: today (from useMemo)
 
-  // --- Notification Scheduling (Console logs removed) ---
-  const scheduleNotification = async (timeString, medicineName) => {
+  // --- Notification Scheduling (Improved Error Handling) ---
+  const scheduleNotification = async (timeString: string, medicineName: string) => {
     try {
       await notifee.requestPermission();
 
@@ -252,56 +289,63 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
         importance: AndroidImportance.HIGH,
       });
 
+      // Calculate trigger time based on today's date and the time string
       const [hour, minute] = timeString.split(':');
       const triggerTime = new Date();
       triggerTime.setHours(parseInt(hour, 10), parseInt(minute, 10), 0, 0);
 
       const now = new Date();
+      // Only schedule if the trigger time is in the future
       if (triggerTime <= now) {
-        return; // Skip past notifications
+        // console.log(`Skipping past notification for ${medicineName} at ${timeString}`);
+        return; // Don't schedule past notifications
       }
 
-      // Check if a notification for this exact time and medicine already exists
-      // Note: This check might be basic. More robust checking might involve storing scheduled IDs.
-      const scheduledNotifications = await notifee.getTriggerNotifications();
-      const alreadyScheduled = scheduledNotifications.some(notif =>
-        notif.notification.title === 'Medication Reminder' &&
-        notif.notification.body?.includes(medicineName) &&
-        notif.trigger.timestamp === triggerTime.getTime()
+      // Generate a unique ID for the notification
+      const notificationId = `${medicineName.replace(/\s+/g, '_')}_${timeString}`;
+
+      // Check if a notification with this ID already exists
+      // Note: This might not be perfectly reliable if app restarts clear scheduled lists internally in notifee
+      const scheduledNotifications = await notifee.getTriggerNotificationIds();
+      if (scheduledNotifications.includes(notificationId)) {
+          // console.log(`Notification already scheduled for ${medicineName} at ${timeString}`);
+          return; // Avoid duplicates
+      }
+
+
+      // Create the trigger notification
+      await notifee.createTriggerNotification(
+        {
+          id: notificationId, // Use the unique ID
+          title: 'Medication Reminder',
+          body: `It's time to take your ${medicineName}.`,
+          android: {
+            channelId,
+            smallIcon: 'ic_launcher', // Ensure this icon exists
+            sound: 'default',
+            importance: AndroidImportance.HIGH,
+            pressAction: { id: 'default' },
+          },
+          ios: {
+            sound: 'default',
+            // critical: true, // Consider if critical alert is needed, requires special entitlement
+          }
+        },
+        {
+          type: TriggerType.TIMESTAMP,
+          timestamp: triggerTime.getTime(),
+        }
       );
+      // console.log(`Notification scheduled for ${medicineName} at ${timeString}`);
 
-      if (!alreadyScheduled) {
-          await notifee.createTriggerNotification(
-            {
-              // Use a unique ID based on reminder and time to allow updates/cancellations
-              id: `${medicineName.replace(/\s+/g, '_')}_${timeString}`,
-              title: 'Medication Reminder',
-              body: `It's time to take your ${medicineName}.`,
-              android: {
-                channelId,
-                smallIcon: 'ic_launcher',
-                sound: 'default',
-                importance: AndroidImportance.HIGH,
-                pressAction: { id: 'default' },
-              },
-              ios: {
-                sound: 'default',
-                // critical: true, // Reconsider if critical alert is necessary
-              }
-            },
-            {
-              type: TriggerType.TIMESTAMP,
-              timestamp: triggerTime.getTime(),
-            }
-          );
-      }
     } catch (error) {
-      // Avoid alerting for scheduling errors
+      console.error(`Error scheduling notification for ${medicineName}:`, error);
+      // Avoid alerting the user for background scheduling errors
     }
   };
 
-  // --- Refresh Handler (Console logs removed) ---
-  const refreshHandler = useCallback(async () => { // Use useCallback
+  // --- Refresh Handler (Using Promise.allSettled for robustness) ---
+  const refreshHandler = useCallback(async () => {
     setRefreshing(true);
     try {
       const username = await AsyncStorage.getItem('username');
@@ -311,59 +355,69 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
         return;
       }
 
+      // Fetch both data types concurrently and wait for both to settle
       const results = await Promise.allSettled([
         fetchReminders(),
         fetchInventoryData()
       ]);
 
+      // Check the results of each promise
       const remindersSuccess = results[0].status === 'fulfilled' && results[0].value;
       const inventorySuccess = results[1].status === 'fulfilled' && results[1].value;
 
+      // Provide feedback based on success/failure
       if (!remindersSuccess && !inventorySuccess) {
-        Alert.alert('Refresh Failed', 'Could not refresh data. Please check your connection.');
+        Alert.alert('Refresh Failed', 'Could not refresh reminders or inventory. Please check your connection.');
       } else if (!remindersSuccess) {
         Alert.alert('Partial Refresh', 'Inventory updated, but failed to refresh reminders.');
       } else if (!inventorySuccess) {
         Alert.alert('Partial Refresh', 'Reminders updated, but failed to refresh inventory.');
       }
+      // If both succeed, no alert is needed.
 
     } catch (error) {
+      // Catch any unexpected errors during the refresh process
+      console.error("Unexpected refresh error:", error);
       Alert.alert('Error', 'An unexpected error occurred while refreshing data.');
     } finally {
+      // Ensure refreshing state is always turned off
       setRefreshing(false);
     }
-  }, [fetchReminders, fetchInventoryData]); // Add dependencies
+  }, [fetchReminders, fetchInventoryData]); // Dependencies: memoized fetch functions
 
   // --- Initial Data Load ---
   useEffect(() => {
     const initializeData = async () => {
-      setRefreshing(true);
+      setRefreshing(true); // Show loading indicator on initial load
       await Promise.allSettled([fetchReminders(), fetchInventoryData()]);
-      setRefreshing(false);
+      setRefreshing(false); // Hide indicator once done
     };
     initializeData();
-  }, [fetchReminders, fetchInventoryData]); // Add dependencies
+    // Run only once on mount, dependencies ensure fetch functions are stable
+  }, [fetchReminders, fetchInventoryData]);
 
-  // --- Event Handlers (Console logs removed) ---
-  const handleTickClick = useCallback((reminder) => { // Use useCallback
+  // --- Event Handlers ---
+  const handleTickClick = useCallback((reminder: Reminder) => {
     setSelectedReminder(reminder);
+    // Check if there are any doses for today that are not completed
     const incompleteTimes = reminder.times.filter(
       (timeObj) => !(timeObj.completed && timeObj.completed[today])
     );
     if (incompleteTimes.length > 0) {
-      setModalVisible(true); // Show modal
+      setModalVisible(true); // Show modal only if there are times to mark
     } else {
-      Alert.alert('Info', 'All doses for today have been marked as completed.');
+      Alert.alert('Info', 'All doses for today have already been marked as completed.');
     }
-  }, [today]); // Add dependency
+  }, [today]); // Dependency: today
 
-  const handleRemoveTime = useCallback(async (time) => { // Use useCallback
-    if (!selectedReminder) return;
+  const handleRemoveTime = useCallback(async (time: TimeObject) => {
+    if (!selectedReminder) return; // Guard clause
 
     const reminderId = selectedReminder._id;
     const timeToRemove = time.time;
+    const originalReminders = reminders; // Store original state for potential revert
 
-    // Optimistic UI Update
+    // --- Optimistic UI Update ---
     setReminders((prevReminders) =>
       prevReminders.map((r) =>
         r._id === reminderId
@@ -371,7 +425,7 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
               ...r,
               times: r.times.map((t) =>
                 t.time === timeToRemove
-                  ? { ...t, completed: { ...(t.completed || {}), [today]: true } }
+                  ? { ...t, completed: { ...(t.completed || {}), [today]: true } } // Mark as completed today
                   : t
               ),
             }
@@ -381,107 +435,82 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
     setModalVisible(false); // Close modal immediately
 
     try {
-      // Cancel the corresponding notification
+      // --- Cancel Notification ---
       const notificationId = `${selectedReminder.name.replace(/\s+/g, '_')}_${timeToRemove}`;
       await notifee.cancelNotification(notificationId);
+      // console.log(`Cancelled notification: ${notificationId}`);
 
-      // Update backend
+      // --- Update Backend ---
       const response = await fetch(`http://10.0.2.2:5000/reminders/${reminderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          time: timeToRemove,
-          days: today,
+          time: timeToRemove, // The specific time to mark completed
+          day: today,         // The specific day to mark completed for
         }),
       });
 
       if (!response.ok) {
-        // Revert UI if backend update fails
-        setReminders((prevReminders) =>
-          prevReminders.map((r) =>
-            r._id === reminderId
-              ? {
-                  ...r,
-                  times: r.times.map((t) =>
-                    t.time === timeToRemove
-                      ? { ...t, completed: { ...(t.completed || {}), [today]: false } } // Revert completed status
-                      : t
-                  ),
-                }
-              : r
-          )
-        );
-        // Show modal again if revert happens? Optional, depends on desired UX.
+        // --- Revert UI on Backend Failure ---
+        setReminders(originalReminders); // Restore previous state
+        const errorData = await response.json().catch(() => ({})); // Try to parse error, default to empty object
+        Alert.alert('Error', errorData.message || 'Failed to mark the reminder as completed on the server.');
+        // Optionally reopen modal if revert happens:
+        // setSelectedReminder(selectedReminder); // Ensure selected reminder is still set
         // setModalVisible(true);
-        const data = await response.json();
-        Alert.alert('Error', data.message || 'Failed to mark the reminder as completed.');
+      } else {
+         // Backend update successful, UI already updated optimistically.
+         // Optionally, fetch reminders again to ensure sync, but optimistic update is usually sufficient.
+         // fetchReminders();
       }
-      // No need to update state again on success, already done optimistically
 
     } catch (error) {
-      // Revert UI on network or other errors
-       setReminders((prevReminders) =>
-          prevReminders.map((r) =>
-            r._id === reminderId
-              ? {
-                  ...r,
-                  times: r.times.map((t) =>
-                    t.time === timeToRemove
-                      ? { ...t, completed: { ...(t.completed || {}), [today]: false } }
-                      : t
-                  ),
-                }
-              : r
-          )
-        );
-      // Show modal again if revert happens? Optional.
-      // setModalVisible(true);
-      Alert.alert('Error', 'An error occurred while updating the reminder.');
+      // --- Revert UI on Network/Other Errors ---
+      console.error('Error updating reminder:', error);
+      setReminders(originalReminders); // Restore previous state
+      Alert.alert('Error', 'An network error occurred while updating the reminder.');
+       // Optionally reopen modal:
+       // setSelectedReminder(selectedReminder);
+       // setModalVisible(true);
     }
-  }, [selectedReminder, today]); // Add dependencies
+  }, [selectedReminder, today, reminders]); // Dependencies: selectedReminder, today, and reminders (for revert)
 
-  const handleAddMedication = useCallback(() => { // Use useCallback
+  const handleAddMedication = useCallback(() => {
     navigation.navigate('NewReminder');
   }, [navigation]);
 
-  const handleNavigateInventory = useCallback(() => { // Use useCallback
+  const handleNavigateInventory = useCallback(() => {
      navigation.navigate('Inventory');
   }, [navigation]);
 
 
-  // --- Helper Functions (memoized with useCallback or useMemo where appropriate) ---
-  const isPastDue = useCallback((timeString) => {
-    const [hour, minute] = timeString.split(':');
-    const reminderTime = new Date();
-    reminderTime.setHours(parseInt(hour, 10), parseInt(minute, 10), 0, 0);
-    return reminderTime < new Date();
-  }, []);
+  // --- Helper Functions (getStatusColor/Icon now depend on 'today') ---
+  const getStatusColor = useCallback((timeObj: TimeObject): string => {
+    if (timeObj.completed && timeObj.completed[today]) return '#4CAF50'; // Green (Completed)
+    if (isPastDue(timeObj.time)) return '#FF6B6B'; // Red (Past Due)
+    return '#4A90E2'; // Blue (Upcoming)
+  }, [today]); // Dependency: today
 
-  const getStatusColor = useCallback((timeObj) => {
-    if (timeObj.completed && timeObj.completed[today]) return '#4CAF50'; // Green
-    if (isPastDue(timeObj.time)) return '#FF6B6B'; // Red
-    return '#4A90E2'; // Blue
-  }, [today, isPastDue]);
-
-  const getStatusIcon = useCallback((timeObj) => {
+  const getStatusIcon = useCallback((timeObj: TimeObject): string => {
     if (timeObj.completed && timeObj.completed[today]) return 'check-circle';
     if (isPastDue(timeObj.time)) return 'clock-alert-outline';
     return 'clock-outline';
-  }, [today, isPastDue]);
+  }, [today]); // Dependency: today
 
-  // useMemo is now correctly imported
+  // Memoized formatted date string
   const getFormattedDate = useMemo(() => {
-    const options = { weekday: 'long', month: 'long', day: 'numeric' };
+    const options: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric' };
     return new Date().toLocaleDateString('en-US', options);
-  }, []);
+  }, []); // No dependencies, calculated once
 
-  const getStockAlertStyle = useCallback((inStock) => { // Use useCallback
-    if (inStock <= 2) {
+  // Memoized function to get styling based on stock level
+  const getStockAlertStyle = useCallback((inStock: number) => {
+    if (inStock <= 2) { // Very Low
       return { backgroundColor: '#FEE2E2', borderColor: '#FCA5A5', textColor: '#DC2626', iconColor: '#DC2626' };
-    } else { // Assumes < 5 is low stock based on filter logic
+    } else { // Low Stock (assumes < 5 based on filter logic)
       return { backgroundColor: '#FEF3C7', borderColor: '#FCD34D', textColor: '#D97706', iconColor: '#D97706' };
     }
-  }, []);
+  }, []); // No dependencies, logic is self-contained
 
   // --- JSX Structure (with Reanimated components) ---
   return (
@@ -493,11 +522,11 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
           <RefreshControl
             refreshing={refreshing}
             onRefresh={refreshHandler}
-            colors={['#4A90E2']}
-            tintColor={'#4A90E2'}
+            colors={['#4A90E2']} // Spinner color for Android
+            tintColor={'#4A90E2'} // Spinner color for iOS
           />
         }
-        scrollEventThrottle={16} // Important for scroll-based animations if added later
+        scrollEventThrottle={16} // Enable smoother scroll event handling if needed later
       >
         {/* --- Animated Header --- */}
         <Animated.View entering={FadeInDown.duration(500).easing(Easing.out(Easing.quad))}>
@@ -510,7 +539,7 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
                 onPress={handleAddMedication}
               >
                 <LinearGradient
-                  colors={['#4A90E2', '#5C6BC0']}
+                  colors={['#4A90E2', '#5C6BC0']} // Example gradient colors
                   style={styles.headerAddButtonGradient}
                 >
                   <Icon name="plus" size={20} color="#FFFFFF" />
@@ -521,7 +550,6 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
         </Animated.View>
 
         {/* --- Main Content: Reminders --- */}
-        {/* No extra Animated.View needed here as children have entering animations */}
         <View style={styles.contentContainer}>
             <View style={styles.remindersSection}>
             <Animated.View entering={FadeIn.delay(100).duration(400)}>
@@ -530,13 +558,15 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
                         <Icon name="pill" size={22} color="#4A90E2" />
                         <Text style={styles.sectionTitle}>Today's Medications</Text>
                     </View>
+                    {/* Refresh icon button */}
                     <TouchableOpacity onPress={refreshHandler} disabled={refreshing}>
-                        <Icon name="refresh" size={22} color="#4A90E2" />
+                        <Icon name="refresh" size={22} color={refreshing ? '#A0AEC0' : '#4A90E2'} />
                     </TouchableOpacity>
                 </View>
             </Animated.View>
 
             <View style={styles.scrollViewWrapper}>
+                {/* Conditional Rendering: Empty State or Reminder List */}
                 {reminders.length === 0 && !refreshing ? (
                     <Animated.View entering={FadeInUp.duration(500)} style={styles.emptyStateContainer}>
                         <Icon name="medical-bag" size={48} color="#CBD5E0" />
@@ -546,14 +576,14 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
                     reminders.map((item, index) => (
                         // Use the AnimatedReminderCard component
                         <AnimatedReminderCard
-                            key={item._id || index} // Use stable key
+                            key={item._id || index} // Use stable key (_id preferred)
                             item={item}
                             index={index}
                             onTickClick={handleTickClick}
                             today={today}
-                            getStatusIcon={getStatusIcon}
-                            getStatusColor={getStatusColor}
-                            isPastDue={isPastDue}
+                            getStatusIcon={getStatusIcon} // Pass memoized helper
+                            getStatusColor={getStatusColor} // Pass memoized helper
+                            // isPastDue is called directly inside AnimatedReminderCard now
                         />
                     ))
                 )}
@@ -571,7 +601,7 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
           </View>
           <TouchableOpacity
             style={styles.seeAllButton}
-            onPress={handleNavigateInventory} // Use handler
+            onPress={handleNavigateInventory} // Use navigation handler
           >
             <Text style={styles.seeAllButtonText}>View All</Text>
             <Icon name="chevron-right" size={18} color="#4A90E2" />
@@ -579,6 +609,7 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
         </View>
 
         <View style={styles.inventoryContainer}>
+          {/* Conditional Rendering: No Alerts or Low Stock Cards */}
           {lowStockItems.length === 0 ? (
             <Animated.View entering={FadeIn.duration(300)} style={styles.noAlertsContainer}>
               <Icon name="check-circle" size={32} color="#4CAF50" />
@@ -586,14 +617,15 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
             </Animated.View>
           ) : (
             <View style={styles.cardsRow}>
+              {/* Display only the first 2 low stock items */}
               {lowStockItems.slice(0, 2).map((item, index) => (
                   // Use the AnimatedInventoryCard component
                   <AnimatedInventoryCard
-                    key={item._id || index} // Use stable key
-                    item={item}
-                    index={index}
-                    alertStyle={getStockAlertStyle(item.inStock)}
-                    onPress={handleNavigateInventory} // Use handler
+                      key={item._id || index} // Use stable key
+                      item={item}
+                      index={index}
+                      alertStyle={getStockAlertStyle(item.inStock)} // Get dynamic style
+                      onPress={handleNavigateInventory} // Navigate on press
                   />
               ))}
             </View>
@@ -603,13 +635,13 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
 
       {/* --- Modal (Using standard Modal, animating content inside) --- */}
       <Modal
-        animationType="fade" // Standard fade for backdrop
+        animationType="fade" // Use standard fade for the modal backdrop
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={() => setModalVisible(false)} // Allow closing via back button on Android
       >
         <View style={styles.modalContainer}>
-          {/* Animate the modal content appearance */}
+          {/* Animate the modal content appearance using ZoomIn */}
           <Animated.View style={styles.modalContent} entering={ZoomIn.duration(300).easing(Easing.out(Easing.quad))}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Mark as Taken</Text>
@@ -623,30 +655,31 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
             </Text>
 
             {/* ScrollView for potentially long list of times */}
-            <ScrollView>
-                {selectedReminder?.times
-                .filter((timeObj) => !(timeObj.completed && timeObj.completed[today]))
+            <ScrollView style={styles.modalScrollView}>
+              {selectedReminder?.times
+                .filter((timeObj) => !(timeObj.completed && timeObj.completed[today])) // Show only incomplete times for today
                 .map((timeObj, index) => (
                     <TouchableOpacity
-                    key={`${selectedReminder._id}-modal-${timeObj.time}-${index}`} // More specific key for modal items
-                    onPress={() => handleRemoveTime(timeObj)} // Use handler
-                    style={styles.modalOption}
+                        key={`${selectedReminder._id}-modal-${timeObj.time}-${index}`} // Unique key for modal items
+                        onPress={() => handleRemoveTime(timeObj)} // Call handler to mark time as taken
+                        style={styles.modalOption}
                     >
-                    <View style={styles.modalOptionInner}>
-                        <Icon
-                        name={isPastDue(timeObj.time) ? "clock-alert-outline" : "clock-outline"}
-                        size={20}
-                        color={isPastDue(timeObj.time) ? "#FF6B6B" : "#4A90E2"}
-                        />
-                        <View>
-                        <Text style={styles.modalTimeText}>
-                            {timeObj.time}
-                        </Text>
-                        <Text style={styles.modalDoseText}>
-                            {timeObj.dose} dose {isPastDue(timeObj.time) ? " (Past Due)" : ""}
-                        </Text>
+                        <View style={styles.modalOptionInner}>
+                            {/* Use correct icon and color based on whether it's past due */}
+                            <Icon
+                                name={isPastDue(timeObj.time) ? "clock-alert-outline" : "clock-outline"}
+                                size={20}
+                                color={isPastDue(timeObj.time) ? "#FF6B6B" : "#4A90E2"}
+                            />
+                            <View>
+                                <Text style={styles.modalTimeText}>
+                                    {timeObj.time}
+                                </Text>
+                                <Text style={styles.modalDoseText}>
+                                    {timeObj.dose} dose {isPastDue(timeObj.time) ? " (Past Due)" : ""}
+                                </Text>
+                            </View>
                         </View>
-                    </View>
                     </TouchableOpacity>
                 ))}
             </ScrollView>
@@ -737,7 +770,7 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 20, // Add padding for iOS home indicator
+    paddingBottom: Platform.OS === 'ios' ? 40 : 30, // Increased bottom padding
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
     backgroundColor: '#EDF2FA',
@@ -746,7 +779,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08, // Softer shadow
     shadowRadius: 5,
     elevation: 6, // Slightly increased elevation
-    minHeight: 180,
+    minHeight: 250, // Increased height from 180 to 200
+    zIndex: 100, // Ensure it's on top
   },
   reminderHeader: {
     flexDirection: 'row',

@@ -45,14 +45,43 @@ const CounterfeitDetection = () => {
   // Hide tab bar on focus, show on blur
   useFocusEffect(
     useCallback(() => {
-      const tabNavigatorScreenNavigation = navigation.getParent()?.getParent();
+      // Get all navigation parents to ensure we find the tab navigator
+      let parent = navigation;
       
-      tabNavigatorScreenNavigation?.setOptions({ tabBarVisible: false });
-      // console.log('[CounterfeitDetection] Focus: Set tabBarVisible to false for', tabNavigatorScreenNavigation);
-
+      // Attempt to make tab bar invisible at the component level that renders it
+      while (parent) {
+        // Set options to hide the tab bar and mark as CounterfeitDetection screen
+        parent.setOptions({ 
+          tabBarVisible: false,
+          tabBarStyle: { display: 'none' },
+          tabBarShowLabel: false,
+          tabBarIconStyle: { display: 'none' },
+          isCounterfeitScreen: true // Special flag for TabBar component
+        });
+        
+        // Try to navigate to parent
+        parent = parent.getParent();
+      }
+      
+      // Log for debugging
+      console.log('CounterfeitDetection: Tab bar should be completely hidden now');
+      
+      // Cleanup function - restore tab bar visibility when leaving screen
       return () => {
-        tabNavigatorScreenNavigation?.setOptions({ tabBarVisible: true });
-        // console.log('[CounterfeitDetection] Blur: Set tabBarVisible to true for', tabNavigatorScreenNavigation);
+        // Reset all the navigation parents
+        parent = navigation;
+        while (parent) {
+          parent.setOptions({ 
+            tabBarVisible: true,
+            tabBarStyle: undefined,
+            tabBarShowLabel: true,
+            tabBarIconStyle: undefined,
+            isCounterfeitScreen: false // Reset the special flag
+          });
+          parent = parent.getParent();
+        }
+        
+        console.log('CounterfeitDetection: Tab bar should be visible again');
       };
     }, [navigation])
   );
@@ -574,7 +603,6 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     flexGrow: 1,
-    paddingBottom: 30,
   },
   content: {
     flex: 1,

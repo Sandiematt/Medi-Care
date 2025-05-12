@@ -44,7 +44,23 @@ function MyTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   
   // Animate the tab bar visibility
   useEffect(() => {
-    // Start animation immediately
+    // Check if the route name is a screen that should hide the tab bar
+    const currentRoute = state.routes[state.index];
+    const shouldHideImmediately = 
+      currentRoute.name === 'CounterfeitDetection' || 
+      (currentRoute.params && currentRoute.params.isCounterfeitScreen) ||
+      currentRoute.name === 'PrescriptionsScreen' ||
+      (currentRoute.params && currentRoute.params.isPrescriptionsScreen) ||
+      currentRoute.name === 'AI_ChatBot' ||
+      (currentRoute.params && currentRoute.params.isAIChatBotScreen) ||
+      currentRoute.name === 'InventoryScreen' ||
+      (currentRoute.params && currentRoute.params.isInventoryScreen) ||
+      
+      options.isPrescriptionsScreen || 
+      options.isCounterfeitScreen ||
+      options.isAIChatBotScreen ||
+      options.isInventoryScreen;
+    
     if (tabBarVisible) {
       // Show the tab bar if it should be visible
       setIsHidden(false);
@@ -54,8 +70,12 @@ function MyTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         tension: 60,
         useNativeDriver: true,
       }).start();
+    } else if (shouldHideImmediately) {
+      // For screens that should hide tab bar immediately, don't animate
+      setIsHidden(true);
+      translateY.setValue(100); // Immediately set position without animation
     } else {
-      // Hide the tab bar with a slide-down animation
+      // For normal scrolling behavior, animate smoothly
       Animated.timing(translateY, {
         toValue: 100,
         duration: 250,
@@ -65,7 +85,7 @@ function MyTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         setIsHidden(true);
       });
     }
-  }, [tabBarVisible, translateY]);
+  }, [tabBarVisible, translateY, state.routes, state.index, options]);
   
   // Update indicator position whenever the active tab changes
   useEffect(() => {

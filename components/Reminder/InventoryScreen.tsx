@@ -195,9 +195,50 @@ const InventoryScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   // Refresh inventory on returning to this screen
   useFocusEffect(
     useCallback(() => {
+      // Fetch data
       fetchInventoryItems();
       fetchStats();
-    }, [])
+      
+      // Hide tab bar on focus, show on blur (similar to other screens)
+      let parent = navigation;
+      
+      // Attempt to make tab bar invisible at the component level that renders it
+      while (parent) {
+        // Set options to hide the tab bar and mark as special screen
+        parent.setOptions({ 
+          tabBarVisible: false,
+          tabBarStyle: { display: 'none' },
+          tabBarShowLabel: false,
+          tabBarIconStyle: { display: 'none' },
+          isInventoryScreen: true // Special flag for TabBar component
+        });
+        
+        // Try to navigate to parent
+        parent = parent.getParent();
+      }
+      
+      console.log('InventoryScreen: Tab bar should be completely hidden now');
+      
+      // Cleanup function - restore tab bar visibility when leaving screen
+      return () => {
+        // Data cleanup remains the same
+        
+        // Reset all the navigation parents to show tab bar again
+        parent = navigation;
+        while (parent) {
+          parent.setOptions({ 
+            tabBarVisible: true,
+            tabBarStyle: undefined,
+            tabBarShowLabel: true,
+            tabBarIconStyle: undefined,
+            isInventoryScreen: false // Reset the special flag
+          });
+          parent = parent.getParent();
+        }
+        
+        console.log('InventoryScreen: Tab bar should be visible again');
+      };
+    }, [navigation])
   );
 
   if (loading) {
@@ -213,6 +254,12 @@ const InventoryScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <View style={styles.header}>
         <View style={styles.headerTop}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Icon name="arrow-left" size={22} color="#0F172A" />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>Inventory</Text>
           <TouchableOpacity
             style={styles.addButton}
@@ -283,6 +330,7 @@ const InventoryScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
       <ScrollView
         style={styles.section}
+        contentContainerStyle={styles.sectionContent}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -511,6 +559,17 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontFamily: 'Poppins-Bold',
     color: '#0F172A',
+    flex: 1,
+    textAlign: 'center',
+  },
+  backButton: {
+    padding: 10,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 44,
+    height: 44,
   },
   addButton: {
     backgroundColor: '#4b90e2',
@@ -629,6 +688,9 @@ const styles = StyleSheet.create({
   section: {
     flex: 1,
     padding: 16,
+  },
+  sectionContent: {
+    paddingBottom: 80, // Add padding to ensure content is visible above tab bar
   },
   sectionHeader: {
     flexDirection: 'row',

@@ -217,7 +217,10 @@ const FavoriteScreen = () => {
   }, []);
 
   return (
-    <ScrollView style={styles.screenContainer}>
+    <ScrollView 
+      style={styles.screenContainer}
+      contentContainerStyle={styles.scrollViewContent}
+    >
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton} 
@@ -237,6 +240,9 @@ const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  scrollViewContent: {
+    paddingBottom: 84, // Add bottom padding to ensure content is visible above tab bar
   },
   container: {
     padding: 20,

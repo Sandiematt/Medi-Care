@@ -80,6 +80,24 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     fetchUsername();
   }, [navigation]);
 
+  // Helper function to format time
+  const formatTime12Hour = (time24: string): string => {
+    if (!time24 || !time24.includes(':')) return '00:00 AM'; // Default or handle invalid format
+
+    const [hoursStr, minutesStr] = time24.split(':');
+    let hours = parseInt(hoursStr, 10);
+    const minutes = parseInt(minutesStr, 10);
+
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+
+    const hoursFormatted = hours.toString().padStart(2, '0');
+    const minutesFormatted = minutes.toString().padStart(2, '0');
+
+    return `${hoursFormatted}:${minutesFormatted} ${ampm}`;
+  };
+
   // Input handlers
   const handleInputChange = (field: 'name' | 'description', value: string) => {
     setMedicationInfo(prev => ({ ...prev, [field]: value }));
@@ -102,7 +120,7 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       // Text input update
       updatedTimes[index] = {
         ...updatedTimes[index],
-        dose: value === '' ? '' : parseInt(value, 10) || 1,
+        dose: value === '' ? 1 : parseInt(value, 10) || 1,
       };
     }
 
@@ -263,23 +281,23 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             onPress={() => showTimePicker(index)}
           >
             <Icon name="clock" size={18} color="#6366F1" style={styles.inputIcon} />
-            <Text style={styles.timeInput}>{time.time}</Text>
+            <Text style={styles.timeInput}>{formatTime12Hour(time.time)}</Text>
             <Icon name="chevron-down" size={14} color="#94A3B8" />
           </TouchableOpacity>
 
           <View style={styles.doseControlContainer}>
             <TouchableOpacity
               onPress={() => decrementDose(index)}
-              style={styles.doseCounterButton}
+              style={styles.counterButton}
               disabled={time.dose <= 1}
             >
               <Icon name="minus" size={14} color={time.dose <= 1 ? '#CBD5E1' : '#6366F1'} />
             </TouchableOpacity>
 
-            <View style={styles.doseInputWrapper}>
+            <View style={styles.doseValueInputWrapper}>
               <Icon name="pills" size={18} color="#6366F1" style={styles.inputIcon} />
               <TextInput
-                style={styles.doseInput}
+                style={styles.doseValueTextInput}
                 value={String(time.dose)}
                 onChangeText={(text) => handleDoseChange(index, text)}
                 placeholder="1"
@@ -290,7 +308,7 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
             <TouchableOpacity
               onPress={() => incrementDose(index)}
-              style={styles.doseCounterButton}
+              style={styles.counterButton}
             >
               <Icon name="plus" size={14} color="#6366F1" />
             </TouchableOpacity>
@@ -431,7 +449,7 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   <DateTimePicker
     value={selectedTime}
     mode="time"
-    is24Hour={true}
+    is24Hour={false}
     display="default"
     onChange={(event, date) => {
       if (event.type === 'dismissed') {
@@ -466,7 +484,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingBottom: 30,
+    paddingBottom:80,
   },
   screenTitle: {
     fontSize: 24,
@@ -579,17 +597,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     marginRight: 12,
     justifyContent: 'space-between',
+    minWidth: 120,
   },
-  doseInputWrapper: {
-    width: 100,
+  doseControlContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: '#F8FAFC',
     marginRight: 12,
   },
   timeInput: {
@@ -598,12 +610,6 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     padding: 0,
     marginLeft: 8,
-  },
-  doseInput: {
-    flex: 1,
-    fontSize: 15,
-    color: '#1E293B',
-    padding: 0,
   },
   iconButton: {
     padding: 8,
@@ -686,22 +692,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  doseControlContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  doseCounterButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  doseInputWrapper: {
+  doseValueInputWrapper: {
     width: 70,
     flexDirection: 'row',
     alignItems: 'center',
@@ -713,7 +704,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     marginHorizontal: 6,
   },
-  doseInput: {
+  doseValueTextInput: {
     flex: 1,
     fontSize: 15,
     color: '#1E293B',

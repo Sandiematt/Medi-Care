@@ -1091,9 +1091,9 @@ const styles = StyleSheet.create({
   },
   loadingText: {
       marginTop: 12,
-      fontSize: 16,
+      fontSize: 14,
       color: '#666',
-      // fontFamily: 'Poppins-Regular',
+      fontFamily: 'Poppins-Regular',
   },
   header: { // Moved inside ScrollView, adjust margins if needed
     flexDirection: 'row',
@@ -1103,15 +1103,15 @@ const styles = StyleSheet.create({
     // paddingHorizontal: 16, // Padding now handled by scrollContentContainer
   },
   greeting: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#6C6C70',
-    // fontFamily: 'Poppins-Regular',
+    fontFamily: 'Poppins-Regular',
   },
   userName: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '600',
     color: '#1C1C1E',
-    // fontFamily: 'Poppins-SemiBold',
+    fontFamily: 'Poppins-Bold',
   },
   profileButton: {
     padding: 5,
@@ -1148,9 +1148,10 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 14,
     color: '#1C1C1E',
     height: '100%',
+    fontFamily: 'Poppins-Regular',
   },
   clearButton: {
       padding: 5,
@@ -1177,21 +1178,21 @@ const styles = StyleSheet.create({
     padding: 16, // Add internal padding
   },
   searchResultsTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#1C1C1E',
     marginBottom: 10,
     // marginTop: 5, // Removed, padding handled by container
-    // fontFamily: 'Poppins-SemiBold',
+    fontFamily: 'Poppins-Bold',
   },
   searchResultsSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#3C3C43',
     opacity: 0.8,
     marginTop: 15,
     marginBottom: 8,
-    // fontFamily: 'Poppins-SemiBold',
+    fontFamily: 'Poppins-Bold',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -1215,14 +1216,16 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   searchResultName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
     color: '#1C1C1E',
     marginBottom: 2,
+    fontFamily: 'Poppins-Bold',
   },
   searchResultDescription: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#8E8E93',
+    fontFamily: 'Poppins-Regular',
   },
   noResultsContainer: {
       flex: 1, // Take space within the results container
@@ -1233,9 +1236,10 @@ const styles = StyleSheet.create({
   },
   noResultsText: {
       marginTop: 15,
-      fontSize: 16,
+      fontSize: 14,
       color: '#AEAEB2',
       textAlign: 'center',
+      fontFamily: 'Poppins-Regular',
   },
   // Banner Styles (Unchanged)
   bannerContainer: {
@@ -1282,18 +1286,20 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
     color: '#1C1C1E',
+    fontFamily: 'Poppins-Bold',
   },
   seeAllButton: {
       paddingVertical: 4,
       paddingHorizontal: 8,
   },
   sectionLink: {
-    fontSize: 15,
+    fontSize: 13,
     color: '#1e948b',
     fontWeight: '500',
+    fontFamily: 'Poppins-Bold',
   },
   // Services Grid Styles (Unchanged)
   servicesGrid: {
@@ -1327,17 +1333,19 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   serviceText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: '#1C1C1E',
     textAlign: 'center',
     marginBottom: 4,
+    fontFamily: 'Poppins-Bold',
   },
   serviceDescription: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#8E8E93',
     textAlign: 'center',
     minHeight: 30,
+    fontFamily: 'Poppins-Regular',
   },
   // Reminder Card Styles (Unchanged)
   reminderCard: {
@@ -1371,15 +1379,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   reminderName: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '600',
     color: '#1C1C1E',
     marginBottom: 4,
+    fontFamily: 'Poppins-Bold',
   },
   reminderDescription: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6C6C70',
-    lineHeight: 20,
+    lineHeight: 18,
+    fontFamily: 'Poppins-Regular',
   },
   reminderDivider: {
     height: 1,
@@ -1399,9 +1409,10 @@ const styles = StyleSheet.create({
   },
   reminderTimeText: {
     marginLeft: 6,
-    fontSize: 14,
+    fontSize: 12,
     color: '#1e948b',
     fontWeight: '500',
+    fontFamily: 'Poppins-Bold',
   },
   emptyReminders: {
     alignItems: 'center',
@@ -1415,8 +1426,9 @@ const styles = StyleSheet.create({
   },
   emptyRemindersText: {
     marginTop: 15,
-    fontSize: 16,
+    fontSize: 14,
     color: '#AEAEB2',
+    fontFamily: 'Poppins-Regular',
   },
 });
 

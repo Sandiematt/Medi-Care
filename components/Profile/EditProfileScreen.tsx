@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
   },
   // ScrollView Styles
   scrollContent: {
-    paddingBottom: 120, // Ensure space for the fixed save button
+    paddingBottom: 150, // Increased from 120 to ensure space for the enlarged save button area
     paddingHorizontal: 20,
   },
   // Profile Image Styles
@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
     right: 0,
     paddingVertical: 15,
     paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 15, // Adjust padding for safe area on iOS
+    paddingBottom: Platform.OS === 'ios' ? 84 : 70, // Increased padding to ensure button is above tab bar
     backgroundColor: '#FFFFFF', // White background to lift button
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0', // Separator line
