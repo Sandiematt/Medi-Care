@@ -1093,9 +1093,9 @@ app.get('/api/users/:username/profile', async (req, res) => {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running and accessible via http://10.0.2.2:${PORT}`);
+    console.log(`Server also accessible via http://20.193.156.237:${PORT}`);
   });
 };
 
 // Start the main function
 main().catch((err) => console.error(err));
-http://20.193.156.237:5000
