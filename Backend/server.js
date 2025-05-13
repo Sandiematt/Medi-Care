@@ -1,6 +1,5 @@
-require('dotenv').config({ path: 'E:\\Medi_Care\\.env' }); 
-const express = require('express');
 require('dotenv').config();
+const express = require('express');
 const { MongoClient } = require('mongodb');
 const { ObjectId } = require('mongodb');
 
@@ -12,6 +11,11 @@ app.use(express.json());
 // MongoDB connection function
 const connectDB = async () => {
   try {
+    // Check if MONGO_URI is defined
+    if (!process.env.MONGO_URI) {
+      throw new Error('MongoDB connection string (MONGO_URI) is not defined in environment variables');
+    }
+    
     const client = new MongoClient(process.env.MONGO_URI);  
     await client.connect();
     console.log('MongoDB connected successfully');
