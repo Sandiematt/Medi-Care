@@ -228,7 +228,7 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
       const username = await AsyncStorage.getItem('username');
       if (!username) return false; // Early exit if no username
 
-      const inventoryResponse = await fetch(`http://10.0.2.2:5000/inventory?username=${username}`);
+      const inventoryResponse = await fetch(`http://20.193.156.237:500/inventory?username=${username}`);
       if (!inventoryResponse.ok) throw new Error(`Inventory fetch failed: ${inventoryResponse.status}`);
       const inventoryData = await inventoryResponse.json();
 
@@ -252,7 +252,7 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
       const username = await AsyncStorage.getItem('username');
       if (!username) return false; // Early exit
 
-      const response = await fetch(`http://10.0.2.2:5000/reminders/${username}`);
+      const response = await fetch(`http://20.193.156.237:500/reminders/${username}`);
       if (!response.ok) throw new Error(`Reminders fetch failed: ${response.status}`);
       const data = await response.json();
 
@@ -441,7 +441,7 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
       // console.log(`Cancelled notification: ${notificationId}`);
 
       // --- Update Backend ---
-      const response = await fetch(`http://10.0.2.2:5000/reminders/${reminderId}`, {
+      const response = await fetch(`http://20.193.156.237:500/reminders/${reminderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

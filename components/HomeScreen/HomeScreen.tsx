@@ -36,7 +36,7 @@ import AI_ChatBot from './AI_ChatBot';
 const Stack = createStackNavigator();
 const { width } = Dimensions.get('window');
 // Define API base URL - Move to config/env variables in a real app
-const API_BASE_URL = 'http://10.0.2.2:5000';
+const API_BASE_URL = 'http://20.193.156.237:500';
 
 // --- Banner Images ---
 // NOTE: Verify these image paths are correct relative to this file
@@ -1287,7 +1287,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
     color: '#1C1C1E',
     fontFamily: 'Poppins-Bold',

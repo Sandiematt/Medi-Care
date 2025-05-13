@@ -7,6 +7,7 @@ import {
   ScrollView,
   Platform,
   Animated,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -96,7 +97,8 @@ interface BMICalculatorProps {
 }
 
 const BMICalculator: React.FC<BMICalculatorProps> = ({ height, weight }) => {
-  const bmi = calculateBMI(height, weight);
+  // Only calculate BMI if we have valid height and weight values
+  const bmi = (height > 0 && weight > 0) ? calculateBMI(height, weight) : 0;
   const healthInfo = getHealthTips(bmi);
   const [animation] = useState(new Animated.Value(0));
 
@@ -204,17 +206,33 @@ const FavoriteScreen = () => {
       try {
         const storedUsername = await AsyncStorage.getItem('username');
         if (!storedUsername) throw new Error('Username not found');
-        const response = await axios.get(`http://10.0.2.2:5000/healthvitals/${storedUsername}`);
+        const response = await axios.get(`http://20.193.156.237:500/healthvitals/${storedUsername}`);
+        
+        // Check if we have valid height and weight data
+        if (!response.data || !response.data.height || !response.data.weight) {
+          Alert.alert(
+            "Missing Health Data",
+            "Please update your health vitals in your profile to see BMI insights.",
+            [{ text: "OK", onPress: () => navigation.goBack() }]
+          );
+          return;
+        }
+        
         setUserData({
           height: parseFloat(response.data.height),
           weight: parseFloat(response.data.weight)
         });
       } catch (error) {
         console.error('Error fetching data:', error);
+        Alert.alert(
+          "Health Data Unavailable",
+          "Please update your health vitals in your profile to see BMI insights.",
+          [{ text: "OK", onPress: () => navigation.goBack() }]
+        );
       }
     };
     fetchUserData();
-  }, []);
+  }, [navigation]);
 
   return (
     <ScrollView 

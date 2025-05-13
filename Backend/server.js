@@ -121,7 +121,13 @@ app.post('/register', async (req, res) => {
     
     // Insert new user
     const result = await usersCollection.insertOne({
-      username, email, contact, age, gender, password
+      username, 
+      email, 
+      contact, 
+      age, 
+      gender, 
+      password, 
+      image: null, // Set image field to null by default
     });
     res.status(201).json({ message: 'User registered successfully', userId: result.insertedId });
   } catch (error) {
@@ -203,7 +209,15 @@ app.get('/healthvitals/:username', async (req, res) => {
     if (healthVitals) {
       res.status(200).json(healthVitals);
     } else {
-      res.status(404).json({ error: 'Health vitals not found for this user' });
+      // Return empty default values instead of 404 error
+      res.status(200).json({ 
+        username: username,
+        bloodpressure: '',
+        heartrate: '',
+        bloodgroup: '',
+        height: '',
+        weight: ''
+      });
     }
   } catch (error) {
     console.error('Error fetching health vitals:', error);
@@ -822,7 +836,7 @@ app.get('/api/remind/:username', async (req, res) => {
 //main
 const multer = require("multer");
 const fs = require("fs");
-const axios = require("axios");;
+const axios = require("axios");
 
 // Configure multer for handling file uploads
 const storage = multer.diskStorage({
@@ -1084,3 +1098,4 @@ app.get('/api/users/:username/profile', async (req, res) => {
 
 // Start the main function
 main().catch((err) => console.error(err));
+http://20.193.156.237:5000

@@ -310,7 +310,7 @@ const AI_ChatBot: React.FC = () => {
       }
       
       // Call the API to fetch profile data
-      const response = await fetch(`http://10.0.2.2:5000/api/users/${username}/profile`);
+      const response = await fetch(`http://20.193.156.237:500/api/users/${username}/profile`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch profile');

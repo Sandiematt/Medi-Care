@@ -55,18 +55,32 @@ const HealthVitalsScreen = () => {
           throw new Error('Username not found in storage.');
         }
   
-        const response = await axios.get(`http://10.0.2.2:5000/healthvitals/${storedUsername}`);
-  
-        const data = response.data || {};
-        setUserData(data);
-        setName(data.username || 'N/A');
-        setBloodPressure(data.bloodpressure || 'N/A');
-        setHeartRate(data.heartrate || 'N/A');
-        setBloodGroup(data.bloodgroup || 'N/A');
-        setHeight(data.height || 'N/A');
-        setWeight(data.weight || 'N/A');
-        setError(null);
+        try {
+          const response = await axios.get(`http://20.193.156.237:500/healthvitals/${storedUsername}`);
+          
+          const data = response.data || {};
+          setUserData(data);
+          setName(data.username || 'N/A');
+          setBloodPressure(data.bloodpressure || 'N/A');
+          setHeartRate(data.heartrate || 'N/A');
+          setBloodGroup(data.bloodgroup || 'N/A');
+          setHeight(data.height || 'N/A');
+          setWeight(data.weight || 'N/A');
+          setError(null);
+        } catch (axiosError) {
+          // Handle 404 or other axios errors silently
+          setUserData(null);
+          setName('N/A');
+          setBloodPressure('N/A');
+          setHeartRate('N/A');
+          setBloodGroup('N/A');
+          setHeight('N/A');
+          setWeight('N/A');
+          // Do not set error to show the error message UI
+          setError(null);
+        }
       } catch (err) {
+        // Handle AsyncStorage or other non-axios errors
         setUserData(null);
         setName('N/A');
         setBloodPressure('N/A');

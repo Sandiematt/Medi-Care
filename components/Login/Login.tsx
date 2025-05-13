@@ -140,7 +140,11 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess: _onLoginSucce
     GoogleSignin.configure({
       // Use the web client ID from firebase console (client_type: 3)
       webClientId: '213391549194-58hs3g88b0dtcc15utdal7evg2j4d6fn.apps.googleusercontent.com',
-      // No need for offlineAccess or forceCodeForRefreshToken for most basic implementations
+      // This line ensures we get the user's email
+      scopes: ['email', 'profile'],
+      // Force account selection each time
+      forceCodeForRefreshToken: true,
+      offlineAccess: true
     });
     
     // Hide the tab bar on the login screen
@@ -154,10 +158,9 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess: _onLoginSucce
         const isSignedIn = await GoogleSignin.isSignedIn();
         if (isSignedIn) {
           await GoogleSignin.signOut();
-          console.log('Previous Google Sign-In session cleared');
         }
       } catch (error) {
-        console.log('Google Sign-In check error: ', error);
+        // Silently handle error
       }
     };
     checkSignIn();
@@ -170,7 +173,7 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess: _onLoginSucce
     }
 
     try {
-      const response = await axios.post("http://10.0.2.2:5000/login", {
+      const response = await axios.post("http://20.193.156.237:500/login", {
         username,
         password,
       });
@@ -204,43 +207,85 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess: _onLoginSucce
       // Check if Play Services are available
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       
-      console.log('Attempting Google Sign-In...');
-      
       // Perform the sign in
       const userInfo = await GoogleSignin.signIn();
       
-      console.log('Google Sign-In Response:', JSON.stringify(userInfo));
+      // Recursively search through response for user properties
+      const findEmail = (obj: any): string | null => {
+        if (!obj) return null;
+        
+        // Direct check for email
+        if (obj.email) return obj.email;
+        
+        // Check if it's an object and search through its properties
+        if (typeof obj === 'object') {
+          for (const key in obj) {
+            // Skip if property is null or not an object/array
+            if (!obj[key] || typeof obj[key] !== 'object') continue;
+            
+            const foundEmail = findEmail(obj[key]);
+            if (foundEmail) return foundEmail;
+          }
+        }
+        
+        return null;
+      };
       
-      // Extract user data from response
-      const email = userInfo.user.email;
-      const name = userInfo.user.name || userInfo.user.givenName;
-      const id = userInfo.user.id;
-      
-      console.log('Extracted data:', { email, name, id });
+      // Find user info in the response
+      const email = findEmail(userInfo);
       
       if (!email) {
-        console.log('No email found in response:', userInfo);
-        setError('Failed to get email from Google');
+        setError('Failed to get email from Google Sign-In response');
         return;
       }
       
+      // Try to extract other user info from the same location
+      let name = null;
+      let id = null;
+      
+      // Recursively find the object that contains the email
+      const findUserObject = (obj: any): any | null => {
+        if (!obj) return null;
+        
+        // Check if current object has the email
+        if (obj.email === email) return obj;
+        
+        // Check nested objects
+        if (typeof obj === 'object') {
+          for (const key in obj) {
+            if (!obj[key] || typeof obj[key] !== 'object') continue;
+            const result = findUserObject(obj[key]);
+            if (result) return result;
+          }
+        }
+        
+        return null;
+      };
+      
+      const userObj = findUserObject(userInfo);
+      
+      if (userObj) {
+        name = userObj.name || userObj.displayName || userObj.givenName;
+        id = userObj.id || userObj.userId || userObj.sub;
+      }
+      
       try {
-        console.log('Sending data to backend:', { email, googleId: id, displayName: name });
+        // Ensure we have an identifier even if not perfect
+        const googleId = id || 'unknown_id';
+        const displayName = name || email.split('@')[0];
         
         // Send Google sign-in data to your MongoDB backend
-        const response = await axios.post('http://10.0.2.2:5000/google-login', {
+        const response = await axios.post('http://20.193.156.237:500/google-login', {
           email,
-          googleId: id,
-          displayName: name
+          googleId,
+          displayName
         });
         
         const user = response.data;
-        console.log('Backend response:', user);
         
         // Store the username in AsyncStorage
         if (user.username) {
           await AsyncStorage.setItem('username', user.username);
-          console.log('Username stored:', user.username);
         }
         
         // Navigate to main screen
@@ -249,29 +294,21 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess: _onLoginSucce
           routes: [{ name: 'Main' }],
         });
       } catch (backendError) {
-        console.error('Backend error:', backendError);
         setError('Failed to authenticate with the server. Please try again.');
       }
     } catch (error: any) {
-      console.error('Google Sign-In error details:', JSON.stringify(error));
-      
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        console.log('Sign in cancelled');
+        // User cancelled the sign-in, no need to show an error
+        return;
       } else if (error.code === statusCodes.IN_PROGRESS) {
         setError('Sign in already in progress');
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         setError('Google Play Services not available or outdated');
       } else if (error.code === 10) {
         // DEVELOPER_ERROR specific handling
-        setError('Google Sign-In configuration error. Please check Firebase console settings.');
-        console.error('DEVELOPER_ERROR: Please follow these steps to fix:');
-        console.error('1. Verify SHA-1 fingerprint in Firebase console matches your app');
-        console.error('2. Check that Google Sign-In is enabled in Firebase Authentication');
-        console.error('3. Make sure web client ID is correct');
-        console.error('4. Rebuild app after making any changes');
+        setError('Google Sign-In configuration error. Please check Google API settings.');
       } else {
         setError(`Google Sign-In failed: ${error.message || 'Unknown error'}`);
-        console.error('Google Sign-In error:', error);
       }
     }
   };
@@ -322,11 +359,6 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess: _onLoginSucce
               <Text style={styles.buttonText}>Login</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.googleButton} onPress={handleGoogleSignIn}>
-              <Icon name="logo-google" size={20} color="#DB4437" style={styles.googleIcon} />
-              <Text style={styles.googleButtonText}>Login with Google</Text>
-            </TouchableOpacity>
-
             <View style={styles.signupContainer}>
               <Text style={styles.signupText}>
                 Don't have an account?{' '}
@@ -337,6 +369,19 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess: _onLoginSucce
                   Sign Up
                 </Text>
               </Text>
+              
+              <View style={styles.separatorContainer}>
+                <View style={styles.separator} />
+                <Text style={styles.separatorText}>or</Text>
+                <View style={styles.separator} />
+              </View>
+              
+              <TouchableOpacity style={styles.googleSignupButton} onPress={handleGoogleSignIn}>
+                <Icon name="logo-google" size={24} color="#DB4437" style={styles.googleIcon} />
+                <Text style={styles.googleSignupLink}>
+                  Sign up using Google
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         </ScrollView>
@@ -470,34 +515,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Bold',
     textAlign: 'center',
   },
-  googleButton: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingVertical: 14,
-    marginBottom: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  googleIcon: {
-    marginRight: 8,
-  },
-  googleButtonText: {
-    color: '#333333',
-    fontSize: 16,
-    fontFamily: 'Poppins-Medium',
-    textAlign: 'center',
-  },
   signupContainer: {
     alignItems: 'center',
     marginTop: 16,
@@ -511,6 +528,53 @@ const styles = StyleSheet.create({
     color: '#199A8E',
     fontFamily: 'Poppins-Bold',
     fontWeight: 'bold',
+  },
+  separatorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 12,
+    width: '100%',
+  },
+  separator: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E2E8F0',
+  },
+  separatorText: {
+    paddingHorizontal: 10,
+    color: '#718096',
+    fontSize: 14,
+    fontFamily: 'Poppins-Regular',
+  },
+  googleSignupButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginTop: 12,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  googleIcon: {
+    marginRight: 12,
+  },
+  googleSignupLink: {
+    color: '#000000',
+    fontFamily: 'Poppins-Medium',
+    fontWeight: '600',
+    fontSize: 16,
   },
   errorText: {
     color: '#DC2626',

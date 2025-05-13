@@ -75,7 +75,7 @@ const AddInventoryScreen = () => {
       // Get auth token if you're using token-based authentication
       const token = await AsyncStorage.getItem('authToken'); // Change this to the correct key for your token
       
-      const response = await fetch('http://10.0.2.2:5000/inventory', {
+      const response = await fetch('http://20.193.156.237:500/inventory', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
