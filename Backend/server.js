@@ -1091,7 +1091,7 @@ app.get('/api/users/:username/profile', async (req, res) => {
   
   // Start the server
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, '20.193.156.237', () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running and accessible via http://20.193.156.237:${PORT}`);
   });
 };
