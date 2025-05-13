@@ -4,7 +4,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { launchImageLibrary } from 'react-native-image-picker';
+import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 
 const { width } = Dimensions.get('window');
 
@@ -139,37 +139,85 @@ const PrescriptionsScreen: React.FC = () => {
   
   const handleImagePick = async () => {
     try {
+      Alert.alert(
+        'Upload Prescription',
+        'Choose an option',
+        [
+          { 
+            text: 'Take Photo', 
+            onPress: () => takePhoto() 
+          },
+          { 
+            text: 'Choose from Gallery', 
+            onPress: () => selectFromGallery() 
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel'
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Error with image selection:', error);
+      Alert.alert('Error', 'Failed to open image options');
+    }
+  };
+  
+  const processImageResult = (result) => {
+    if (result.didCancel || !result.assets?.[0]) return;
+      
+    const imageUri = result.assets[0].uri;
+    const imageBase64 = result.assets[0].base64;
+    
+    if (!imageBase64) {
+      throw new Error('No image data received');
+    }
+    
+    // Check image size - large base64 strings can cause issues
+    if (imageBase64.length > 5000000) { // ~5MB
+      Alert.alert('Image Too Large', 'Please select a smaller image or reduce the quality.');
+      return;
+    }
+    
+    setNewPrescription(prev => ({
+      ...prev,
+      image: `data:image/jpeg;base64,${imageBase64}`
+    }));
+    
+    setSelectedImage(imageUri);
+  };
+  
+  const takePhoto = async () => {
+    try {
+      const result = await launchCamera({
+        mediaType: 'photo',
+        quality: 0.5,
+        includeBase64: true,
+        maxWidth: 800,
+        maxHeight: 800,
+        saveToPhotos: true
+      });
+      
+      processImageResult(result);
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      Alert.alert('Error', 'Failed to take photo');
+    }
+  };
+  
+  const selectFromGallery = async () => {
+    try {
       const result = await launchImageLibrary({
         mediaType: 'photo',
-        quality: 0.5, // Reduced quality for smaller file size
+        quality: 0.5,
         includeBase64: true,
-        maxWidth: 800, // Limit image dimensions
+        maxWidth: 800,
         maxHeight: 800
       });
       
-      if (result.didCancel || !result.assets?.[0]) return;
-      
-      const imageUri = result.assets[0].uri;
-      const imageBase64 = result.assets[0].base64;
-      
-      if (!imageBase64) {
-        throw new Error('No image data received');
-      }
-      
-      // Check image size - large base64 strings can cause issues
-      if (imageBase64.length > 5000000) { // ~5MB
-        Alert.alert('Image Too Large', 'Please select a smaller image or reduce the quality.');
-        return;
-      }
-      
-      setNewPrescription(prev => ({
-        ...prev,
-        image: `data:image/jpeg;base64,${imageBase64}`
-      }));
-      
-      setSelectedImage(imageUri);
+      processImageResult(result);
     } catch (error) {
-      console.error('Error picking image:', error);
+      console.error('Error picking from gallery:', error);
       Alert.alert('Error', 'Failed to pick image');
     }
   };
@@ -289,17 +337,7 @@ const PrescriptionsScreen: React.FC = () => {
   };
 
   const renderItem = ({ item }: { item: Prescription }) => (
-    <TouchableOpacity 
-      style={styles.card} 
-      onPress={() => {
-        setSelectedPrescription(item);
-        if (item.image) {
-          setSelectedImage(item.image);
-          setModalVisible(true);
-        }
-      }} 
-      activeOpacity={0.9}
-    >
+    <View style={styles.card}>
       <View style={styles.cardContent}>
         <View style={styles.cardTop}>
           <View style={styles.prescriptionIconContainer}>
@@ -331,9 +369,18 @@ const PrescriptionsScreen: React.FC = () => {
         </View>
 
         <View style={styles.cardActions}>
-          <View style={styles.prescriptionIconContainer}>
+          <TouchableOpacity 
+            style={styles.prescriptionIconContainer}
+            onPress={() => {
+              setSelectedPrescription(item);
+              if (item.image) {
+                setSelectedImage(item.image);
+                setModalVisible(true);
+              }
+            }}
+          >
             <Icon name="eye" size={24} color="#1e948b" />
-          </View>
+          </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.actionButton, styles.deleteButton]} 
             onPress={() => handleDelete(item._id)}
@@ -342,7 +389,7 @@ const PrescriptionsScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 
   const renderHeader = () => {
@@ -485,9 +532,19 @@ const PrescriptionsScreen: React.FC = () => {
               >
                 <Icon name="camera" size={24} color="#1e948b" />
                 <Text style={styles.imageUploadText}>
-                  {isUploading ? 'Uploading...' : 'Upload Prescription Image'}
+                  {selectedImage ? 'Change Prescription Image' : 'Upload Prescription Image'}
                 </Text>
               </TouchableOpacity>
+              
+              {selectedImage && (
+                <View style={styles.previewContainer}>
+                  <Image 
+                    source={{ uri: selectedImage }} 
+                    style={styles.previewImage} 
+                    resizeMode="contain"
+                  />
+                </View>
+              )}
 
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Prescription Name</Text>
@@ -841,6 +898,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     fontFamily: 'Poppins-SemiBold',
+  },
+  previewContainer: {
+    marginBottom: 16,
+    alignItems: 'center',
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  previewImage: {
+    width: '100%',
+    height: 200,
+    backgroundColor: '#F8FAFC',
   },
 });
 

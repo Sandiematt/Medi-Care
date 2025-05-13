@@ -15,6 +15,7 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
 interface LoginProps {
   navigation: any;
@@ -133,12 +134,33 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess: _onLoginSucce
   const [error, setError] = useState<string>('');
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
 
-  // Hide the tab bar on the login screen
+  // Configure Google Sign-In
   useEffect(() => {
-    // Set tab bar visibility to false for this screen
+    // Set up Google Sign-In with the configuration matching your Firebase console
+    GoogleSignin.configure({
+      // Use the web client ID from firebase console (client_type: 3)
+      webClientId: '213391549194-58hs3g88b0dtcc15utdal7evg2j4d6fn.apps.googleusercontent.com',
+      // No need for offlineAccess or forceCodeForRefreshToken for most basic implementations
+    });
+    
+    // Hide the tab bar on the login screen
     navigation.setOptions({
       tabBarVisible: false,
     });
+
+    // Check if user is already signed in and sign out
+    const checkSignIn = async () => {
+      try {
+        const isSignedIn = await GoogleSignin.isSignedIn();
+        if (isSignedIn) {
+          await GoogleSignin.signOut();
+          console.log('Previous Google Sign-In session cleared');
+        }
+      } catch (error) {
+        console.log('Google Sign-In check error: ', error);
+      }
+    };
+    checkSignIn();
   }, [navigation]);
 
   const handleLogin = async () => {
@@ -171,6 +193,86 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess: _onLoginSucce
       });
     } catch (err) {
       setError("Invalid username or password");
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      // Clear any previous errors
+      setError('');
+      
+      // Check if Play Services are available
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      
+      console.log('Attempting Google Sign-In...');
+      
+      // Perform the sign in
+      const userInfo = await GoogleSignin.signIn();
+      
+      console.log('Google Sign-In Response:', JSON.stringify(userInfo));
+      
+      // Extract user data from response
+      const email = userInfo.user.email;
+      const name = userInfo.user.name || userInfo.user.givenName;
+      const id = userInfo.user.id;
+      
+      console.log('Extracted data:', { email, name, id });
+      
+      if (!email) {
+        console.log('No email found in response:', userInfo);
+        setError('Failed to get email from Google');
+        return;
+      }
+      
+      try {
+        console.log('Sending data to backend:', { email, googleId: id, displayName: name });
+        
+        // Send Google sign-in data to your MongoDB backend
+        const response = await axios.post('http://10.0.2.2:5000/google-login', {
+          email,
+          googleId: id,
+          displayName: name
+        });
+        
+        const user = response.data;
+        console.log('Backend response:', user);
+        
+        // Store the username in AsyncStorage
+        if (user.username) {
+          await AsyncStorage.setItem('username', user.username);
+          console.log('Username stored:', user.username);
+        }
+        
+        // Navigate to main screen
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
+      } catch (backendError) {
+        console.error('Backend error:', backendError);
+        setError('Failed to authenticate with the server. Please try again.');
+      }
+    } catch (error: any) {
+      console.error('Google Sign-In error details:', JSON.stringify(error));
+      
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        console.log('Sign in cancelled');
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        setError('Sign in already in progress');
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        setError('Google Play Services not available or outdated');
+      } else if (error.code === 10) {
+        // DEVELOPER_ERROR specific handling
+        setError('Google Sign-In configuration error. Please check Firebase console settings.');
+        console.error('DEVELOPER_ERROR: Please follow these steps to fix:');
+        console.error('1. Verify SHA-1 fingerprint in Firebase console matches your app');
+        console.error('2. Check that Google Sign-In is enabled in Firebase Authentication');
+        console.error('3. Make sure web client ID is correct');
+        console.error('4. Rebuild app after making any changes');
+      } else {
+        setError(`Google Sign-In failed: ${error.message || 'Unknown error'}`);
+        console.error('Google Sign-In error:', error);
+      }
     }
   };
 
@@ -218,6 +320,11 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess: _onLoginSucce
 
             <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
               <Text style={styles.buttonText}>Login</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.googleButton} onPress={handleGoogleSignIn}>
+              <Icon name="logo-google" size={20} color="#DB4437" style={styles.googleIcon} />
+              <Text style={styles.googleButtonText}>Login with Google</Text>
             </TouchableOpacity>
 
             <View style={styles.signupContainer}>
@@ -282,12 +389,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Bold',
     color: '#1A1A1A',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
+    fontFamily: 'Poppins-Regular',
     color: '#666666',
     textAlign: 'center',
     marginBottom: 32,
@@ -313,10 +422,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     backgroundColor: 'transparent',
     fontWeight: '500',
+    fontFamily: 'Poppins-Medium',
   },
   input: {
     flex: 1,
     fontSize: 16,
+    fontFamily: 'Poppins-Regular',
     color: '#1A1A1A',
     padding: 0,
     height: '100%',
@@ -356,6 +467,35 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Bold',
+    textAlign: 'center',
+  },
+  googleButton: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginBottom: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  googleIcon: {
+    marginRight: 8,
+  },
+  googleButtonText: {
+    color: '#333333',
+    fontSize: 16,
+    fontFamily: 'Poppins-Medium',
     textAlign: 'center',
   },
   signupContainer: {
@@ -364,10 +504,12 @@ const styles = StyleSheet.create({
   },
   signupText: {
     fontSize: 14,
+    fontFamily: 'Poppins-Regular',
     color: '#718096',
   },
   signupLink: {
     color: '#199A8E',
+    fontFamily: 'Poppins-Bold',
     fontWeight: 'bold',
   },
   errorText: {
@@ -375,6 +517,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     fontSize: 14,
+    fontFamily: 'Poppins-Regular',
   },
 });
 

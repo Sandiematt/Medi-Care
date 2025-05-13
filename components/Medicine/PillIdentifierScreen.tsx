@@ -11,6 +11,7 @@ import {
   Easing,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Alert,
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import TextRecognition from '@react-native-ml-kit/text-recognition';
@@ -50,7 +51,6 @@ const { width } = Dimensions.get('window');
 
 const PillIdentifierScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [imprint, setImprint] = useState('');
-  const [ocrResult, setOcrResult] = useState('');
   
   // State and ref for tab bar visibility
   const [isTabBarVisible, setIsTabBarVisible] = useState(true);
@@ -223,7 +223,6 @@ const PillIdentifierScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           const result = await TextRecognition.recognize(imageUri);
           const recognizedText = result.text || '';
           console.log('Recognized Text:', recognizedText);
-          setOcrResult(recognizedText);
           setImprint(recognizedText);
         } catch (error) {
           console.error('OCR Error:', error);
@@ -238,6 +237,13 @@ const PillIdentifierScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   });
 
   const handleSearch = () => {
+    // Validate that imprint is not empty before searching
+    if (!imprint.trim()) {
+      // Show alert or handle empty input case
+      Alert.alert('Input Required', 'Please enter a pill imprint or name before searching');
+      return;
+    }
+    
     // Navigate to PillDisplay screen and pass the imprint as a query parameter
     navigation.navigate('PillDisplay', { query: imprint });
   };
@@ -280,35 +286,36 @@ const PillIdentifierScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
       <View style={styles.mainContent}>
         {/* Search Section */}
-<View style={styles.searchCard}>
-  <View style={styles.searchInputContainer}>
-    <View style={styles.searchContainer}>
-      <Icon name="magnify" size={24} color="#A5B4FC" style={styles.searchIcon} />
-      <TextInput
-        style={styles.input}
-        placeholder="Enter pill imprint or name"
-        placeholderTextColor="#94A3B8"
-        value={imprint}
-        onChangeText={setImprint}
-      />
-    </View>
-  </View>
-  <TouchableOpacity 
-    style={styles.searchButton}
-    onPress={handleSearch}
-    activeOpacity={0.8}
-  >
-    <LinearGradient
-      colors={['#199A8E', '#199A8E']}
-      start={{x: 0, y: 0}}
-      end={{x: 1, y: 1}}
-      style={styles.buttonGradient}
-    >
-      <Text style={styles.buttonText}>Search Database</Text>
-      <Icon name="arrow-right" size={20} color="#FFFFFF" style={styles.buttonIcon} />
-    </LinearGradient>
-  </TouchableOpacity>
-</View>
+        <View style={styles.searchCard}>
+          <View style={styles.searchInputContainer}>
+            <View style={styles.searchContainer}>
+              <Icon name="magnify" size={24} color="#A5B4FC" style={styles.searchIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter pill imprint or name"
+                placeholderTextColor="#94A3B8"
+                value={imprint}
+                onChangeText={setImprint}
+              />
+            </View>
+          </View>
+          <TouchableOpacity 
+            style={[styles.searchButton, !imprint.trim() && styles.disabledButton]}
+            onPress={handleSearch}
+            activeOpacity={0.8}
+            disabled={!imprint.trim()}
+          >
+            <LinearGradient
+              colors={['#199A8E', !imprint.trim() ? '#A0AEC0' : '#199A8E']}
+              start={{x: 0, y: 0}}
+              end={{x: 1, y: 1}}
+              style={styles.buttonGradient}
+            >
+              <Text style={styles.buttonText}>Search Database</Text>
+              <Icon name="arrow-right" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
 
         {/* Camera Section */}
         <Animated.View style={[
@@ -341,7 +348,7 @@ const PillIdentifierScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                   onPress={handleFileUpload}
                   activeOpacity={0.7}
                 >
-                  <Icon name="file-upload" size={48} color="#199A8E" />
+                  <Icon name="image-multiple" size={48} color="#199A8E" />
                 </TouchableOpacity>
               </Animated.View>
               <Text style={styles.cameraText}>Upload Your Pill</Text>
@@ -400,30 +407,6 @@ const PillIdentifierScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             </Animated.View>
           ))}
         </Animated.View>
-
-        {/* Results Section */}
-        {ocrResult && (
-          <Animated.View
-            entering={Animated.spring({
-              duration: 500,
-              useNativeDriver: true,
-            })}
-            style={styles.resultCard}
-          >
-            <LinearGradient
-              colors={['rgba(99, 102, 241, 0.1)', 'rgba(79, 70, 229, 0.1)']}
-              style={styles.resultGradient}
-            >
-              <View style={styles.resultHeader}>
-                <Icon name="text-recognition" size={24} color="#4F46E5" />
-                <Text style={styles.resultTitle}>Scan Results</Text>
-              </View>
-              <View style={styles.resultContent}>
-                <Text style={styles.resultText}>{ocrResult}</Text>
-              </View>
-            </LinearGradient>
-          </Animated.View>
-        )}
       </View>
     </ScrollView>
   );
@@ -610,43 +593,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
   },
 
-  // Result Card Styles
-  resultCard: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 8,
-  },
-  resultGradient: {
-    padding: 20,
-  },
-  resultHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  resultTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1E293B',
-    marginLeft: 12,
-    fontFamily: 'Poppins-Bold',
-  },
-  resultContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-  },
-  resultText: {
-    fontSize: 16,
-    color: '#475569',
-    lineHeight: 24,
-    fontFamily: 'Poppins-Regular',
-  },
-
   // Button Styles
   buttonGradient: {
     flexDirection: 'row',
@@ -673,6 +619,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
 });
 

@@ -509,9 +509,9 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
   // Static data for services - wrap in useMemo to prevent recreation on each render
   const services = useMemo(() => [
     { name: 'Inventory', icon: 'inventory-2', color: '#5856D6', route: 'Medicines', description: 'Track your medications' },
-    { name: 'Counterfeit', icon: 'verified-user', color: '#FF2D55', route: 'Hospital', description: 'Verify your medicine' },
-    { name: 'Prescriptions', icon: 'description', color: '#AF52DE', route: 'Prescriptions', description: 'View prescriptions' },
-    { name: 'AI ChatBot', icon: 'chat', color: '#FF9500', route: 'AI_ChatBot', description: 'Get AI assistance' },
+    { name: 'Counterfeit', icon: 'verified-user', color: '#FF7D6B', route: 'Hospital', description: 'Verify your medicine' },
+    { name: 'Prescriptions', icon: 'description', color: '#7C4DFF', route: 'Prescriptions', description: 'View prescriptions' },
+    { name: 'AI ChatBot', icon: 'chat', color: '#4ECDC4', route: 'AI_ChatBot', description: 'Get AI assistance' },
   ], []);
 
   // --- Search Logic ---
@@ -1134,7 +1134,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingHorizontal: 12,
-    height: 48,
+    height: 54, // Increased from 48 to 54 for more vertical space
     borderWidth: 1,
     borderColor: '#EFEFF4',
     shadowColor: "#000",
@@ -1151,6 +1151,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#1C1C1E',
     height: '100%',
+    paddingVertical: 12, // Added vertical padding
     fontFamily: 'Poppins-Regular',
   },
   clearButton: {
@@ -1286,10 +1287,11 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#1C1C1E',
     fontFamily: 'Poppins-Bold',
+    letterSpacing: -0.5,
   },
   seeAllButton: {
       paddingVertical: 4,
@@ -1301,15 +1303,16 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontFamily: 'Poppins-Bold',
   },
-  // Services Grid Styles (Unchanged)
+  // Services Grid Styles
   servicesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    marginTop: 5,
   },
   serviceCardContainer: {
-    width: '48%',
-    marginBottom: 15,
+    width: '47%',
+    marginBottom: 18,
   },
   serviceCardTouchable: {
     backgroundColor: '#FFFFFF',
@@ -1317,12 +1320,13 @@ const styles = StyleSheet.create({
     padding: 15,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#EFEFF4',
+    borderColor: '#F0F0F5',
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+    height: 160,
   },
   serviceIconContainer: {
     width: 50,
@@ -1333,7 +1337,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   serviceText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: '#1C1C1E',
     textAlign: 'center',

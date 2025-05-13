@@ -35,6 +35,7 @@ interface InventoryItem {
   price: number;
   inStock: number;
   type: string;
+  _id?: string; // Add _id field for MongoDB documents
 }
 
 interface Stats {
@@ -65,6 +66,19 @@ const InventoryScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     maxPrice: null,
   });
   const [itemTypes, setItemTypes] = useState<string[]>([]);
+  
+  // Add state for edit modal
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+  const [editStock, setEditStock] = useState('');
+  const [editType, setEditType] = useState('');
+  const [updateError, setUpdateError] = useState('');
+  const [updateSuccess, setUpdateSuccess] = useState('');
+  const [updatingItem, setUpdatingItem] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingItem, setDeletingItem] = useState(false);
 
   // Fetch items from database
   const fetchInventoryItems = async () => {
@@ -241,6 +255,160 @@ const InventoryScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     }, [navigation])
   );
 
+  // Add handleItemPress function to open edit modal
+  const handleItemPress = (item: InventoryItem) => {
+    setEditingItem(item);
+    setEditName(item.name);
+    setEditPrice(item.price.toString());
+    setEditStock(item.inStock.toString());
+    setEditType(item.type);
+    setUpdateError('');
+    setUpdateSuccess('');
+    setShowEditModal(true);
+  };
+
+  // Add handleUpdateItem function
+  const handleUpdateItem = async () => {
+    setUpdateError('');
+    setUpdateSuccess('');
+    
+    // Validate input
+    if (!editName || !editPrice || !editStock || !editType) {
+      setUpdateError('All fields are required');
+      return;
+    }
+
+    try {
+      setUpdatingItem(true);
+      
+      // Get username from AsyncStorage
+      const username = await AsyncStorage.getItem('username');
+      let parsedUsername;
+      
+      // Try to parse username if it's stored as JSON
+      try {
+        const parsedUserData = JSON.parse(username || '');
+        parsedUsername = parsedUserData.username;
+      } catch (parseError) {
+        // If parsing fails, assume it's a plain string
+        parsedUsername = username;
+      }
+      
+      if (!parsedUsername || !editingItem?._id) {
+        setUpdateError('Authentication required');
+        setUpdatingItem(false);
+        return;
+      }
+      
+      // Send update request to the API
+      const response = await fetch(`http://10.0.2.2:5000/inventory/${editingItem._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: editName,
+          price: parseFloat(editPrice),
+          inStock: parseInt(editStock),
+          type: editType,
+          username: parsedUsername,
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update item');
+      }
+      
+      // Update the local state
+      const updatedItems = inventoryItems.map(item => 
+        item._id === editingItem._id 
+          ? { ...item, name: editName, price: parseFloat(editPrice), inStock: parseInt(editStock), type: editType }
+          : item
+      );
+      
+      setInventoryItems(updatedItems);
+      setFilteredItems(updatedItems);
+      setUpdateSuccess('Item updated successfully');
+      
+      // Close modal and refresh data after a delay
+      setTimeout(() => {
+        setShowEditModal(false);
+        setEditingItem(null);
+        fetchInventoryItems();
+        fetchStats();
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Error updating inventory item:', error);
+      setUpdateError(error instanceof Error ? error.message : 'An error occurred');
+    } finally {
+      setUpdatingItem(false);
+    }
+  };
+
+  // Add handleDeleteItem function
+  const handleDeleteItem = async () => {
+    if (!editingItem?._id) {
+      setUpdateError('Item ID not found');
+      return;
+    }
+    
+    try {
+      setDeletingItem(true);
+      
+      // Get username from AsyncStorage
+      const username = await AsyncStorage.getItem('username');
+      let parsedUsername;
+      
+      // Try to parse username if it's stored as JSON
+      try {
+        const parsedUserData = JSON.parse(username || '');
+        parsedUsername = parsedUserData.username;
+      } catch (parseError) {
+        // If parsing fails, assume it's a plain string
+        parsedUsername = username;
+      }
+      
+      if (!parsedUsername) {
+        setUpdateError('Authentication required');
+        setDeletingItem(false);
+        return;
+      }
+      
+      // Send delete request to the API
+      const response = await fetch(`http://10.0.2.2:5000/inventory/${editingItem._id}?username=${encodeURIComponent(parsedUsername)}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete item');
+      }
+      
+      // Remove the item from local state
+      const updatedItems = inventoryItems.filter(item => item._id !== editingItem._id);
+      setInventoryItems(updatedItems);
+      setFilteredItems(updatedItems);
+      
+      // Close modal and refresh data
+      setShowEditModal(false);
+      setEditingItem(null);
+      setShowDeleteConfirm(false);
+      
+      // Refresh the data
+      fetchInventoryItems();
+      fetchStats();
+      
+    } catch (error) {
+      console.error('Error deleting inventory item:', error);
+      setUpdateError(error instanceof Error ? error.message : 'An error occurred');
+      setShowDeleteConfirm(false);
+    } finally {
+      setDeletingItem(false);
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -353,6 +521,7 @@ const InventoryScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             <TouchableOpacity
               key={item.name + index}
               style={[styles.itemCard, index === filteredItems.length - 1 && styles.lastCard]}
+              onPress={() => handleItemPress(item)}
             >
               <View style={styles.itemLeft}>
                 <View style={styles.itemIconContainer}>
@@ -521,6 +690,169 @@ const InventoryScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               >
                 <Text style={styles.applyButtonText}>Apply Filters</Text>
               </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Edit Item Modal */}
+      <Modal
+        visible={showEditModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          if (!updatingItem && !deletingItem) {
+            setShowEditModal(false);
+            setEditingItem(null);
+          }
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Inventory Item</Text>
+              <TouchableOpacity 
+                onPress={() => {
+                  if (!updatingItem && !deletingItem) {
+                    setShowEditModal(false);
+                    setEditingItem(null);
+                  }
+                }}
+                disabled={updatingItem || deletingItem}
+              >
+                <Icon name="x" size={24} color={(updatingItem || deletingItem) ? "#CBD5E1" : "#0F172A"} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent}>
+              {/* Display errors */}
+              {updateError ? (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>{updateError}</Text>
+                </View>
+              ) : null}
+              
+              {/* Display success message */}
+              {updateSuccess ? (
+                <View style={styles.successContainer}>
+                  <Text style={styles.successText}>{updateSuccess}</Text>
+                </View>
+              ) : null}
+              
+              {/* Delete confirmation */}
+              {showDeleteConfirm ? (
+                <View style={styles.deleteConfirmContainer}>
+                  <Text style={styles.deleteConfirmText}>
+                    Are you sure you want to delete this item? This action cannot be undone.
+                  </Text>
+                  <View style={styles.deleteConfirmButtons}>
+                    <TouchableOpacity
+                      style={styles.cancelDeleteButton}
+                      onPress={() => setShowDeleteConfirm(false)}
+                      disabled={deletingItem}
+                    >
+                      <Text style={styles.cancelDeleteText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.confirmDeleteButton}
+                      onPress={handleDeleteItem}
+                      disabled={deletingItem}
+                    >
+                      {deletingItem ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <Text style={styles.confirmDeleteText}>Delete</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : null}
+              
+              {/* Form Fields */}
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Item Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editName}
+                  onChangeText={setEditName}
+                  placeholder="Enter item name"
+                  placeholderTextColor="#94A3B8"
+                  editable={!updatingItem && !deletingItem && !showDeleteConfirm}
+                />
+              </View>
+              
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Price ($)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editPrice}
+                  onChangeText={setEditPrice}
+                  placeholder="Enter price"
+                  placeholderTextColor="#94A3B8"
+                  keyboardType="decimal-pad"
+                  editable={!updatingItem && !deletingItem && !showDeleteConfirm}
+                />
+              </View>
+              
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Stock Quantity</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editStock}
+                  onChangeText={setEditStock}
+                  placeholder="Enter stock quantity"
+                  placeholderTextColor="#94A3B8"
+                  keyboardType="number-pad"
+                  editable={!updatingItem && !deletingItem && !showDeleteConfirm}
+                />
+              </View>
+              
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Item Type</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editType}
+                  onChangeText={setEditType}
+                  placeholder="Enter item type"
+                  placeholderTextColor="#94A3B8"
+                  editable={!updatingItem && !deletingItem && !showDeleteConfirm}
+                />
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              {!showDeleteConfirm ? (
+                <>
+                  <TouchableOpacity
+                    style={[styles.cancelButton, (updatingItem || deletingItem) && styles.disabledButton]}
+                    onPress={() => {
+                      setShowEditModal(false);
+                      setEditingItem(null);
+                    }}
+                    disabled={updatingItem || deletingItem}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.updateButton, (updatingItem || deletingItem) && styles.disabledUpdateButton]}
+                    onPress={handleUpdateItem}
+                    disabled={updatingItem || deletingItem}
+                  >
+                    {updatingItem ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.updateButtonText}>Update</Text>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.deleteButton, (updatingItem || deletingItem) && styles.disabledDeleteButton]}
+                    onPress={() => setShowDeleteConfirm(true)}
+                    disabled={updatingItem || deletingItem}
+                  >
+                    <Icon name="trash-2" size={20} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </>
+              ) : null}
             </View>
           </View>
         </View>
@@ -975,6 +1307,160 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Normal',
     color: '#64748B',
     marginTop: 8,
+  },
+  errorContainer: {
+    backgroundColor: '#FEE2E2',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: '#DC2626',
+    fontFamily: 'Poppins-Normal',
+    fontSize: 14,
+  },
+  successContainer: {
+    backgroundColor: '#DCFCE7',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  successText: {
+    color: '#059669',
+    fontFamily: 'Poppins-Normal',
+    fontSize: 14,
+  },
+  formGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontFamily: 'Poppins-Normal',
+    color: '#64748B',
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    fontFamily: 'Poppins-Normal',
+    color: '#0F172A',
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontFamily: 'Poppins-Normal',
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  updateButton: {
+    flex: 1,
+    backgroundColor: '#4b90e2',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#4b90e2',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  updateButtonText: {
+    fontSize: 16,
+    fontFamily: 'Poppins-Bold',
+    color: '#FFFFFF',
+  },
+  disabledButton: {
+    backgroundColor: '#F1F5F9',
+    borderColor: '#E2E8F0',
+  },
+  disabledUpdateButton: {
+    backgroundColor: '#93C5FD',
+  },
+  deleteButton: {
+    flex: 1,
+    backgroundColor: '#EF4444',
+    paddingVertical: 16,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#EF4444',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  disabledDeleteButton: {
+    backgroundColor: '#FCA5A5',
+  },
+  deleteConfirmContainer: {
+    backgroundColor: '#FEF2F2',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+  },
+  deleteConfirmText: {
+    fontSize: 14,
+    fontFamily: 'Poppins-Normal',
+    color: '#B91C1C',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  deleteConfirmButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  cancelDeleteButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+  },
+  cancelDeleteText: {
+    fontSize: 14,
+    fontFamily: 'Poppins-Normal',
+    color: '#64748B',
+  },
+  confirmDeleteButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#EF4444',
+  },
+  confirmDeleteText: {
+    fontSize: 14,
+    fontFamily: 'Poppins-Bold',
+    color: '#FFFFFF',
   },
 });
 

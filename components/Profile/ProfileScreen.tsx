@@ -13,6 +13,7 @@ import {
   Easing, // Import Easing for animation curves
   NativeScrollEvent, // Added
   NativeSyntheticEvent, // Added
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -332,36 +333,71 @@ const ProfileMainScreen = ({ navigation }: ProfileMainScreenProps) => {
     }
 
     setUploading(true);
-
-    const formData = new FormData();
-    formData.append('image', {
-      uri: imageAsset.uri,
-      type: imageAsset.type,
-      name: imageAsset.fileName || 'photo.jpg',
-    });
+    console.log('Starting image upload for user:', username);
 
     try {
+      // Create FormData object
+      const formData = new FormData();
+      
+      // Properly format image data for FormData to avoid type issues
+      const imageFile = {
+        uri: Platform.OS === 'android' ? imageAsset.uri : imageAsset.uri.replace('file://', ''),
+        type: imageAsset.type || 'image/jpeg',
+        name: imageAsset.fileName || `photo_${Date.now()}.jpg`,
+      };
+      
+      // Append with correct structure for multer
+      formData.append('image', imageFile as any);
+      
+      console.log('Image URI:', imageAsset.uri);
+      console.log('Image type:', imageFile.type);
+      console.log('Image name:', imageFile.name);
+      console.log('Server URL:', `http://10.0.2.2:5000/users/${username}/upload-profile-image`);
+
+      // Make POST request to upload the image
       const response = await axios.post(
         `http://10.0.2.2:5000/users/${username}/upload-profile-image`,
         formData,
         {
           headers: {
             'Content-Type': 'multipart/form-data',
+            'Accept': 'application/json',
           },
+          // Important: Don't let Axios transform the FormData
+          transformRequest: (_data, _headers) => formData,
+          timeout: 15000, // 15 second timeout
         }
       );
 
-      if (response.data.success) {
+      console.log('Upload response:', response.data);
+
+      if (response.data && response.data.success) {
         // Refresh user data to get the updated image
-        const userResponse = await axios.get(`http://10.0.2.2:5000/users/${username}`);
-        setUserData(userResponse.data);
-        Alert.alert('Success', 'Profile picture updated successfully');
+        try {
+          const userResponse = await axios.get(`http://10.0.2.2:5000/users/${username}`);
+          setUserData(userResponse.data);
+          Alert.alert('Success', 'Profile picture updated successfully');
+        } catch (refreshError) {
+          console.error('Error refreshing user data:', refreshError);
+          Alert.alert('Note', 'Image uploaded but profile may need to be refreshed manually');
+        }
       } else {
-        Alert.alert('Error', 'Failed to update profile picture');
+        Alert.alert('Error', response.data?.error || 'Failed to update profile picture');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading image:', error);
-      Alert.alert('Error', 'Failed to upload image');
+      
+      if (error.message?.includes('Network Error')) {
+        Alert.alert(
+          'Network Error', 
+          'Cannot connect to the server. Please check your internet connection and make sure the server is running.'
+        );
+      } else if (error.response) {
+        console.error('Server response error:', error.response.status, error.response.data);
+        Alert.alert('Server Error', `Status: ${error.response.status}. ${error.response.data?.error || 'Unknown error'}`);
+      } else {
+        Alert.alert('Error', error.message || 'Failed to upload image');
+      }
     } finally {
       setUploading(false);
     }

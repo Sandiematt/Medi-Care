@@ -63,6 +63,55 @@ app.post('/login', async (req, res) => {
   }
 });
 
+// Google Sign-In endpoint
+app.post('/google-login', async (req, res) => {
+  try {
+    const { email, googleId, displayName } = req.body;
+    
+    console.log('Google login request received:', { email, googleId, displayName });
+    
+    // Check if user exists with this email
+    let user = await usersCollection.findOne({ email });
+    
+    if (!user) {
+      // Create a new user following the schema pattern from the existing users
+      const newUser = {
+        username: displayName || email.split('@')[0], // Use display name or extract from email
+        email,
+        contact: "", // Empty string as placeholder
+        age: "", // Empty string as placeholder
+        gender: "", // Empty string as placeholder
+        googleId, // Store Google ID for future reference
+        password: "", // Empty since Google Auth doesn't use password
+        isadmin: false, // Default to non-admin
+        image: null // Profile image set to null initially
+      };
+      
+      const result = await usersCollection.insertOne(newUser);
+      user = newUser;
+      console.log('New Google user created:', result.insertedId);
+    } else {
+      // Update existing user's Google ID if needed
+      if (!user.googleId) {
+        await usersCollection.updateOne(
+          { email },
+          { $set: { googleId } }
+        );
+      }
+    }
+    
+    // Return user information matching your regular login response pattern
+    res.status(200).json({ 
+      message: 'Login successful',
+      isAdmin: user.isadmin || false,
+      username: user.username, // Include username
+    });
+  } catch (error) {
+    console.error('Error during Google login:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // User registration endpoint
 app.post('/register', async (req, res) => {
   try {
@@ -347,7 +396,132 @@ app.get('/reminders/:username', async (req, res) => {
     }
   });
 
+  // API to get single inventory item by ID
+  app.get('/inventory/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      if (!id) {
+        return res.status(400).json({ message: 'Item ID is required' });
+      }
+      
+      const item = await inventoryCollection.findOne({ _id: new ObjectId(id) });
+      
+      if (!item) {
+        return res.status(404).json({ message: 'Inventory item not found' });
+      }
+      
+      res.status(200).json(item);
+    } catch (error) {
+      console.error('Error fetching inventory item:', error.message);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
 
+  // API to update inventory item
+  app.put('/inventory/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, price, inStock, type, username } = req.body;
+      
+      // Validate required fields
+      if (!name || price === undefined || inStock === undefined || !type) {
+        return res.status(400).json({
+          message: 'All fields are required (name, price, inStock, type)'
+        });
+      }
+      
+      // Validate user is logged in
+      if (!username) {
+        return res.status(401).json({
+          message: 'Authentication required'
+        });
+      }
+      
+      // Find the existing item to verify ownership
+      const existingItem = await inventoryCollection.findOne({ _id: new ObjectId(id) });
+      
+      if (!existingItem) {
+        return res.status(404).json({ message: 'Inventory item not found' });
+      }
+      
+      // Verify the user owns this item
+      if (existingItem.createdBy !== username) {
+        return res.status(403).json({ message: 'You do not have permission to update this item' });
+      }
+      
+      // Update the item
+      const result = await inventoryCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { 
+          $set: {
+            name,
+            price: parseFloat(price),
+            inStock: parseInt(inStock),
+            type,
+            updatedAt: new Date()
+          } 
+        }
+      );
+      
+      if (result.modifiedCount === 0) {
+        return res.status(400).json({ message: 'No changes were made to the item' });
+      }
+      
+      res.status(200).json({
+        message: 'Inventory item updated successfully',
+        itemId: id
+      });
+    } catch (error) {
+      console.error('Error updating inventory item:', error.message);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // API to delete inventory item
+  app.delete('/inventory/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { username } = req.query;
+      
+      if (!id) {
+        return res.status(400).json({ message: 'Item ID is required' });
+      }
+      
+      // Validate user is logged in
+      if (!username) {
+        return res.status(401).json({
+          message: 'Authentication required'
+        });
+      }
+      
+      // Find the existing item to verify ownership
+      const existingItem = await inventoryCollection.findOne({ _id: new ObjectId(id) });
+      
+      if (!existingItem) {
+        return res.status(404).json({ message: 'Inventory item not found' });
+      }
+      
+      // Verify the user owns this item
+      if (existingItem.createdBy !== username) {
+        return res.status(403).json({ message: 'You do not have permission to delete this item' });
+      }
+      
+      // Delete the item
+      const result = await inventoryCollection.deleteOne({ _id: new ObjectId(id) });
+      
+      if (result.deletedCount === 0) {
+        return res.status(400).json({ message: 'Failed to delete the item' });
+      }
+      
+      res.status(200).json({
+        message: 'Inventory item deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting inventory item:', error.message);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
 
 app.post('/inventory', async (req, res) => {
   try {
@@ -774,44 +948,102 @@ app.post('/logout', (req, res) => {
 
     // User profile image upload endpoint
 app.post('/users/:username/upload-profile-image', upload.single('image'), async (req, res) => {
+  console.log('Received profile image upload request for user:', req.params.username);
+  
   try {
     const { username } = req.params;
     
+    // Log request details
+    console.log('Request headers:', JSON.stringify(req.headers));
+    console.log('Content-Type:', req.headers['content-type']);
+    console.log('Request file:', req.file ? 'File received' : 'No file received');
+    
     if (!req.file) {
-      return res.status(400).json({ error: 'No image uploaded' });
+      console.error('No file was uploaded in the request');
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No image uploaded' 
+      });
     }
     
-    // Read the uploaded image file and convert it to base64
-    const imageBase64 = fs.readFileSync(req.file.path, {
-      encoding: 'base64'
+    console.log('Received file details:', {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      path: req.file.path
     });
     
-    // Create the image data URL
-    const imageData = `data:${req.file.mimetype};base64,${imageBase64}`;
-    
-    // Update user document with the image
-    const result = await usersCollection.findOneAndUpdate(
-      { username },
-      { $set: { image: imageData } },
-      { returnDocument: 'after' }
-    );
-    
-    // Delete temp file
-    fs.unlinkSync(req.file.path);
-    
-    if (!result) {
-      return res.status(404).json({ error: 'User not found' });
+    try {
+      // Read the uploaded image file and convert it to base64
+      const imageBase64 = fs.readFileSync(req.file.path, {
+        encoding: 'base64'
+      });
+      
+      // Create the image data URL
+      const imageData = `data:${req.file.mimetype};base64,${imageBase64}`;
+      console.log('Image converted to base64, length:', imageBase64.length);
+      
+      // Find the user first to verify they exist
+      const userExists = await usersCollection.findOne({ username });
+      if (!userExists) {
+        console.error(`User not found: ${username}`);
+        // Clean up the file if it exists
+        if (fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+        return res.status(404).json({ 
+          success: false, 
+          error: 'User not found' 
+        });
+      }
+      
+      // Update user document with the image
+      const result = await usersCollection.findOneAndUpdate(
+        { username },
+        { $set: { image: imageData } },
+        { returnDocument: 'after' }
+      );
+      
+      // Delete temp file
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      
+      if (!result) {
+        console.error(`User update failed: ${username}`);
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Failed to update user profile' 
+        });
+      }
+      
+      console.log(`Profile image updated successfully for: ${username}`);
+      return res.status(200).json({
+        success: true,
+        message: 'Profile image uploaded successfully'
+      });
+    } catch (fileError) {
+      console.error('Error processing file:', fileError);
+      
+      // Attempt to clean up the uploaded file if it exists
+      if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (cleanupError) {
+          console.error('Error cleaning up file:', cleanupError);
+        }
+      }
+      
+      return res.status(500).json({
+        success: false,
+        error: 'Error processing the uploaded image'
+      });
     }
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Profile image uploaded successfully'
-    });
   } catch (error) {
-    console.error('Error uploading profile image:', error);
+    console.error('Error in profile image upload:', error);
     return res.status(500).json({
       success: false,
-      error: 'Failed to upload profile image'
+      error: 'Server error while uploading profile image'
     });
   }
 });
