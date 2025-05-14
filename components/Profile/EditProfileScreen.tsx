@@ -79,14 +79,14 @@ const EditProfileScreen: React.FC = () => {
       const storedUsername = await AsyncStorage.getItem('username');
       if (storedUsername) {
         // Make API call to get user data
-        const response = await axios.get(`http://10.0.2.2:5000/users/${storedUsername}`);
+        const response = await axios.get(`http://20.193.156.237:5000/users/${storedUsername}`);
         // Exclude password from being pre-filled for security, unless necessary
         const userData = { ...response.data, password: '' };
         setFormData(userData);
         
         // Fetch profile photo from separate endpoint
         try {
-          const profileResponse = await axios.get(`http://10.0.2.2:5000/api/users/${storedUsername}/profile`);
+          const profileResponse = await axios.get(`http://20.193.156.237:5000/api/users/${storedUsername}/profile`);
           if (profileResponse.data.success && profileResponse.data.profilePhoto) {
             setProfilePhoto(profileResponse.data.profilePhoto);
           }
@@ -123,7 +123,7 @@ const EditProfileScreen: React.FC = () => {
       let hasChanges = false;
       
       // Get the current user data from backend to compare changes
-      const response = await axios.get(`http://10.0.2.2:5000/users/${storedUsername}`);
+      const response = await axios.get(`http://20.193.156.237:5000/users/${storedUsername}`);
       const originalData = response.data;
       
       // Check if any required fields are empty
@@ -178,7 +178,7 @@ const EditProfileScreen: React.FC = () => {
 
       // Make the API call to update the user profile
       const updateResponse = await axios.put(
-        `http://10.0.2.2:5000/users/${storedUsername}`,
+        `http://20.193.156.237:5000/users/${storedUsername}`,
         updateData,
         {
           headers: { 'Content-Type': 'application/json' },

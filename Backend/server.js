@@ -1153,5 +1153,5 @@ app.listen(PORT, '0.0.0.0', () => {
 // Start the main function
 main().catch((err) => console.error(err));
 
-// emualator ip addresshttp://10.0.2.2:5000
-// 
+// emualator ip addresshttp://20.193.156.237:5000
+// http://20.193.156.237:5000

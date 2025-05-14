@@ -102,7 +102,7 @@ const PillDisplayScreen: React.FC<Props> = ({ route, navigation }) => {
             setError(null);
             
             try {
-                const response = await axios.get('http://10.0.2.2:5000/api/medicine', {
+                const response = await axios.get('http://20.193.156.237:5000/api/medicine', {
                     params: { query },
                     timeout: 5000
                 });

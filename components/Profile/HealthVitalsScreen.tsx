@@ -56,7 +56,7 @@ const HealthVitalsScreen = () => {
         }
   
         try {
-          const response = await axios.get(`http://10.0.2.2:5000/healthvitals/${storedUsername}`);
+          const response = await axios.get(`http://20.193.156.237:5000/healthvitals/${storedUsername}`);
           
           const data = response.data || {};
           setUserData(data);

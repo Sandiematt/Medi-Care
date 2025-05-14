@@ -327,7 +327,7 @@ const AI_ChatBot: React.FC = () => {
       }
 
       // Replace with your actual API endpoint
-      const response = await fetch(`http://10.0.2.2:5000/api/users/${username}/profile`);
+      const response = await fetch(`http://20.193.156.237:5000/api/users/${username}/profile`);
       if (!response.ok) {
         throw new Error(`Failed to fetch profile: ${response.status}`);
       }

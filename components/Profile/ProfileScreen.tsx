@@ -169,7 +169,7 @@ const ProfileMainScreen = ({ navigation }: ProfileMainScreenProps) => {
       if (storedUsername) {
         try {
           // Replace with your actual API endpoint
-          const response = await axios.get(`http://10.0.2.2:5000/users/${storedUsername}`);
+          const response = await axios.get(`http://20.193.156.237:5000/users/${storedUsername}`);
           const data = response.data;
           setUserData(data);
           setUsername(data.username || storedUsername); // Fallback username
@@ -386,11 +386,11 @@ const ProfileMainScreen = ({ navigation }: ProfileMainScreenProps) => {
       console.log('Image URI:', imageAsset.uri);
       console.log('Image type:', imageFile.type);
       console.log('Image name:', imageFile.name);
-      console.log('Server URL:', `http://10.0.2.2:5000/users/${username}/upload-profile-image`);
+      console.log('Server URL:', `http://20.193.156.237:5000/users/${username}/upload-profile-image`);
 
       // Make POST request to upload the image
       const response = await axios.post(
-        `http://10.0.2.2:5000/users/${username}/upload-profile-image`,
+        `http://20.193.156.237:5000/users/${username}/upload-profile-image`,
         formData,
         {
           headers: {
@@ -408,7 +408,7 @@ const ProfileMainScreen = ({ navigation }: ProfileMainScreenProps) => {
       if (response.data && response.data.success) {
         // Refresh user data to get the updated image
         try {
-          const userResponse = await axios.get(`http://10.0.2.2:5000/users/${username}`);
+          const userResponse = await axios.get(`http://20.193.156.237:5000/users/${username}`);
           setUserData(userResponse.data);
           Alert.alert('Success', 'Profile picture updated successfully');
         } catch (refreshError) {

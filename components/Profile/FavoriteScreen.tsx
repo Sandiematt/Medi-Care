@@ -206,7 +206,7 @@ const FavoriteScreen = () => {
       try {
         const storedUsername = await AsyncStorage.getItem('username');
         if (!storedUsername) throw new Error('Username not found');
-        const response = await axios.get(`http://10.0.2.2:5000/healthvitals/${storedUsername}`);
+        const response = await axios.get(`http://20.193.156.237:5000/healthvitals/${storedUsername}`);
         
         // Check if we have valid height and weight data
         if (!response.data || !response.data.height || !response.data.weight) {

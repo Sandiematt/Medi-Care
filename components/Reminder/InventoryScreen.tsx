@@ -105,7 +105,7 @@ const InventoryScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       }
       
       // Use the username as a query parameter
-      const response = await fetch(`http://10.0.2.2:5000/inventory?username=${encodeURIComponent(parsedUsername)}`);
+      const response = await fetch(`http://20.193.156.237:5000/inventory?username=${encodeURIComponent(parsedUsername)}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch inventory items');
@@ -146,7 +146,7 @@ const InventoryScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       }
       
       // Include username as a query parameter
-      const response = await fetch(`http://10.0.2.2:5000/stats?username=${encodeURIComponent(parsedUsername)}`);
+      const response = await fetch(`http://20.193.156.237:5000/stats?username=${encodeURIComponent(parsedUsername)}`);
       if (!response.ok) {
         throw new Error('Failed to fetch inventory stats');
       }
@@ -320,7 +320,7 @@ const InventoryScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       }
       
       // Send update request to the API
-      const response = await fetch(`http://10.0.2.2:5000/inventory/${editingItem._id}`, {
+      const response = await fetch(`http://20.193.156.237:5000/inventory/${editingItem._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -396,7 +396,7 @@ const InventoryScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       }
       
       // Send delete request to the API
-      const response = await fetch(`http://10.0.2.2:5000/inventory/${editingItem._id}?username=${encodeURIComponent(parsedUsername)}`, {
+      const response = await fetch(`http://20.193.156.237:5000/inventory/${editingItem._id}?username=${encodeURIComponent(parsedUsername)}`, {
         method: 'DELETE',
       });
       
