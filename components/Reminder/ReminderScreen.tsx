@@ -10,6 +10,7 @@ import {
   RefreshControl,
   Pressable, // Keep Pressable if needed elsewhere
   Platform, // For potential platform-specific adjustments
+  SafeAreaView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -60,6 +61,14 @@ interface ReminderMainScreenProps {
   navigation: any; // Replace 'any' with more specific navigation prop type if available
 }
 
+// New interface for delete confirmation modal
+interface DeleteModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  reminderName: string;
+}
+
 // --- Navigation Setup (Unchanged) ---
 const Stack = createStackNavigator();
 
@@ -94,7 +103,7 @@ const isPastDue = (timeString: string): boolean => {
 // --- Animated Components ---
 
 // Animated component for Reminder Cards
-const AnimatedReminderCard = ({ item, index, onTickClick, today, getStatusIcon, getStatusColor }) => {
+const AnimatedReminderCard = ({ item, index, onTickClick, today, getStatusIcon, getStatusColor, onDeleteClick }) => {
   return (
     // Use entering animation for initial appearance
     <Animated.View
@@ -110,12 +119,20 @@ const AnimatedReminderCard = ({ item, index, onTickClick, today, getStatusIcon, 
                 <Text style={styles.totalDoses}>{item.totalDoses} doses</Text>
               </View>
             </View>
-            <TouchableOpacity
-              style={styles.checkButton}
-              onPress={() => onTickClick(item)} // Pass handler
-            >
-              <Icon name="check" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => onDeleteClick(item)}
+              >
+                <Icon name="delete-outline" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.checkButton}
+                onPress={() => onTickClick(item)}
+              >
+                <Icon name="check" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {item.description && (
@@ -210,6 +227,51 @@ const AnimatedInventoryCard = ({ item, index, alertStyle, onPress }) => {
   );
 };
 
+// --- Delete Confirmation Modal component ---
+const DeleteConfirmationModal = ({ visible, onClose, onConfirm, reminderName }: DeleteModalProps) => {
+  return (
+    <Modal
+      animationType="fade"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+      statusBarTranslucent={true}
+    >
+      <View style={styles.safeAreaContainer}>
+        <View style={styles.centeredModalView}>
+          <View style={styles.deleteModalContent}>
+            <View style={styles.deleteModalHeader}>
+              <View style={styles.iconContainer}>
+                <Icon name="alert-circle" size={22} color="#FF6B6B" />
+              </View>
+              <Text style={styles.deleteModalTitle}>Delete Reminder</Text>
+            </View>
+            
+            <Text style={styles.deleteModalMessage}>
+              Are you sure you want to delete "{reminderName}"? This action cannot be undone.
+            </Text>
+            
+            <View style={styles.deleteModalButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={onClose}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.confirmDeleteButton}
+                onPress={onConfirm}
+              >
+                <Text style={styles.confirmDeleteText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
 
 // --- Main Screen Component ---
 const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) => {
@@ -218,6 +280,9 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
   const [modalVisible, setModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [lowStockItems, setLowStockItems] = useState<InventoryItem[]>([]);
+  // Add new state for delete confirmation modal
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [reminderToDelete, setReminderToDelete] = useState<Reminder | null>(null);
 
   // useMemo is correctly imported and used for today's short weekday name
   const today = useMemo(() => new Date().toLocaleString('en-US', { weekday: 'short' }), []);
@@ -228,7 +293,7 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
       const username = await AsyncStorage.getItem('username');
       if (!username) return false; // Early exit if no username
 
-      const inventoryResponse = await fetch(`http://20.193.156.237:500/inventory?username=${username}`);
+      const inventoryResponse = await fetch(`http://10.0.2.2:5000/inventory?username=${username}`);
       if (!inventoryResponse.ok) throw new Error(`Inventory fetch failed: ${inventoryResponse.status}`);
       const inventoryData = await inventoryResponse.json();
 
@@ -252,7 +317,7 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
       const username = await AsyncStorage.getItem('username');
       if (!username) return false; // Early exit
 
-      const response = await fetch(`http://20.193.156.237:500/reminders/${username}`);
+      const response = await fetch(`http://10.0.2.2:5000/reminders/${username}`);
       if (!response.ok) throw new Error(`Reminders fetch failed: ${response.status}`);
       const data = await response.json();
 
@@ -441,7 +506,7 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
       // console.log(`Cancelled notification: ${notificationId}`);
 
       // --- Update Backend ---
-      const response = await fetch(`http://20.193.156.237:500/reminders/${reminderId}`, {
+      const response = await fetch(`http://10.0.2.2:5000/reminders/${reminderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -483,6 +548,38 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
      navigation.navigate('Inventory');
   }, [navigation]);
 
+  // --- Add Delete Reminder Function ---
+  const handleDeleteClick = useCallback((reminder: Reminder) => {
+    setReminderToDelete(reminder);
+    setDeleteModalVisible(true);
+  }, []);
+
+  const handleDeleteReminder = useCallback(async () => {
+    if (!reminderToDelete) return;
+    
+    setDeleteModalVisible(false); // Close modal immediately
+
+    try {
+      const username = await AsyncStorage.getItem('username');
+      const response = await fetch(`http://10.0.2.2:5000/reminders/${reminderToDelete._id}?username=${username}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Remove reminder from state
+        setReminders(prevReminders => prevReminders.filter(r => r._id !== reminderToDelete._id));
+        Alert.alert('Success', 'Reminder deleted successfully');
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        Alert.alert('Error', errorData.message || 'Failed to delete the reminder');
+      }
+    } catch (error) {
+      console.error('Error deleting reminder:', error);
+      Alert.alert('Error', 'A network error occurred while deleting the reminder');
+    } finally {
+      setReminderToDelete(null);
+    }
+  }, [reminderToDelete]);
 
   // --- Helper Functions (getStatusColor/Icon now depend on 'today') ---
   const getStatusColor = useCallback((timeObj: TimeObject): string => {
@@ -574,12 +671,13 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
                     </Animated.View>
                 ) : (
                     reminders.map((item, index) => (
-                        // Use the AnimatedReminderCard component
+                        // Use the AnimatedReminderCard component with the new delete handler
                         <AnimatedReminderCard
                             key={item._id || index} // Use stable key (_id preferred)
                             item={item}
                             index={index}
                             onTickClick={handleTickClick}
+                            onDeleteClick={handleDeleteClick} // Add delete handler
                             today={today}
                             getStatusIcon={getStatusIcon} // Pass memoized helper
                             getStatusColor={getStatusColor} // Pass memoized helper
@@ -635,64 +733,75 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
 
       {/* --- Modal (Using standard Modal, animating content inside) --- */}
       <Modal
-        animationType="fade" // Use standard fade for the modal backdrop
+        animationType="fade"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)} // Allow closing via back button on Android
+        onRequestClose={() => setModalVisible(false)}
+        statusBarTranslucent={true}
       >
-        <View style={styles.modalContainer}>
-          {/* Animate the modal content appearance using ZoomIn */}
-          <Animated.View style={styles.modalContent} entering={ZoomIn.duration(300).easing(Easing.out(Easing.quad))}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Mark as Taken</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Icon name="close" size={24} color="#757575" />
+        <SafeAreaView style={styles.safeAreaContainer}>
+          <View style={styles.centeredModalView}>
+            <View style={styles.simpleModalContent}>
+              {/* Header */}
+              <View style={styles.simpleModalHeader}>
+                <Text style={styles.simpleModalTitle}>Mark as Taken</Text>
+                <TouchableOpacity 
+                  onPress={() => setModalVisible(false)}
+                  hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+                >
+                  <Icon name="close" size={24} color="#757575" />
+                </TouchableOpacity>
+              </View>
+              
+              <Text style={styles.simpleInstructions}>
+                Select a time to mark as taken:
+              </Text>
+              
+              {/* Time options */}
+              <ScrollView style={styles.simpleScrollView} contentContainerStyle={styles.simpleScrollContent}>
+                {selectedReminder?.times
+                  .filter(timeObj => !(timeObj.completed && timeObj.completed[today]))
+                  .map((timeObj, index) => (
+                    <TouchableOpacity
+                      key={`time-option-${index}`}
+                      style={styles.simpleTimeButton}
+                      onPress={() => handleRemoveTime(timeObj)}
+                    >
+                      <Icon
+                        name={isPastDue(timeObj.time) ? "clock-alert-outline" : "clock-outline"}
+                        size={20}
+                        color={isPastDue(timeObj.time) ? "#FF6B6B" : "#4A90E2"}
+                      />
+                      <View style={styles.simpleTimeInfo}>
+                        <Text style={styles.simpleTimeText}>{timeObj.time}</Text>
+                        <Text style={styles.simpleDoseText}>
+                          {timeObj.dose} dose {isPastDue(timeObj.time) ? "(Past Due)" : ""}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))
+                }
+              </ScrollView>
+              
+              {/* Cancel button */}
+              <TouchableOpacity
+                style={styles.simpleCancelButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.simpleCancelText}>Cancel</Text>
               </TouchableOpacity>
             </View>
-
-            <Text style={styles.modalSubtitle}>
-              Select a time to mark {selectedReminder?.name} as taken:
-            </Text>
-
-            {/* ScrollView for potentially long list of times */}
-            <ScrollView style={styles.modalScrollView}>
-              {selectedReminder?.times
-                .filter((timeObj) => !(timeObj.completed && timeObj.completed[today])) // Show only incomplete times for today
-                .map((timeObj, index) => (
-                    <TouchableOpacity
-                        key={`${selectedReminder._id}-modal-${timeObj.time}-${index}`} // Unique key for modal items
-                        onPress={() => handleRemoveTime(timeObj)} // Call handler to mark time as taken
-                        style={styles.modalOption}
-                    >
-                        <View style={styles.modalOptionInner}>
-                            {/* Use correct icon and color based on whether it's past due */}
-                            <Icon
-                                name={isPastDue(timeObj.time) ? "clock-alert-outline" : "clock-outline"}
-                                size={20}
-                                color={isPastDue(timeObj.time) ? "#FF6B6B" : "#4A90E2"}
-                            />
-                            <View>
-                                <Text style={styles.modalTimeText}>
-                                    {timeObj.time}
-                                </Text>
-                                <Text style={styles.modalDoseText}>
-                                    {timeObj.dose} dose {isPastDue(timeObj.time) ? " (Past Due)" : ""}
-                                </Text>
-                            </View>
-                        </View>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
-
-            <TouchableOpacity
-              style={styles.modalCancelButton}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={styles.modalCancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
+          </View>
+        </SafeAreaView>
       </Modal>
+
+      {/* Add Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        visible={deleteModalVisible}
+        onClose={() => setDeleteModalVisible(false)}
+        onConfirm={handleDeleteReminder}
+        reminderName={reminderToDelete?.name || ''}
+      />
     </View>
   );
 };
@@ -849,6 +958,24 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Medium',
     color: '#718096',
   },
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  deleteButton: {
+    backgroundColor: '#FF6B6B',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    elevation: 2,
+    shadowColor: '#FF6B6B',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+  },
   checkButton: {
     backgroundColor: '#4A90E2',
     width: 36,
@@ -856,7 +983,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 10, // Space after name container
     elevation: 2, // Add slight elevation to button
     shadowColor: '#4A90E2',
     shadowOffset: { width: 0, height: 1 },
@@ -987,26 +1113,29 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Medium',
     color: '#4CAF50',
   },
-  modalContainer: {
+  safeAreaContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  },
+  centeredModalView: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.6)', // Darker backdrop
+    padding: 20,
   },
-  modalContent: {
-    width: '85%',
+  simpleModalContent: {
+    width: '90%',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 0, // Remove padding here, add to inner content
+    padding: 0, 
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 }, // Increased shadow offset
-    shadowOpacity: 0.15, // Slightly increased opacity
-    shadowRadius: 12, // Increased radius
-    elevation: 10, // Increased elevation
-    maxHeight: '75%', // Limit height
-    overflow: 'hidden', // Clip content to rounded corners
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 10,
+    maxWidth: '95%',
   },
-  modalHeader: {
+  simpleModalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -1016,55 +1145,131 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
-  modalTitle: {
+  simpleModalTitle: {
     fontSize: 20,
     fontFamily: 'Poppins-SemiBold',
     color: '#2D3748',
   },
-  modalSubtitle: {
+  simpleInstructions: {
     fontSize: 16,
     fontFamily: 'Poppins-Regular',
     color: '#718096',
-    marginBottom: 16,
-    paddingHorizontal: 20, // Add horizontal padding
-    paddingTop: 16, // Add top padding
+    textAlign: 'center',
+    marginTop: 16,
+    marginBottom: 12,
+    paddingHorizontal: 20,
   },
-  modalOption: {
+  simpleScrollView: {
+    maxHeight: Platform.OS === 'ios' ? 300 : 250, // Explicit height for the scrollable area
+  },
+  simpleScrollContent: {
+    paddingBottom: 8,
+  },
+  simpleTimeButton: {
     backgroundColor: '#F7F9FC',
     borderRadius: 12,
     padding: 16,
-    marginHorizontal: 20, // Add horizontal margin
+    marginHorizontal: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0', // Add subtle border
-  },
-  modalOptionInner: {
+    borderColor: '#E2E8F0',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
   },
-  modalTimeText: {
+  simpleTimeInfo: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  simpleTimeText: {
     fontSize: 16,
     fontFamily: 'Poppins-Medium',
     color: '#2D3748',
   },
-  modalDoseText: {
+  simpleDoseText: {
     fontSize: 14,
     fontFamily: 'Poppins-Regular',
     color: '#718096',
     marginTop: 2,
   },
-  modalCancelButton: {
+  simpleCancelButton: {
     alignItems: 'center',
     margin: 20, // Use margin instead of marginTop
     paddingVertical: 14, // Increased padding
     backgroundColor: '#E2E8F0',
     borderRadius: 12,
   },
-  modalCancelButtonText: {
+  simpleCancelText: {
     fontSize: 16,
     fontFamily: 'Poppins-Medium',
     color: '#4A5568',
+  },
+  deleteModalContent: {
+    width: '85%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    maxWidth: 340,
+  },
+  deleteModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  iconContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  deleteModalTitle: {
+    fontSize: 18,
+    fontFamily: 'Poppins-SemiBold',
+    color: '#2D3748',
+  },
+  deleteModalMessage: {
+    fontSize: 15,
+    fontFamily: 'Poppins-Regular',
+    color: '#4A5568',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  deleteModalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+  },
+  cancelButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    backgroundColor: '#E2E8F0',
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 15,
+    fontFamily: 'Poppins-Medium',
+    color: '#4A5568',
+  },
+  confirmDeleteButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    backgroundColor: '#FF6B6B',
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  confirmDeleteText: {
+    fontSize: 15,
+    fontFamily: 'Poppins-Medium',
+    color: '#FFFFFF',
   },
 });
 

@@ -16,6 +16,7 @@ import {
   Easing, // Import Easing for animation curves
   NativeScrollEvent,
   NativeSyntheticEvent,
+  RefreshControl,
 } from 'react-native';
 // Use specific icons for clarity
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
@@ -36,7 +37,7 @@ import AI_ChatBot from './AI_ChatBot';
 const Stack = createStackNavigator();
 const { width } = Dimensions.get('window');
 // Define API base URL - Move to config/env variables in a real app
-const API_BASE_URL = 'http://20.193.156.237:500';
+const API_BASE_URL = 'http://10.0.2.2:5000';
 
 // --- Banner Images ---
 // NOTE: Verify these image paths are correct relative to this file
@@ -64,16 +65,15 @@ const BannerCarousel = () => {
       if (scrollViewRef.current) {
         // Calculate the next index, wrapping around
         const nextIndex = (currentIndex + 1) % bannerImages.length;
-        setCurrentIndex(nextIndex); // Update state first
+        setCurrentIndex(nextIndex); 
         // Scroll to the next slide
         scrollViewRef.current.scrollTo({ x: nextIndex * width, animated: true });
       }
-    }, 3000); // Change banner every 3 seconds
+    }, 3000);
 
     // Clear interval on component unmount
     return () => clearInterval(interval);
-    // Dependencies for the effect
-  }, [currentIndex, bannerImages.length, width]);
+  }, [currentIndex]);
 
   // Handle case where there are no banner images
   if (bannerImages.length === 0) {
@@ -493,6 +493,7 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
   // State variables
   const [userData, setUserData] = useState<{ username: string; profilePhoto?: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // Add refreshing state
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -529,6 +530,124 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
     }
     return itemAnims.get(key)!; // Return the existing or new Animated.Value
   }, [itemAnims]);
+
+  // Function to start animations for home screen sections
+  const startSectionAnimations = useCallback(() => {
+    // Start the sequence of animations
+    Animated.sequence([
+      // 1. Fade in Header
+      Animated.timing(headerFadeAnim, {
+        toValue: 1, duration: 400, easing: Easing.out(Easing.ease), useNativeDriver: true,
+      }),
+      // 2. Stagger animation for content sections
+      Animated.stagger(120, [ // 120ms delay between each section
+        // Animate Banner (Opacity + TranslateY)
+        Animated.parallel([
+          Animated.timing(bannerAnim, {
+            toValue: 1, duration: 400, easing: Easing.out(Easing.ease), useNativeDriver: true,
+          }),
+        ]),
+        // Animate Services (Opacity + TranslateY)
+        Animated.parallel([
+          Animated.timing(servicesAnim, {
+            toValue: 1, duration: 400, easing: Easing.out(Easing.ease), useNativeDriver: true,
+          }),
+        ]),
+        // Animate Reminder Section only if user is logged in
+        (userData?.username !== 'Guest') ? Animated.parallel([
+          Animated.timing(reminderAnim, {
+            toValue: 1, duration: 400, easing: Easing.out(Easing.ease), useNativeDriver: true,
+          }),
+        ]) : Animated.delay(0), // If guest, just add a zero delay placeholder
+      ]),
+    ]).start(); // Start the animation sequence
+  }, [bannerAnim, headerFadeAnim, reminderAnim, servicesAnim, userData?.username]);
+
+  // Function to reset animations before refreshing content
+  const resetAnimations = useCallback(() => {
+    headerFadeAnim.setValue(0);
+    bannerAnim.setValue(0);
+    servicesAnim.setValue(0);
+    reminderAnim.setValue(0);
+  }, [bannerAnim, headerFadeAnim, reminderAnim, servicesAnim]);
+
+  // Function to fetch user data and reminders
+  const fetchUserDataAndReminders = useCallback(async () => {
+    try {
+      // Attempt to get username from AsyncStorage
+      const storedUser = await AsyncStorage.getItem('username');
+      let username = 'Guest'; // Default to Guest
+
+      if (storedUser) {
+        // If user found, set state and fetch reminders
+        username = storedUser;
+        
+        try {
+          // Fetch user profile data including profile photo
+          const profileResponse = await axios.get(`${API_BASE_URL}/api/users/${username}/profile`);
+          
+          if (profileResponse.data.success) {
+            setUserData({ 
+              username: username,
+              profilePhoto: profileResponse.data.profilePhoto || null 
+            });
+          } else {
+            console.warn('Failed to fetch profile data:', profileResponse.data.message);
+            setUserData({ username: username });
+          }
+        } catch (profileError) {
+          console.error('Error fetching profile data:', profileError);
+          setUserData({ username: username });
+        }
+
+        try {
+          console.log(`Fetching reminders for user: ${username}`); // Log username
+          const response = await axios.get(`${API_BASE_URL}/api/remind/${username}`);
+          if (response.data.success && Array.isArray(response.data.reminders)) {
+            console.log(`Fetched ${response.data.reminders.length} reminders.`);
+            setReminders(response.data.reminders);
+          } else {
+            // Log failure reason if provided by API
+            console.warn('Failed to fetch reminders:', response.data.message || 'API success false or reminders not array');
+            setReminders([]);
+          }
+        } catch (apiError) {
+          console.error('Error fetching reminders API:', apiError);
+          if (axios.isAxiosError(apiError)) {
+            // Log detailed Axios error
+            console.error('API error status:', apiError.response?.status);
+            console.error('API error data:', apiError.response?.data);
+          }
+          setReminders([]); // Ensure reminders are empty on error
+        }
+      } else {
+        // If no user found, set state to Guest
+        console.log('No user identifier found, defaulting to Guest.');
+        setUserData({ username: username });
+        setReminders([]); // No reminders for Guest
+      }
+    } catch (error) {
+      // Catch errors during AsyncStorage access or other setup
+      console.error('Error fetching initial data:', error);
+      setUserData({ username: 'Guest' }); // Fallback to Guest state
+      setReminders([]);
+    }
+  }, []);
+
+  // Function to handle pull-to-refresh
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    resetAnimations();
+    
+    try {
+      await fetchUserDataAndReminders();
+    } catch (error) {
+      console.error('Error during refresh:', error);
+    } finally {
+      startSectionAnimations();
+      setRefreshing(false);
+    }
+  }, [fetchUserDataAndReminders, resetAnimations, startSectionAnimations]);
 
   // Creates the style object for opacity and translateY animation
   const getSectionAnimationStyle = useCallback((animValue: Animated.Value) => {
@@ -726,117 +845,37 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
     const fetchDataAndAnimate = async () => {
       try {
         setLoading(true);
-        // Reset animations before fetching
-        headerFadeAnim.setValue(0);
-        bannerAnim.setValue(0);
-        servicesAnim.setValue(0);
-        reminderAnim.setValue(0);
-
-        // Attempt to get username from AsyncStorage
-        const storedUser = await AsyncStorage.getItem('username');
-        let username = 'Guest'; // Default to Guest
-
-        if (storedUser) {
-            // If user found, set state and fetch reminders
-            username = storedUser;
-            
-            try {
-                // Fetch user profile data including profile photo
-                const profileResponse = await axios.get(`${API_BASE_URL}/api/users/${username}/profile`);
-                
-                if (profileResponse.data.success) {
-                    setUserData({ 
-                        username: username,
-                        profilePhoto: profileResponse.data.profilePhoto || null 
-                    });
-                } else {
-                    console.warn('Failed to fetch profile data:', profileResponse.data.message);
-                    setUserData({ username: username });
-                }
-            } catch (profileError) {
-                console.error('Error fetching profile data:', profileError);
-                setUserData({ username: username });
-            }
-
-            try {
-                console.log(`Fetching reminders for user: ${username}`); // Log username
-                const response = await axios.get(`${API_BASE_URL}/api/remind/${username}`);
-                // Log API response structure for debugging
-                // console.log('API Response:', response.data);
-                if (response.data.success && Array.isArray(response.data.reminders)) {
-                    console.log(`Fetched ${response.data.reminders.length} reminders.`);
-                    setReminders(response.data.reminders);
-                } else {
-                    // Log failure reason if provided by API
-                    console.warn('Failed to fetch reminders:', response.data.message || 'API success false or reminders not array');
-                    setReminders([]);
-                }
-            } catch (apiError) {
-                console.error('Error fetching reminders API:', apiError);
-                if (axios.isAxiosError(apiError)) {
-                    // Log detailed Axios error
-                    console.error('API error status:', apiError.response?.status);
-                    console.error('API error data:', apiError.response?.data);
-                }
-                setReminders([]); // Ensure reminders are empty on error
-            }
-        } else {
-            // If no user found, set state to Guest
-            console.log('No user identifier found, defaulting to Guest.');
-            setUserData({ username: username });
-            setReminders([]); // No reminders for Guest
-        }
-
+        resetAnimations();
+        
+        // Split data fetching and animation to improve perceived performance
+        const fetchPromise = fetchUserDataAndReminders();
+        
+        // Start animations early for a faster perceived load
+        // Wait a small delay to ensure some content is ready
+        setTimeout(() => {
+          setLoading(false);
+          startSectionAnimations();
+        }, 300);
+        
+        // Still await the full data load
+        await fetchPromise;
       } catch (error) {
-        // Catch errors during AsyncStorage access or other setup
         console.error('Error fetching initial data:', error);
-        setUserData({ username: 'Guest' }); // Fallback to Guest state
+        setUserData({ username: 'Guest' });
         setReminders([]);
-      } finally {
-        // Regardless of success or failure, stop loading
         setLoading(false);
-        // Start the sequence of animations
-        Animated.sequence([
-          // 1. Fade in Header
-          Animated.timing(headerFadeAnim, {
-            toValue: 1, duration: 400, easing: Easing.out(Easing.ease), useNativeDriver: true,
-          }),
-          // 2. Stagger animation for content sections
-          Animated.stagger(120, [ // 120ms delay between each section
-            // Animate Banner (Opacity + TranslateY)
-            Animated.parallel([
-              Animated.timing(bannerAnim, {
-                toValue: 1, duration: 400, easing: Easing.out(Easing.ease), useNativeDriver: true,
-              }),
-            ]),
-            // Animate Services (Opacity + TranslateY)
-            Animated.parallel([
-              Animated.timing(servicesAnim, {
-                toValue: 1, duration: 400, easing: Easing.out(Easing.ease), useNativeDriver: true,
-              }),
-            ]),
-            // Animate Reminder Section only if user is logged in
-            (userData?.username !== 'Guest') ? Animated.parallel([
-              Animated.timing(reminderAnim, {
-                toValue: 1, duration: 400, easing: Easing.out(Easing.ease), useNativeDriver: true,
-              }),
-            ]) : Animated.delay(0), // If guest, just add a zero delay placeholder
-          ]),
-        ]).start(); // Start the animation sequence
+        startSectionAnimations();
       }
     };
 
-    fetchDataAndAnimate(); // Call the async function
+    fetchDataAndAnimate();
 
-    // Cleanup function for the debounce timer
     return () => {
-        if (debounceTimeoutRef.current) {
-            clearTimeout(debounceTimeoutRef.current);
-        }
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
     };
-    // Run effect only once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchUserDataAndReminders, resetAnimations, startSectionAnimations]);
 
   // --- Navigation Focus Listener ---
   useEffect(() => {
@@ -847,13 +886,23 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
       setIsSearching(false);
       setSearchResults({ services: [], reminders: [] });
       // Clear any pending debounce timer
-       if (debounceTimeoutRef.current) {
-            clearTimeout(debounceTimeoutRef.current);
-        }
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+      
+      // Refresh data when returning to this screen
+      const refreshData = async () => {
+        resetAnimations();
+        await fetchUserDataAndReminders();
+        startSectionAnimations();
+      };
+      
+      refreshData();
     });
+    
     // Return the unsubscribe function to clean up the listener on unmount
     return unsubscribe;
-  }, [navigation]);
+  }, [fetchUserDataAndReminders, navigation, resetAnimations, startSectionAnimations]);
 
   // --- Loading State ---
   if (loading) {
@@ -885,17 +934,30 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
   // --- Render Main Screen UI ---
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Conditional Rendering: Search Results or Main Content */}
-      {isSearching ? (
-        // Show Search Results ScrollView (including Header and Search Bar)
+      {loading ? (
+        // Show loading indicator only while initially loading
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1e948b" />
+          <Text style={styles.loadingText}>Loading dashboard...</Text>
+        </View>
+      ) : isSearching ? (
+        // Show Search Results ScrollView
         <ScrollView
-            style={styles.container} // Use general container style
+            style={styles.container}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             contentInsetAdjustmentBehavior="never"
-            contentContainerStyle={styles.scrollContentContainer} // Use general padding
+            contentContainerStyle={styles.scrollContentContainer}
             onScroll={handleScroll}
-            scrollEventThrottle={16} // Important for smooth scroll event handling
+            scrollEventThrottle={16}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={['#1e948b']}
+                tintColor="#1e948b"
+              />
+            }
         >
             {/* Header */}
             <Animated.View style={[styles.header, { opacity: headerFadeAnim }]}>
@@ -930,14 +992,14 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
                 </View>
             </View>
 
-            {/* Search Results Component (Renders results within an Animated.View) */}
+            {/* Search Results Component */}
             <SearchResults
                 searchResults={searchResults}
                 navigation={navigation}
             />
         </ScrollView>
       ) : (
-        // Show Main Content ScrollView (including Header and Search Bar)
+        // Show Main Content ScrollView
         <ScrollView
           style={styles.container}
           showsVerticalScrollIndicator={false}
@@ -945,7 +1007,15 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
           contentInsetAdjustmentBehavior="never"
           contentContainerStyle={styles.scrollContentContainer}
           onScroll={handleScroll}
-          scrollEventThrottle={16} // Important for smooth scroll event handling
+          scrollEventThrottle={16}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#1e948b']}
+              tintColor="#1e948b"
+            />
+          }
         >
           {/* Header */}
           <Animated.View style={[styles.header, { opacity: headerFadeAnim }]}>
@@ -1016,7 +1086,7 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
                   </View>
                   {closestReminderInfo ? (
                       <ReminderCard
-                          key={`${closestReminderInfo.reminder._id}-${closestReminderInfo.timestamp}`}
+                          key={`${closestReminderInfo.reminder?._id}-${closestReminderInfo.timestamp}`}
                           reminder={closestReminderInfo.reminder}
                           navigation={navigation}
                       />
@@ -1029,7 +1099,7 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
               </Animated.View>
           )}
 
-        </ScrollView> // End main content ScrollView
+        </ScrollView>
       )}
     </SafeAreaView>
   );

@@ -131,6 +131,7 @@ const ProfileMainScreen = ({ navigation }: ProfileMainScreenProps) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [profileCompletion, setProfileCompletion] = useState(50); // Default minimum completion
 
   // --- Tab Bar Visibility Logic ---
   const [isTabBarVisible, setIsTabBarVisible] = useState(true);
@@ -141,44 +142,67 @@ const ProfileMainScreen = ({ navigation }: ProfileMainScreenProps) => {
   const cardScaleAnim = useRef(new Animated.Value(0.95)).current; // Start slightly smaller
   const cardOpacityAnim = useRef(new Animated.Value(0)).current; // Start transparent
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      setLoading(true); // Ensure loading is true at the start
-      try {
-        const storedUsername = await AsyncStorage.getItem('username');
-        if (storedUsername) {
-          try {
-            // Replace with your actual API endpoint
-            const response = await axios.get(`http://20.193.156.237:500/users/${storedUsername}`);
-            const data = response.data;
-            setUserData(data);
-            setUsername(data.username || storedUsername); // Fallback username
-            setEmail(data.email || 'N/A');
-       
-          } catch (networkError) {
-            console.log('Network error fetching user data:', networkError);
-            // Set fallback data on network error
-            setUsername(storedUsername);
-            setEmail('Could not load email');
-          
-            // Optionally show a user-friendly message here
-          }
-        } else {
-          // Handle case where username is not found in storage
-          console.log('Username not found in AsyncStorage.');
-          // Maybe navigate to Login or show an error
-          // Ensure you have a 'Login' screen defined in your navigator
-          // navigation.replace('Login');
-        }
-      } catch (error) {
-        console.log('Error fetching username from AsyncStorage:', error);
-      } finally {
-        setLoading(false);
+  // Calculate profile completion percentage
+  const calculateProfileCompletion = (data: UserData | null) => {
+    if (!data) return 50; // Default minimum if no data
+    
+    // Fields to check for completion
+    const requiredFields = ['username', 'email', 'contact', 'gender', 'age', 'image'];
+    let filledFields = 0;
+    
+    requiredFields.forEach(field => {
+      if (data[field] && String(data[field]).trim() !== '') {
+        filledFields++;
       }
-    };
+    });
+    
+    // Calculate percentage (minimum 50%, maximum 100%)
+    const percentage = Math.max(50, Math.min(100, Math.round((filledFields / requiredFields.length) * 100)));
+    return percentage;
+  };
 
+  // Function to fetch user data from the backend
+  const fetchUserData = useCallback(async () => {
+    setLoading(true); // Ensure loading is true at the start
+    try {
+      const storedUsername = await AsyncStorage.getItem('username');
+      if (storedUsername) {
+        try {
+          // Replace with your actual API endpoint
+          const response = await axios.get(`http://10.0.2.2:5000/users/${storedUsername}`);
+          const data = response.data;
+          setUserData(data);
+          setUsername(data.username || storedUsername); // Fallback username
+          setEmail(data.email || 'N/A');
+          
+          // Calculate and set profile completion
+          setProfileCompletion(calculateProfileCompletion(data));
+     
+        } catch (networkError) {
+          console.log('Network error fetching user data:', networkError);
+          // Set fallback data on network error
+          setUsername(storedUsername);
+          setEmail('Could not load email');
+        
+          // Optionally show a user-friendly message here
+        }
+      } else {
+        // Handle case where username is not found in storage
+        console.log('Username not found in AsyncStorage.');
+        // Maybe navigate to Login or show an error
+        // Ensure you have a 'Login' screen defined in your navigator
+        // navigation.replace('Login');
+      }
+    } catch (error) {
+      console.log('Error fetching username from AsyncStorage:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);  // Empty dependency array as it doesn't depend on any props or state
+
+  useEffect(() => {
     fetchUserData();
-  }, [navigation]); // Add navigation as dependency if used for redirection
+  }, [fetchUserData]); // Add fetchUserData as dependency
 
   // --- Tab Bar Scroll Handler ---
   const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -216,6 +240,16 @@ const ProfileMainScreen = ({ navigation }: ProfileMainScreenProps) => {
       tabBarVisible: isTabBarVisible,
     });
   }, [isTabBarVisible, navigation]); // Runs when isTabBarVisible or navigation changes
+
+  // Add a focus listener to refresh user data when returning from EditProfileScreen
+  useEffect(() => {
+    const refreshOnFocus = navigation.addListener('focus', () => {
+      // Refresh user data when returning to this screen
+      fetchUserData();
+    });
+
+    return refreshOnFocus; // Clean up the listener on unmount
+  }, [navigation, fetchUserData]);
 
   useEffect(() => {
     // This effect handles screen focus and blur events.
@@ -352,11 +386,11 @@ const ProfileMainScreen = ({ navigation }: ProfileMainScreenProps) => {
       console.log('Image URI:', imageAsset.uri);
       console.log('Image type:', imageFile.type);
       console.log('Image name:', imageFile.name);
-      console.log('Server URL:', `http://20.193.156.237:500/users/${username}/upload-profile-image`);
+      console.log('Server URL:', `http://10.0.2.2:5000/users/${username}/upload-profile-image`);
 
       // Make POST request to upload the image
       const response = await axios.post(
-        `http://20.193.156.237:500/users/${username}/upload-profile-image`,
+        `http://10.0.2.2:5000/users/${username}/upload-profile-image`,
         formData,
         {
           headers: {
@@ -374,7 +408,7 @@ const ProfileMainScreen = ({ navigation }: ProfileMainScreenProps) => {
       if (response.data && response.data.success) {
         // Refresh user data to get the updated image
         try {
-          const userResponse = await axios.get(`http://20.193.156.237:500/users/${username}`);
+          const userResponse = await axios.get(`http://10.0.2.2:5000/users/${username}`);
           setUserData(userResponse.data);
           Alert.alert('Success', 'Profile picture updated successfully');
         } catch (refreshError) {
@@ -521,7 +555,51 @@ const ProfileMainScreen = ({ navigation }: ProfileMainScreenProps) => {
           </View>
           <Text style={styles.profileName}>{username || 'Username'}</Text>
           <Text style={styles.profileEmail}>{email || 'Email Address'}</Text> 
-         
+          
+          {/* Profile Completion Tracker */}
+          <View style={[styles.completionContainer, profileCompletion === 100 ? styles.completionContainerComplete : null]}>
+            <View style={styles.completionHeader}>
+              <Text style={styles.completionText}>
+                Profile Completion: {profileCompletion}%
+              </Text>
+              {profileCompletion < 100 ? (
+                <TouchableOpacity 
+                  onPress={() => navigation.navigate('EditProfile')}
+                  style={styles.completeButton}
+                >
+                  <Text style={styles.completeButtonText}>Complete</Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={styles.completedText}>Completed</Text>
+              )}
+            </View>
+            
+            <View style={styles.progressBarContainer}>
+              <View 
+                style={[
+                  styles.progressBar,
+                  { width: `${profileCompletion}%` },
+                  profileCompletion === 100 ? styles.progressBarComplete : null
+                ]} 
+              />
+            </View>
+            
+            {profileCompletion < 100 ? (
+              <View style={styles.warningContainer}>
+                <Icon name="alert-circle-outline" size={14} color="#F59E0B" />
+                <Text style={styles.completionWarning}>
+                  Please complete your profile for a better experience
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.warningContainer}>
+                <Icon name="checkmark-circle-outline" size={14} color="#10B981" />
+                <Text style={[styles.completionWarning, styles.completionSuccess]}>
+                  Your profile is complete! Thank you.
+                </Text>
+              </View>
+            )}
+          </View>
         </Animated.View>
 
       
@@ -735,6 +813,86 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#64748B',
     fontFamily: 'Poppins-Regular',
+  },
+  completionContainer: {
+    marginTop: 16,
+    width: '100%',
+    borderRadius: 12,
+    backgroundColor: '#FAFBFC',
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  completionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  completionText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1E293B',
+    fontFamily: 'Poppins-SemiBold',
+  },
+  completeButton: {
+    backgroundColor: '#199A8E',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1.5,
+  },
+  completeButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: 'Poppins-SemiBold',
+  },
+  progressBarContainer: {
+    height: 8,
+    backgroundColor: '#E0F2F7',
+    borderRadius: 4,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#199A8E',
+    borderRadius: 4,
+  },
+  warningContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  completionWarning: {
+    fontSize: 13,
+    color: '#64748B',
+    fontFamily: 'Poppins-Regular',
+    marginLeft: 6,
+    flex: 1,
+  },
+  completionContainerComplete: {
+    backgroundColor: '#FAFBFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  completedText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#10B981',
+    fontFamily: 'Poppins-SemiBold',
+  },
+  progressBarComplete: {
+    backgroundColor: '#10B981',
+  },
+  completionSuccess: {
+    color: '#10B981',
   },
 });
 

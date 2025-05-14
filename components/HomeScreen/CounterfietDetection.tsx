@@ -1,5 +1,4 @@
-/* eslint-disable no-catch-shadow */
-/* eslint-disable @typescript-eslint/no-shadow */
+
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
@@ -248,7 +247,7 @@ const CounterfeitDetection = () => {
       console.log('Uploading image:', imageFile.uri);
 
       const response = await axios.post(
-        'http://20.193.156.237:500/detect-counterfeit',
+        'http://10.0.2.2:5000/detect-counterfeit',
         formData,
         {
           headers: {

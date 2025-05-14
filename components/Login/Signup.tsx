@@ -86,7 +86,7 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
     }
 
     try {
-      const response = await fetch('http://20.193.156.237:500/register', {
+      const response = await fetch('http://10.0.2.2:5000/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

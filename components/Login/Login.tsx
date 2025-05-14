@@ -173,7 +173,7 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess: _onLoginSucce
     }
 
     try {
-      const response = await axios.post("http://20.193.156.237:500/login", {
+      const response = await axios.post("http://10.0.2.2:5000/login", {
         username,
         password,
       });
@@ -275,7 +275,7 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess: _onLoginSucce
         const displayName = name || email.split('@')[0];
         
         // Send Google sign-in data to your MongoDB backend
-        const response = await axios.post('http://20.193.156.237:500/google-login', {
+        const response = await axios.post('http://10.0.2.2:5000/google-login', {
           email,
           googleId,
           displayName

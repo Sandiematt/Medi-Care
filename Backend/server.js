@@ -1,4 +1,5 @@
-require('dotenv').config({ path: __dirname + '/../.env' });
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const express = require('express');
 
 const { MongoClient } = require('mongodb');
@@ -83,7 +84,6 @@ app.post('/google-login', async (req, res) => {
         gender: "", // Empty string as placeholder
         googleId, // Store Google ID for future reference
         password: "", // Empty since Google Auth doesn't use password
-        isadmin: false, // Default to non-admin
         image: null // Profile image set to null initially
       };
       
@@ -310,6 +310,44 @@ app.get('/reminders/:username', async (req, res) => {
     res.status(200).json(reminders);
   } catch (error) {
     console.error('Error fetching reminders:', error.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Delete Reminder API
+app.delete('/reminders/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { username } = req.query; // Get username from query parameters for authorization
+    
+    if (!id) {
+      return res.status(400).json({ message: 'Reminder ID is required' });
+    }
+    
+    // Find the reminder first to check if it belongs to the user
+    const reminder = await remindersCollection.findOne({ _id: new ObjectId(id) });
+    
+    if (!reminder) {
+      return res.status(404).json({ message: 'Reminder not found' });
+    }
+    
+    // Optional: Verify the user owns this reminder (if you want to enforce this security)
+    if (username && reminder.username !== username) {
+      return res.status(403).json({ message: 'You do not have permission to delete this reminder' });
+    }
+    
+    // Delete the reminder
+    const result = await remindersCollection.deleteOne({ _id: new ObjectId(id) });
+    
+    if (result.deletedCount === 0) {
+      return res.status(400).json({ message: 'Failed to delete the reminder' });
+    }
+    
+    res.status(200).json({
+      message: 'Reminder deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting reminder:', error.message);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -581,14 +619,29 @@ app.post('/inventory', async (req, res) => {
 
 app.get('/stats', async (req, res) => {
   try {
-    // Fetch total items in the database
-    const totalItems = await inventoryCollection.countDocuments();
+    const { username } = req.query;
+    
+    if (!username) {
+      return res.status(400).json({ message: 'Username is required' });
+    }
+    
+    // Add filter by username (createdBy field)
+    const filter = { createdBy: username };
+    
+    // Fetch total items for this user
+    const totalItems = await inventoryCollection.countDocuments(filter);
 
-    // Count items with low stock (inStock < 5 but > 0)
-    const lowStock = await inventoryCollection.countDocuments({ inStock: { $lt: 5, $gt: 0 } });
+    // Count items with low stock (inStock < 5 but > 0) for this user
+    const lowStock = await inventoryCollection.countDocuments({ 
+      ...filter, 
+      inStock: { $gt: 0, $lte: 10 } 
+    });
 
-    // Count items that are out of stock (inStock === 0)
-    const outOfStock = await inventoryCollection.countDocuments({ inStock: 0 });
+    // Count items that are out of stock (inStock === 0) for this user
+    const outOfStock = await inventoryCollection.countDocuments({ 
+      ...filter, 
+      inStock: 0 
+    });
 
     // Return statistics as an object
     res.status(200).json({
@@ -1089,12 +1142,15 @@ app.get('/api/users/:username/profile', async (req, res) => {
   }
 });
   
-  // Start the server
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running and accessible via http://20.193.156.237:${PORT}`);
-  });
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on:`);
+  console.log(`- http://localhost:${PORT}`);
+  console.log(`- http://127.0.0.1:${PORT}`);
+});
 };
 
 // Start the main function
 main().catch((err) => console.error(err));
+
+//http://10.0.2.2:5000

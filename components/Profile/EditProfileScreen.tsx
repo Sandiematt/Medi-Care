@@ -79,14 +79,14 @@ const EditProfileScreen: React.FC = () => {
       const storedUsername = await AsyncStorage.getItem('username');
       if (storedUsername) {
         // Make API call to get user data
-        const response = await axios.get(`http://20.193.156.237:500/users/${storedUsername}`);
+        const response = await axios.get(`http://10.0.2.2:5000/users/${storedUsername}`);
         // Exclude password from being pre-filled for security, unless necessary
         const userData = { ...response.data, password: '' };
         setFormData(userData);
         
         // Fetch profile photo from separate endpoint
         try {
-          const profileResponse = await axios.get(`http://20.193.156.237:500/api/users/${storedUsername}/profile`);
+          const profileResponse = await axios.get(`http://10.0.2.2:5000/api/users/${storedUsername}/profile`);
           if (profileResponse.data.success && profileResponse.data.profilePhoto) {
             setProfilePhoto(profileResponse.data.profilePhoto);
           }
@@ -115,22 +115,34 @@ const EditProfileScreen: React.FC = () => {
       if (!storedUsername) {
         Alert.alert('Error', 'User session expired. Please log in again.');
         setSaving(false);
-        // navigation.navigate('Login'); // Optional: Redirect
         return;
       }
 
       // Prepare the data payload with only the changed fields
       const updateData: Partial<FormData> = {};
       let hasChanges = false;
+      
+      // Get the current user data from backend to compare changes
+      const response = await axios.get(`http://10.0.2.2:5000/users/${storedUsername}`);
+      const originalData = response.data;
+      
       Object.keys(formData).forEach((key) => {
-        // Only include fields that were marked editable and potentially changed
-        // Note: This logic assumes the initial fetch sets the baseline.
-        // A more robust check might compare against initially fetched data.
-        if (editableFields[key] && formData[key] !== '') { // Also ensure non-empty value, adjust if empty is valid
-           // Special handling for password: only send if it's actually entered
-           if (key === 'password' && formData[key] === '') {
-               return; // Don't send empty password
-           }
+        // Skip internal fields and password handling
+        if (key === '_id' || key === 'image' || key === 'isAdmin' || key === 'googleId') {
+          return;
+        }
+        
+        // Special handling for password
+        if (key === 'password') {
+          if (formData[key] && formData[key] !== '') {
+            updateData[key] = formData[key];
+            hasChanges = true;
+          }
+          return;
+        }
+        
+        // For all other fields, check if value has changed from original
+        if (formData[key] !== originalData[key] && formData[key] !== '') {
           updateData[key] = formData[key];
           hasChanges = true;
         }
@@ -151,8 +163,8 @@ const EditProfileScreen: React.FC = () => {
       }
 
       // Make the API call to update the user profile
-      const response = await axios.put(
-        `http://20.193.156.237:500/users/${storedUsername}`,
+      const updateResponse = await axios.put(
+        `http://10.0.2.2:5000/users/${storedUsername}`,
         updateData,
         {
           headers: { 'Content-Type': 'application/json' },
@@ -160,22 +172,22 @@ const EditProfileScreen: React.FC = () => {
       );
 
       // Handle the response from the backend
-      if (response.data.success) {
+      if (updateResponse.data.success) {
         // Reset editable fields state upon successful save
         setEditableFields((prevFields) =>
           Object.keys(prevFields).reduce(
             (acc, key) => ({ ...acc, [key]: false }),
-            {} as EditableFields // Cast to EditableFields
+            {} as EditableFields
           )
         );
         Alert.alert('Success', 'Profile updated successfully!');
-        // Optionally refetch data or update local state precisely
-        // fetchUserData(); // Or update formData state directly if API returns updated user
+        // Refetch user data to update the form
+        fetchUserData();
       } else {
         // Throw error if backend indicates failure
-        throw new Error(response.data.message || 'Unknown error from server');
+        throw new Error(updateResponse.data.message || 'Unknown error from server');
       }
-    } catch (error: any) { // Catch block with type assertion
+    } catch (error: any) {
       console.error('Error updating profile:', error);
       // Display specific error message from backend if available, otherwise generic message
       Alert.alert(
@@ -301,7 +313,7 @@ const EditProfileScreen: React.FC = () => {
 
           {Object.keys(formData)
             // Filter out internal fields like _id and username (now handled separately)
-            .filter((key) => key !== '_id' && key !== 'username' && key !== 'image')
+            .filter((key) => key !== '_id' && key !== 'username' && key !== 'image' && key !== 'isAdmin' && key !== 'googleId')
             .map((key) => (
               <View style={styles.fieldContainer} key={key}>
                 {/* Field Label */}
