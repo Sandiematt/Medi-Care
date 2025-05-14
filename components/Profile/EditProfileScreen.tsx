@@ -126,6 +126,19 @@ const EditProfileScreen: React.FC = () => {
       const response = await axios.get(`http://10.0.2.2:5000/users/${storedUsername}`);
       const originalData = response.data;
       
+      // Check if any required fields are empty
+      const requiredFields = ['email', 'contact']; // Add other required fields as needed
+      const emptyRequiredFields = requiredFields.filter(
+        field => formData[field] === '' && editableFields[field]
+      );
+      
+      if (emptyRequiredFields.length > 0) {
+        const fieldNames = emptyRequiredFields.map(field => getFieldLabel(field)).join(', ');
+        Alert.alert('Validation Error', `${fieldNames} cannot be empty.`);
+        setSaving(false);
+        return;
+      }
+      
       Object.keys(formData).forEach((key) => {
         // Skip internal fields and password handling
         if (key === '_id' || key === 'image' || key === 'isAdmin' || key === 'googleId') {
@@ -141,8 +154,9 @@ const EditProfileScreen: React.FC = () => {
           return;
         }
         
-        // For all other fields, check if value has changed from original
-        if (formData[key] !== originalData[key] && formData[key] !== '') {
+        // Include a field in the update if it's been made editable and has changed
+        if (editableFields[key] && formData[key] !== originalData[key]) {
+          // Explicitly include empty values to clear fields in the backend
           updateData[key] = formData[key];
           hasChanges = true;
         }
@@ -153,12 +167,12 @@ const EditProfileScreen: React.FC = () => {
         Alert.alert('No Changes', 'No fields were modified to save.');
         setSaving(false);
         // Reset editable fields visually
-         setEditableFields((prevFields) =>
-           Object.keys(prevFields).reduce(
-             (acc, key) => ({ ...acc, [key]: false }),
-             {} as EditableFields
-           )
-         );
+        setEditableFields((prevFields) =>
+          Object.keys(prevFields).reduce(
+            (acc, key) => ({ ...acc, [key]: false }),
+            {} as EditableFields
+          )
+        );
         return;
       }
 

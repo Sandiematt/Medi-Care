@@ -156,9 +156,9 @@ app.put('/users/:username', async (req, res) => {
     const { username } = req.params;
     const updates = req.body;
     
-    // Remove any undefined or empty fields
+    // Remove any undefined fields, but KEEP empty strings
     Object.keys(updates).forEach(key => {
-      if (updates[key] === undefined || updates[key] === '') {
+      if (updates[key] === undefined) {
         delete updates[key];
       }
     });
@@ -1153,4 +1153,5 @@ app.listen(PORT, '0.0.0.0', () => {
 // Start the main function
 main().catch((err) => console.error(err));
 
-//http://10.0.2.2:5000
+// emualator ip addresshttp://10.0.2.2:5000
+// 

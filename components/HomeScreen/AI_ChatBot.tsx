@@ -1129,14 +1129,6 @@ const AI_ChatBot: React.FC = () => {
           {/* You could add a status like "Online" or "Typing..." here if needed */}
           <Text style={styles.headerSubText}>{isTyping ? "Typing..." : "Online"}</Text>
         </View>
-        {/* Optional: User avatar in header */}
-        {userProfile && userProfile.profilePhoto && (
-          <Image
-            source={{ uri: userProfile.profilePhoto }}
-            style={styles.userHeaderAvatar}
-            onError={(e) => console.log("Failed to load user header avatar", e.nativeEvent.error)}
-          />
-        )}
       </View>
 
       {/* Chat Area with KeyboardAvoidingView */}

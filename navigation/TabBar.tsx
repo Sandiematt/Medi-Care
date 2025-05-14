@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     width: 42, // Slightly smaller for 3 tabs
     height: 42, // Slightly smaller for 3 tabs
     borderRadius: 21, // Half of width/height
-    backgroundColor: '#7753F8', // Purple color matching the image
+    backgroundColor: '#1f948b', // Teal color
   },
   iconContainer: {
     position: 'absolute',
