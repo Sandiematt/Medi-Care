@@ -519,7 +519,7 @@ const PrescriptionsScreen: React.FC = () => {
           <View style={styles.uploadModalContent}>
             <View style={styles.uploadModalHeader}>
               <Text style={styles.uploadModalTitle}>Add New Prescription</Text>
-              <TouchableOpacity onPress={() => setUploadModalVisible(false)}>
+              <TouchableOpacity onPress={() => setUploadModalVisible(false)} activeOpacity={0.7}>
                 <Icon name="close" size={24} color="#1e948b" />
               </TouchableOpacity>
             </View>
@@ -598,7 +598,7 @@ const PrescriptionsScreen: React.FC = () => {
                 />
               </View>
 
-              <TouchableOpacity style={styles.submitButton} onPress={handleUpload}>
+              <TouchableOpacity style={styles.submitButton} onPress={handleUpload} activeOpacity={0.7}>
                 <Text style={styles.submitButtonText}>Save Prescription</Text>
               </TouchableOpacity>
             </ScrollView>

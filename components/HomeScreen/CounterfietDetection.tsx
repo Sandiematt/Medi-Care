@@ -362,7 +362,7 @@ const CounterfeitDetection = () => {
         style={styles.header}
       >
         <View style={styles.headerContent}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.7}>
             <Icon name="arrow-back" size={28} color="#FFFFFF" />
           </TouchableOpacity>
           <Icon name="shield-checkmark" size={28} color="#FFFFFF" style={styles.headerIconLeft} />

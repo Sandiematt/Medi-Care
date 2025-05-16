@@ -656,7 +656,7 @@ const ReminderMainScreen: React.FC<ReminderMainScreenProps> = ({ navigation }) =
                         <Text style={styles.sectionTitle}>Today's Medications</Text>
                     </View>
                     {/* Refresh icon button */}
-                    <TouchableOpacity onPress={refreshHandler} disabled={refreshing}>
+                    <TouchableOpacity onPress={refreshHandler} disabled={refreshing} activeOpacity={0.7}>
                         <Icon name="refresh" size={22} color={refreshing ? '#A0AEC0' : '#4A90E2'} />
                     </TouchableOpacity>
                 </View>

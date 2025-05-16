@@ -354,7 +354,11 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess: _onLoginSucce
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-            <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+            <TouchableOpacity 
+              style={styles.loginButton} 
+              activeOpacity={0.7} 
+              onPress={handleLogin}
+            >
               <Text style={styles.buttonText}>Login</Text>
             </TouchableOpacity>
 
@@ -375,7 +379,7 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess: _onLoginSucce
                 <View style={styles.separator} />
               </View>
               
-              <TouchableOpacity style={styles.googleSignupButton} onPress={handleGoogleSignIn}>
+              <TouchableOpacity style={styles.googleSignupButton} onPress={handleGoogleSignIn} activeOpacity={0.7}>
                 <Icon name="logo-google" size={24} color="#DB4437" style={styles.googleIcon} />
                 <Text style={styles.googleSignupLink}>
                   Sign up using Google

@@ -360,7 +360,7 @@ const SignUp: React.FC<SignUpProps> = ({ navigation }) => {
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-            <TouchableOpacity style={styles.signupButton} onPress={handleSignUp}>
+            <TouchableOpacity style={styles.signupButton} onPress={handleSignUp} activeOpacity={0.7}>
               <Text style={styles.buttonText}>Sign Up</Text>
             </TouchableOpacity>
 

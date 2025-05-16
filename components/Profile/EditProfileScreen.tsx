@@ -273,7 +273,7 @@ const EditProfileScreen: React.FC = () => {
 
       {/* Header Section */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleGoBack} style={styles.headerButton}>
+        <TouchableOpacity onPress={handleGoBack} style={styles.headerButton} activeOpacity={0.7}>
           <Icon name="arrow-back-outline" size={26} color="#333333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Edit Profile</Text>

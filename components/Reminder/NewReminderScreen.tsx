@@ -337,7 +337,7 @@ const NewReminderScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         />
       )}
 
-      <TouchableOpacity style={styles.addButton} onPress={addTime}>
+      <TouchableOpacity style={styles.addButton} onPress={addTime} activeOpacity={0.7}>
         <Icon name="plus-circle" size={20} color="#6366F1" />
         <Text style={styles.addButtonText}>Add time</Text>
       </TouchableOpacity>

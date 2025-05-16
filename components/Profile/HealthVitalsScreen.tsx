@@ -115,7 +115,7 @@ const HealthVitalsScreen = () => {
       <View style={styles.errorContainer}>
         <Icon name="alert-circle-outline" size={60} color={COLORS.error} />
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={() => setLoading(true)}>
+        <TouchableOpacity style={styles.retryButton} onPress={() => setLoading(true)} activeOpacity={0.7}>
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
       </View>
@@ -128,7 +128,7 @@ const HealthVitalsScreen = () => {
       
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+        <TouchableOpacity onPress={handleGoBack} style={styles.backButton} activeOpacity={0.7}>
           <Icon name="chevron-back" size={24} color={COLORS.textLight} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Health Vitals</Text>

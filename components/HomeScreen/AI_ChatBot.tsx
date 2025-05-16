@@ -188,11 +188,11 @@ const AttachmentModal: React.FC<{
       >
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Attach File</Text>
-          <TouchableOpacity style={styles.modalButton} onPress={onCameraPress}>
+          <TouchableOpacity style={styles.modalButton} onPress={onCameraPress} activeOpacity={0.7}>
             <Ionicons name="camera-outline" size={24} color={styles.modalButtonText?.color || "#008080"} style={styles.modalButtonIcon} />
             <Text style={styles.modalButtonText}>Open Camera</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.modalButton} onPress={onGalleryPress}>
+          <TouchableOpacity style={styles.modalButton} onPress={onGalleryPress} activeOpacity={0.7}>
             <Ionicons name="images-outline" size={24} color={styles.modalButtonText?.color || "#008080"} style={styles.modalButtonIcon} />
             <Text style={styles.modalButtonText}>Choose from Gallery</Text>
           </TouchableOpacity>
@@ -1119,7 +1119,7 @@ const AI_ChatBot: React.FC = () => {
 
       {/* Header Section */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.headerBackButton} onPress={handleBackButtonPress}>
+        <TouchableOpacity style={styles.headerBackButton} onPress={handleBackButtonPress} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={26} color="white" />
         </TouchableOpacity>
         <Image
@@ -1169,7 +1169,7 @@ const AI_ChatBot: React.FC = () => {
 
         {/* Input Area */}
         <View style={styles.inputContainer}>
-          <TouchableOpacity style={styles.attachButton} onPress={handleAttachButtonPress}>
+          <TouchableOpacity style={styles.attachButton} onPress={handleAttachButtonPress} activeOpacity={0.7}>
             <Ionicons name="add-circle-outline" size={30} color={styles.sendButton?.backgroundColor || "#008080"} />
           </TouchableOpacity>
           <View style={styles.inputWrapper}>

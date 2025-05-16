@@ -504,7 +504,7 @@ const ProfileMainScreen = ({ navigation }: ProfileMainScreenProps) => {
       
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Profile</Text>
-        <TouchableOpacity onPress={handleLogoutPress}>
+        <TouchableOpacity onPress={handleLogoutPress} activeOpacity={0.7}>
           <Icon name="log-out-outline" size={28} color="#475569" />
         </TouchableOpacity>
       </View>

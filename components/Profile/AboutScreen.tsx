@@ -188,7 +188,7 @@ const AboutUs: React.FC = () => {
                     }
                 ]}
             >
-                <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+                <TouchableOpacity onPress={handleGoBack} style={styles.backButton} activeOpacity={0.7}>
                     <Icon name="chevron-back" size={24} color="#333" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>About Us</Text>

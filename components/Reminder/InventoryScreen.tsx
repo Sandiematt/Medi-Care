@@ -484,7 +484,7 @@ const InventoryScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             onChangeText={setSearchQuery}
           />
           {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7}>
               <Icon name="x" size={18} color="#94A3B8" />
             </TouchableOpacity>
           ) : null}
@@ -509,7 +509,7 @@ const InventoryScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           <Text style={styles.filterIndicatorText}>
             Filters applied
           </Text>
-          <TouchableOpacity onPress={resetFilters}>
+          <TouchableOpacity onPress={resetFilters} activeOpacity={0.5}>
             <Text style={styles.clearFiltersText}>Clear all</Text>
           </TouchableOpacity>
         </View>
@@ -593,7 +593,7 @@ const InventoryScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Filter Inventory</Text>
-              <TouchableOpacity onPress={() => setShowFilterModal(false)}>
+              <TouchableOpacity onPress={() => setShowFilterModal(false)} activeOpacity={0.7}>
                 <Icon name="x" size={24} color="#0F172A" />
               </TouchableOpacity>
             </View>
