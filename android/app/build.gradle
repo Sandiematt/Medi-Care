@@ -121,6 +121,8 @@ dependencies {
     implementation("com.facebook.react:react-android")
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
 
+    // Google Play Services for location
+    implementation "com.google.android.gms:play-services-location:${rootProject.ext.playServicesLocationVersion}"
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")

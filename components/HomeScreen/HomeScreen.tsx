@@ -29,7 +29,7 @@ import axios from 'axios';
 // NOTE: Verify these paths match your project structure!
 import InventoryScreen from '../Reminder/InventoryScreen'; // Check: Is InventoryScreen really inside Reminder folder?
 import HospitalScreen from './CounterfietDetection'; // Check: Ensure filename matches 'CounterfietDetection.js/ts'
-import PrescriptionsScreen from '../Profile/PrescriptionsScreen';
+import FindHospitals from './FindHospitals';
 import ProfileScreenApp from '../Profile/ProfileScreen';
 import ReminderScreen from '../Reminder/ReminderScreen'; // Check: Ensure this screen handles both single reminder view and list view if needed
 import AI_ChatBot from './AI_ChatBot';
@@ -45,10 +45,7 @@ const bannerImages = [
   require('../../assets/images/banner1.png'),
   require('../../assets/images/bannerr2.png'),
   require('../../assets/images/bannerr3.png'),
-  // Add more placeholder images if needed for testing without local assets
-  // { uri: 'https://placehold.co/600x300/EFEFEF/AAAAAA?text=Banner+1' },
-  // { uri: 'https://placehold.co/600x300/D8D8D8/AAAAAA?text=Banner+2' },
-  // { uri: 'https://placehold.co/600x300/C0C0C0/AAAAAA?text=Banner+3' },
+ 
 ];
 
 // --- Banner Carousel ---
@@ -158,18 +155,8 @@ interface Reminder {
 
 // --- Animated Reminder Card ---
 const ReminderCard = ({ reminder, navigation }: { reminder: Reminder, navigation: any }) => {
-  // Animation value for fade-in effect
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  // Start fade-in animation on mount
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 500,
-      easing: Easing.out(Easing.ease),
-      useNativeDriver: true, // Opacity is safe for native driver
-    }).start();
-  }, [fadeAnim]);
+  // Simplified state for pressed appearance
+  const [isPressed, setIsPressed] = useState(false);
 
   // Helper to format 24-hour time string (HH:mm) to 12-hour AM/PM format
   const formatDisplayTime = (time24: string): string => {
@@ -244,53 +231,56 @@ const ReminderCard = ({ reminder, navigation }: { reminder: Reminder, navigation
   if (!nextReminder) return null;
 
   return (
-    <Animated.View style={{ opacity: fadeAnim }}>
-      <TouchableOpacity
-        style={styles.reminderCard}
-        activeOpacity={0.8}
-        // Navigate to the Reminder screen, passing the ID
-        onPress={() => navigation.navigate('Reminder', { reminderId: reminder._id })}
-      >
-        {/* Card Header */}
-        <View style={styles.reminderHeader}>
-          <View style={styles.reminderInfo}>
-            <View style={[styles.reminderIconContainer, { backgroundColor: '#5856D61A' }]}>
-              <MaterialIcon name="medication" size={24} color="#1e948b" />
-            </View>
-            <View style={styles.reminderDetails}>
-              <Text style={styles.reminderName}>{reminder.name || 'Unnamed Reminder'}</Text>
-              {/* Show description if it exists */}
-              {reminder.description && (
-                  <Text style={styles.reminderDescription} numberOfLines={2} ellipsizeMode="tail">
-                      {reminder.description}
-                  </Text>
-              )}
-            </View>
+    <TouchableOpacity
+      style={[
+        styles.reminderCard,
+        isPressed && { backgroundColor: '#F8F8F8' } // Subtle background change on press
+      ]}
+      activeOpacity={0.9}
+      onPressIn={() => setIsPressed(true)}
+      onPressOut={() => setIsPressed(false)}
+      // Navigate to the Reminder screen, passing the ID
+      onPress={() => navigation.navigate('Reminder', { reminderId: reminder._id })}
+    >
+      {/* Card Header */}
+      <View style={styles.reminderHeader}>
+        <View style={styles.reminderInfo}>
+          <View style={[styles.reminderIconContainer, { backgroundColor: '#5856D61A' }]}>
+            <MaterialIcon name="medication" size={24} color="#1e948b" />
+          </View>
+          <View style={styles.reminderDetails}>
+            <Text style={styles.reminderName}>{reminder.name || 'Unnamed Reminder'}</Text>
+            {/* Show description if it exists */}
+            {reminder.description && (
+                <Text style={styles.reminderDescription} numberOfLines={2} ellipsizeMode="tail">
+                    {reminder.description}
+                </Text>
+            )}
           </View>
         </View>
-        {/* Divider */}
-        <View style={styles.reminderDivider} />
-        {/* Card Footer */}
-        <View style={styles.reminderFooter}>
-          {/* Day */}
-          <View style={styles.reminderTimeInfo}>
-            <MaterialIcon name="event" size={20} color="#1e948b" />
-            <Text style={styles.reminderTimeText}>{nextReminder.day}</Text>
-          </View>
-          {/* Time */}
-          <View style={styles.reminderTimeInfo}>
-            <MaterialIcon name="access-time" size={20} color="#1e948b" />
-            {/* Display formatted time */}
-            <Text style={styles.reminderTimeText}>{formatDisplayTime(nextReminder.time)}</Text>
-          </View>
-          {/* Dose */}
-          <View style={styles.reminderTimeInfo}>
-            <MaterialIcon name="medication" size={20} color="#1e948b" />
-            <Text style={styles.reminderTimeText}>{nextReminder.dose} dose(s)</Text>
-          </View>
+      </View>
+      {/* Divider */}
+      <View style={styles.reminderDivider} />
+      {/* Card Footer */}
+      <View style={styles.reminderFooter}>
+        {/* Day */}
+        <View style={styles.reminderTimeInfo}>
+          <MaterialIcon name="event" size={20} color="#1e948b" />
+          <Text style={styles.reminderTimeText}>{nextReminder.day}</Text>
         </View>
-      </TouchableOpacity>
-    </Animated.View>
+        {/* Time */}
+        <View style={styles.reminderTimeInfo}>
+          <MaterialIcon name="access-time" size={20} color="#1e948b" />
+          {/* Display formatted time */}
+          <Text style={styles.reminderTimeText}>{formatDisplayTime(nextReminder.time)}</Text>
+        </View>
+        {/* Dose */}
+        <View style={styles.reminderTimeInfo}>
+          <MaterialIcon name="medication" size={20} color="#1e948b" />
+          <Text style={styles.reminderTimeText}>{nextReminder.dose} dose(s)</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 };
 
@@ -452,28 +442,20 @@ const SearchResults = ({ searchResults, navigation }: { searchResults: { service
 
 // --- Animated Service Card ---
 const AnimatedServiceCard = ({ service, index: _index, navigation }: { service: any, index: number, navigation: any }) => {
-  // Rename 'index' to '_' to mark it as unused
-  // Animation value for press-down scale effect
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
-  // Function to handle press in (scale down)
-  const onPressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.95, friction: 5, useNativeDriver: true }).start();
-  };
-  // Function to handle press out (scale back up)
-  const onPressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, friction: 5, useNativeDriver: true }).start();
-  };
+  // Background color animation
+  const [isPressed, setIsPressed] = useState(false);
 
   return (
-    // Apply scaling animation to the container view
-    <Animated.View style={[styles.serviceCardContainer, { transform: [{ scale: scaleAnim }] }]}>
+    <View style={styles.serviceCardContainer}>
       <TouchableOpacity
-        style={styles.serviceCardTouchable}
+        style={[
+          styles.serviceCardTouchable,
+          isPressed && { backgroundColor: '#F8F8F8' } // Subtle background change on press
+        ]}
         onPress={() => navigation.navigate(service.route)}
-        onPressIn={onPressIn} // Trigger scale down
-        onPressOut={onPressOut} // Trigger scale up
-        activeOpacity={1} // Disable default opacity change, use scale animation instead
+        onPressIn={() => setIsPressed(true)}
+        onPressOut={() => setIsPressed(false)}
+        activeOpacity={0.9}
       >
         {/* Icon */}
         <View style={[styles.serviceIconContainer, { backgroundColor: `${service.color}1A` }]}>
@@ -483,7 +465,7 @@ const AnimatedServiceCard = ({ service, index: _index, navigation }: { service: 
         <Text style={styles.serviceText}>{service.name}</Text>
         <Text style={styles.serviceDescription}>{service.description}</Text>
       </TouchableOpacity>
-    </Animated.View>
+    </View>
   );
 };
 
@@ -511,7 +493,7 @@ const HomeMainScreen = ({ navigation }: { navigation: any }) => {
   const services = useMemo(() => [
     { name: 'Inventory', icon: 'inventory-2', color: '#5856D6', route: 'Medicines', description: 'Track your medications' },
     { name: 'Counterfeit', icon: 'verified-user', color: '#FF7D6B', route: 'Hospital', description: 'Verify your medicine' },
-    { name: 'Prescriptions', icon: 'description', color: '#7C4DFF', route: 'Prescriptions', description: 'View prescriptions' },
+    { name: 'Find Hospitals', icon: 'local-hospital', color: '#7C4DFF', route: 'FindHospitals', description: 'Find nearby hospitals' },
     { name: 'AI ChatBot', icon: 'chat', color: '#4ECDC4', route: 'AI_ChatBot', description: 'Get AI assistance' },
   ], []);
 
@@ -1121,7 +1103,7 @@ const HomeOptionsNavigator = () => (
       component={HospitalScreen} 
     />
     <Stack.Screen name="AI_ChatBot" component={AI_ChatBot} />
-    <Stack.Screen name="Prescriptions" component={PrescriptionsScreen} />
+    <Stack.Screen name="FindHospitals" component={FindHospitals} />
     <Stack.Screen name="Profile" component={ProfileScreenApp} />
     {/* Ensure ReminderScreen can handle both viewing a single reminder (with param) and the list */}
     <Stack.Screen name="Reminder" component={ReminderScreen} />
@@ -1240,12 +1222,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF', // Keep distinct background for the results area
     borderRadius: 12, // Optional: Give results area rounded corners
     marginTop: 5, // Add some space below search bar
-    // Add shadow/border if needed for more separation
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    borderWidth: 1.5,
+    borderColor: '#D0D0D0',
+    // Add a subtle shadow on iOS that doesn't cause artifacts
+    ...(Platform.OS === 'ios' ? {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    } : {}),
     padding: 16, // Add internal padding
   },
   searchResultsTitle: {
@@ -1389,13 +1374,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 15,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#F0F0F5',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
+    borderWidth: 1.5,
+    borderColor: '#D0D0D0',
+    // Add a subtle shadow on iOS that doesn't cause artifacts
+    ...(Platform.OS === 'ios' ? {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    } : {}),
     height: 160,
   },
   serviceIconContainer: {
@@ -1426,13 +1413,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#EFEFF4',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1.5,
+    borderColor: '#D0D0D0',
+    // Add a subtle shadow on iOS that doesn't cause artifacts
+    ...(Platform.OS === 'ios' ? {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    } : {}),
   },
   reminderHeader: {
     padding: 16,

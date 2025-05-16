@@ -55,11 +55,14 @@ function MyTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
       (currentRoute.params && currentRoute.params.isAIChatBotScreen) ||
       currentRoute.name === 'InventoryScreen' ||
       (currentRoute.params && currentRoute.params.isInventoryScreen) ||
+      currentRoute.name === 'FindHospitals' ||
+      (currentRoute.params && currentRoute.params.isFindHospitalsScreen) ||
       
       options.isPrescriptionsScreen || 
       options.isCounterfeitScreen ||
       options.isAIChatBotScreen ||
-      options.isInventoryScreen;
+      options.isInventoryScreen ||
+      options.isFindHospitalsScreen;
     
     if (tabBarVisible) {
       // Show the tab bar if it should be visible

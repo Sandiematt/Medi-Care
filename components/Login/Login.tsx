@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   TouchableOpacity,
   Platform,
-  ScrollView,
   Image,
   Animated,
 } from 'react-native';
@@ -319,7 +318,7 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess: _onLoginSucce
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
+        <View style={styles.contentContainer}>
           <View style={styles.header}>
             <View style={styles.logoContainer}>
               <Image
@@ -384,7 +383,7 @@ const Login: React.FC<LoginProps> = ({ navigation, onLoginSuccess: _onLoginSucce
               </TouchableOpacity>
             </View>
           </View>
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -398,21 +397,25 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
+  contentContainer: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
   header: {
     backgroundColor: '#1d958b',
-    height: 260,
+    height: 200,
     justifyContent: 'center',
     alignItems: 'center',
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
   },
   logoContainer: {
-    width: 160,
-    height: 160,
+    width: 140,
+    height: 140,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#000000',
-    borderRadius: 80,
+    borderRadius: 70,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -423,31 +426,32 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   logo: {
-    width: 170,
-    height: 170,
+    width: 150,
+    height: 150,
   },
   formContainer: {
     paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 24,
+    paddingTop: 16,
+    paddingBottom: 16,
+    flex: 1,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     fontFamily: 'Poppins-Bold',
     color: '#1A1A1A',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Poppins-Regular',
     color: '#666666',
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 16,
   },
   inputContainer: {
-    marginBottom: 24,
+    marginBottom: 16,
     height: 60,
     justifyContent: 'flex-end',
   },
@@ -496,9 +500,9 @@ const styles = StyleSheet.create({
   loginButton: {
     backgroundColor: '#199A8E',
     borderRadius: 12,
-    paddingVertical: 16,
-    marginTop: 32,
-    marginBottom: 16,
+    paddingVertical: 14,
+    marginTop: 20,
+    marginBottom: 20,
     shadowColor: '#199A8E',
     shadowOffset: {
       width: 0,
@@ -532,7 +536,7 @@ const styles = StyleSheet.create({
   separatorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 12,
+    marginVertical: 8,
     width: '100%',
   },
   separator: {
@@ -550,13 +554,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 24,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginTop: 12,
+    marginTop: 15,
     width: '100%',
     shadowColor: '#000',
     shadowOffset: {

@@ -18,7 +18,6 @@ import {
   Modal,
   PermissionsAndroid,
   ScrollView,
-  useColorScheme,
   // Linking // Import Linking for opening app settings
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -301,8 +300,6 @@ const AI_ChatBot: React.FC = () => {
   const flatListRef = useRef<FlatList>(null);
   const typingDots = useRef(new Animated.Value(0)).current;
   const typingAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
-  const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === 'dark';
 
   // IMPORTANT: Replace with your actual API key.
   // It's highly recommended to store API keys securely and not hardcode them in client-side code.
@@ -311,9 +308,23 @@ const AI_ChatBot: React.FC = () => {
   const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
   const GEMINI_VISION_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-
   // New state variable to track the last uploaded image
   const [currentImage, setCurrentImage] = useState<{ uri: string, base64: string } | null>(null);
+
+  // API call function for Gemini
+  const callGeminiAPI = async (url: string, requestBody: any) => {
+    // The key is already included in the URL, so we don't need to add it to headers
+    // For Android identification, send package name in the proper header
+    return fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Android-Package': 'com.medi_care',  // Match exactly what you entered in Google Cloud Console
+        'X-Android-Cert': '40:46:47:CD:08:61:CD:E4:3B:AC:AD:E8:BA:08:37:E4' // Your SHA-1 fingerprint
+      },
+      body: JSON.stringify(requestBody)
+    });
+  };
 
   // Fetch user profile
   const fetchUserProfile = async () => {
@@ -506,11 +517,7 @@ const AI_ChatBot: React.FC = () => {
         };
       }
 
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-      });
+      const response = await callGeminiAPI(apiUrl, requestBody);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -767,16 +774,12 @@ const AI_ChatBot: React.FC = () => {
     );
   };
 
-  // Updated Styles with dark mode support
+  // Updated Styles without dark mode support
   const getStyles = () => {
-    const inputBackgroundColor = isDarkMode ? '#333333' : '#F0F4F8';
-    const inputTextColor = isDarkMode ? '#FFFFFF' : '#222222';
-    const placeholderColor = isDarkMode ? '#AAAAAA' : '#888888';
-    
     return StyleSheet.create({
       container: {
         flex: 1,
-        backgroundColor: isDarkMode ? '#121212' : '#F0F4F8',
+        backgroundColor: '#F0F4F8',
       },
       header: {
         flexDirection: 'row',
@@ -786,7 +789,7 @@ const AI_ChatBot: React.FC = () => {
         backgroundColor: '#008080', // Teal (keep consistent for brand identity)
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: isDarkMode ? 0.3 : 0.2,
+        shadowOpacity: 0.2,
         shadowRadius: 3,
         elevation: 5,
       },
@@ -868,11 +871,11 @@ const AI_ChatBot: React.FC = () => {
         borderBottomRightRadius: 8,
       },
       botMessage: {
-        backgroundColor: isDarkMode ? '#2A2A2A' : '#FFFFFF',
+        backgroundColor: '#FFFFFF',
         borderBottomLeftRadius: 8,
         shadowColor: '#000000',
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: isDarkMode ? 0.4 : 0.18,
+        shadowOpacity: 0.18,
         shadowRadius: 2.00,
         elevation: 3,
       },
@@ -886,12 +889,12 @@ const AI_ChatBot: React.FC = () => {
         fontFamily: Platform.OS === 'ios' ? 'AvenirNext-Regular' : 'Poppins-Regular',
       },
       botMessageText: {
-        color: isDarkMode ? '#E0E0E0' : '#000000',
+        color: '#000000',
         fontFamily: Platform.OS === 'ios' ? 'AvenirNext-Regular' : 'Poppins-Regular',
       },
       timestamp: {
         fontSize: 10.5,
-        color: isDarkMode ? '#AAAAAA' : '#666666',
+        color: '#666666',
         marginTop: 6,
         paddingHorizontal: 5,
         fontFamily: Platform.OS === 'ios' ? 'AvenirNext-Regular' : 'Poppins-Regular',
@@ -917,16 +920,16 @@ const AI_ChatBot: React.FC = () => {
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: isDarkMode ? '#6BBAC6' : '#A0D2DB',
+        backgroundColor: '#A0D2DB',
       },
       inputContainer: {
         flexDirection: 'row',
         paddingHorizontal: 10,
         paddingVertical: 10,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: '#FFFFFF',
         alignItems: 'center',
         borderTopWidth: 1,
-        borderTopColor: isDarkMode ? '#333333' : '#DDE2E5',
+        borderTopColor: '#DDE2E5',
       },
       attachButton: {
         padding: 8, // Good touch target
@@ -936,7 +939,7 @@ const AI_ChatBot: React.FC = () => {
       },
       inputWrapper: {
         flex: 1,
-        backgroundColor: inputBackgroundColor,
+        backgroundColor: '#F0F4F8',
         borderRadius: 25,
         paddingHorizontal: 18,
         paddingVertical: Platform.OS === 'ios' ? 12 : 8,
@@ -946,7 +949,7 @@ const AI_ChatBot: React.FC = () => {
       },
       input: {
         fontSize: 16,
-        color: inputTextColor,
+        color: '#222222',
         paddingTop: Platform.OS === 'ios' ? 0 : 2,
         paddingBottom: Platform.OS === 'ios' ? 0 : 2,
         fontFamily: Platform.OS === 'ios' ? 'AvenirNext-Regular' : 'Poppins-Regular',
@@ -1024,11 +1027,11 @@ const AI_ChatBot: React.FC = () => {
       suggestionContainer: {
         paddingVertical: 10,
         paddingHorizontal: 12,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#F0F4F8',
+        backgroundColor: '#F0F4F8',
         borderTopWidth: 1,
-        borderTopColor: isDarkMode ? '#333333' : '#DDE2E5',
+        borderTopColor: '#DDE2E5',
         borderBottomWidth: 1,
-        borderBottomColor: isDarkMode ? '#333333' : '#DDE2E5',
+        borderBottomColor: '#DDE2E5',
       },
       suggestionTitleContainer: {
         flexDirection: 'row',
@@ -1039,7 +1042,7 @@ const AI_ChatBot: React.FC = () => {
       suggestionTitle: {
         fontSize: 14,
         fontWeight: '600',
-        color: isDarkMode ? '#E0E0E0' : '#555555',
+        color: '#555555',
         fontFamily: Platform.OS === 'ios' ? 'AvenirNext-SemiBold' : 'Poppins-SemiBold',
       },
       suggestionScrollContent: {
@@ -1049,14 +1052,14 @@ const AI_ChatBot: React.FC = () => {
       suggestionChip: {
         paddingVertical: 8,
         paddingHorizontal: 14,
-        backgroundColor: isDarkMode ? '#264D4D' : '#E6F2F2',
+        backgroundColor: '#E6F2F2',
         borderWidth: 1,
         borderColor: '#008080',
         borderRadius: 20,
         marginRight: 10,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: isDarkMode ? 0.3 : 0.1,
+        shadowOpacity: 0.1,
         shadowRadius: 1,
         elevation: 1,
       },
@@ -1068,7 +1071,7 @@ const AI_ChatBot: React.FC = () => {
       },
       // Disclaimer Banner Styles
       disclaimerBanner: {
-        backgroundColor: isDarkMode ? 'rgba(173, 20, 87, 0.15)' : 'rgba(173, 20, 87, 0.08)',
+        backgroundColor: 'rgba(173, 20, 87, 0.08)',
         borderLeftWidth: 3,
         borderLeftColor: '#AD1457',
         marginHorizontal: 10,
@@ -1079,7 +1082,7 @@ const AI_ChatBot: React.FC = () => {
         elevation: 1,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: isDarkMode ? 0.3 : 0.1,
+        shadowOpacity: 0.1,
         shadowRadius: 1,
       },
       disclaimerHeader: {
@@ -1090,12 +1093,12 @@ const AI_ChatBot: React.FC = () => {
       disclaimerTitle: {
         fontSize: 13,
         fontWeight: '600',
-        color: isDarkMode ? '#F0F0F0' : '#333333',
+        color: '#333333',
         fontFamily: Platform.OS === 'ios' ? 'AvenirNext-SemiBold' : 'Poppins-SemiBold',
       },
       disclaimerText: {
         fontSize: 12,
-        color: isDarkMode ? '#D0D0D0' : '#444444',
+        color: '#444444',
         paddingHorizontal: 10,
         paddingBottom: 10,
         paddingTop: 0,
@@ -1110,7 +1113,7 @@ const AI_ChatBot: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar 
-        barStyle={isDarkMode ? "light-content" : "dark-content"} 
+        barStyle="dark-content" 
         backgroundColor={styles.header?.backgroundColor || "#008080"} 
       />
 
@@ -1175,7 +1178,7 @@ const AI_ChatBot: React.FC = () => {
               value={input}
               onChangeText={setInput}
               placeholder="Type your medical question..."
-              placeholderTextColor={isDarkMode ? '#AAAAAA' : '#888888'}
+              placeholderTextColor="#888888"
               multiline
               maxLength={500} // Max length for input
               onSubmitEditing={handleSend} // Allows sending with keyboard "return" key

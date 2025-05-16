@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -23,41 +23,40 @@ const AboutUs: React.FC = () => {
     const scrollY = useRef(new Animated.Value(0)).current;
     const scaleValue = useRef(new Animated.Value(1)).current;
 
-    // Animation values for cards
-    const missionScale = useRef(new Animated.Value(0.9)).current;
+    // Only animate opacity for simple transitions
     const missionOpacity = useRef(new Animated.Value(0)).current;
     const teamTranslateY = useRef(new Animated.Value(50)).current;
     const teamOpacity = useRef(new Animated.Value(0)).current;
-
-    React.useEffect(() => {
-        // Animate cards on mount
-        Animated.parallel([
-            Animated.timing(missionScale, {
-                toValue: 1,
-                duration: 800,
-                useNativeDriver: true,
-                easing: Easing.out(Easing.back(1.5)),
-            }),
+    
+    // Animation setup with delay
+    useEffect(() => {
+        // Delay all animations to ensure rendering is complete
+        setTimeout(() => {
             Animated.timing(missionOpacity, {
                 toValue: 1,
                 duration: 800,
                 useNativeDriver: true,
-            }),
-            Animated.timing(teamTranslateY, {
-                toValue: 0,
-                duration: 1000,
-                delay: 400,
-                useNativeDriver: true,
-                easing: Easing.out(Easing.cubic),
-            }),
-            Animated.timing(teamOpacity, {
-                toValue: 1,
-                duration: 1000,
-                delay: 400,
-                useNativeDriver: true,
-            }),
-        ]).start();
-    }, []);
+                easing: Easing.ease,
+            }).start();
+            
+            // Start team animations separately
+            setTimeout(() => {
+                Animated.parallel([
+                    Animated.timing(teamTranslateY, {
+                        toValue: 0,
+                        duration: 500,
+                        useNativeDriver: true,
+                        easing: Easing.out(Easing.cubic),
+                    }),
+                    Animated.timing(teamOpacity, {
+                        toValue: 1,
+                        duration: 500,
+                        useNativeDriver: true,
+                    }),
+                ]).start();
+            }, 300);
+        }, 300);
+    }, [missionOpacity, teamTranslateY, teamOpacity]);
 
     const handleGoBack = () => {
         navigation.goBack();
@@ -199,30 +198,26 @@ const AboutUs: React.FC = () => {
                 showsVerticalScrollIndicator={false}
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
+                style={styles.scrollViewContainer}
             >
                 <Animated.View style={[styles.heroSection, { transform: [{ scale: heroScale }] }]}>
                     <Text style={styles.heroTitle}>Revolutionizing Healthcare</Text>
                     <Text style={styles.heroSubtitle}>Making healthcare accessible for everyone</Text>
                 </Animated.View>
 
-                <Animated.View 
-                    style={[
-                        styles.missionSection,
-                        {
-                            opacity: missionOpacity,
-                            transform: [{ scale: missionScale }],
-                        }
-                    ]}
-                >
+                {/* Mission section with card-like appearance but no container animations */}
+                <View style={styles.plainMissionSection}>
                     <View style={styles.missionCard}>
                         <Icon name="medical" size={40} color="#4A90E2" style={styles.missionIcon} />
-                        <Text style={styles.missionTitle}>Our Mission</Text>
-                        <Text style={styles.missionText}>
+                        <Animated.Text style={[styles.missionTitle, {opacity: missionOpacity}]}>
+                            Our Mission
+                        </Animated.Text>
+                        <Animated.Text style={[styles.missionText, {opacity: missionOpacity}]}>
                             Medicare is dedicated to improving the healthcare experience by leveraging technology 
                             to simplify healthcare management for users.
-                        </Text>
+                        </Animated.Text>
                     </View>
-                </Animated.View>
+                </View>
 
                 <Animated.View 
                     style={[
@@ -334,23 +329,26 @@ const styles = StyleSheet.create({
         marginTop: 8,
         opacity: 0.9,
     },
-    missionSection: {
+    plainMissionSection: {
         padding: 24,
+        backgroundColor: '#F8F9FA',
     },
     missionCard: {
         backgroundColor: '#fff',
-        borderRadius: 16,
         padding: 24,
+        borderRadius: 16,
         alignItems: 'center',
+        marginHorizontal: 2,
+        marginVertical: 2,
         ...Platform.select({
             ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.1,
-                shadowRadius: 8,
+                shadowColor: 'rgba(0,0,0,0.1)',
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.15,
+                shadowRadius: 6,
             },
             android: {
-                elevation: 4,
+                elevation: 3,
             },
         }),
     },
@@ -496,7 +494,10 @@ const styles = StyleSheet.create({
         top: 40,
         right: 20,
     },
-   
+    scrollViewContainer: {
+        flex: 1,
+        backgroundColor: '#F8F9FA',
+    },
 });
 
 export default AboutUs;
