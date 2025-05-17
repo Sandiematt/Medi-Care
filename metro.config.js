@@ -14,6 +14,17 @@ const customConfig = {
     blockList: [
       /node_modules\/.*\/android\/build\/generated\/source\/codegen\/.*/,
     ],
+    extraNodeModules: {
+      // Add Node.js core module polyfills here
+      path: require.resolve('path-browserify'),
+      crypto: require.resolve('crypto-browserify'),
+      fs: require.resolve('react-native-fs'),
+      os: require.resolve('os-browserify'),
+      stream: require.resolve('stream-browserify'),
+      string_decoder: require.resolve('string_decoder'),
+      process: require.resolve('process/browser'),
+      buffer: require.resolve('buffer'),
+    },
   },
 };
 

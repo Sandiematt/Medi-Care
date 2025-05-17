@@ -1,9 +1,9 @@
 import React from 'react';
 import { createBottomTabNavigator, BottomTabNavigationOptions } from '@react-navigation/bottom-tabs';
-import HomeScreen from '../components/HomeScreen/HomeScreen';
-import ReminderScreen from '../components/Reminder/ReminderScreen';
+import HomeScreen from '../Screens/HomeScreen/HomeScreen';
+import ReminderScreen from '../Screens/Reminder/ReminderScreen';
 import Icon from 'react-native-vector-icons/MaterialIcons'; // Import icons
-import PillIdentifierScreen from '../components/Medicine/PillIdentifierScreen';
+import PillIdentifierScreen from '../Screens/Medicine/PillIdentifierScreen';
 import MyTabBar from './TabBar'; // Import custom TabBar
 import { RouteProp } from '@react-navigation/native'; // ParamListBase is not needed here
 

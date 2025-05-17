@@ -1,0 +1,20 @@
+export const GlobalStyles = {
+    colorBaseWhite: '#FFFFFF',
+    colorBaseBlack: '#000000',
+    colorBaseGray: '#808080',
+    colorBaseRed: '#FF0000',
+    colorBaseGreen: '#00FF00',
+    colorBaseBlue: '#0000FF',
+    colorBaseYellow: '#FFFF00',
+    colorBasePurple: '#800080',
+    colorBaseOrange: '#FFA500',
+    colorBasePink: '#FFC0CB',
+    colorBaseBrown: '#A52A2A',
+    colorBaseTeal: '#008080',
+    colorBaseLime: '#00FF00',
+    colorBaseLavender: '#E6E6FA',
+    colorBaseMagenta: '#FF00FF',
+    colorBaseOlive: '#808000',
+    colorBaseNavy: '#000080',
+    
+}
