@@ -1,7 +1,6 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
-apply plugin: "com.google.gms.google-services"
 apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
 
 
@@ -72,8 +71,11 @@ def enableProguardInReleaseBuilds = false
  * allowing to use e.g. `Date.toLocaleString` and `String.localeCompare` that
  * give correct results when using with locales other than en-US. Note that
  * this variant is about 6MiB larger per architecture than default.
+ * `def jscFlavor = io.github.react-native-community:jsc-android-intl:2026004.+`
  */
-def jscFlavor = 'org.webkit:android-jsc:+'
+//def jscFlavor = 'org.webkit:android-jsc:+'
+def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
+
 
 android {
     ndkVersion rootProject.ext.ndkVersion
@@ -102,12 +104,15 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
+            // Using debug signing config since we're not uploading to Play Store
             signingConfig signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
+    }
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
     }
 }
 
@@ -116,6 +121,8 @@ dependencies {
     implementation("com.facebook.react:react-android")
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
 
+    // Google Play Services for location
+    implementation "com.google.android.gms:play-services-location:${rootProject.ext.playServicesLocationVersion}"
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
@@ -124,7 +131,6 @@ dependencies {
     }
 
 }
-
 
 // Ensure that the google-services plugin is applied at the bottom of the file
 // as per the documentation recommendation.

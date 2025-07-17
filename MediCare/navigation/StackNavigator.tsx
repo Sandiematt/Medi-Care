@@ -2,11 +2,21 @@ import React, { useEffect } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import { View, Text } from "react-native";
 import SplashScreen from "./SplashScreen";
-import SignUp from "../components/Login/Signup";
-import Login from "../components/Login/Login";
+import SignUp from "../Screens/SignUp/Signup";
+import Login from "../Screens/Login/Login";
 import BottomTabs from "./BottomTabs";
+import { StackNavigationProp } from "@react-navigation/stack";
 
-const Stack = createStackNavigator();
+type RootStackParamList = {
+  Splash: undefined;
+  SignUp: undefined;
+  Login: undefined;
+  Main: undefined;
+};
+
+type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
+
+const Stack = createStackNavigator<RootStackParamList>();
 
 // Create a simple fallback splash screen
 const FallbackSplash = () => {
@@ -15,6 +25,15 @@ const FallbackSplash = () => {
       <Text style={{ color: 'white', fontSize: 24 }}>Loading...</Text>
     </View>
   );
+};
+
+// Wrapper for Login component that provides the onLoginSuccess prop
+const LoginWrapper = ({ navigation }: { navigation: LoginScreenNavigationProp }) => {
+  const handleLoginSuccess = () => {
+    navigation.replace('Main');
+  };
+
+  return <Login navigation={navigation} onLoginSuccess={handleLoginSuccess} />;
 };
 
 const StackNavigator = () => {
@@ -35,7 +54,7 @@ const StackNavigator = () => {
         options={{ gestureEnabled: false }} 
       />
       <Stack.Screen name="SignUp" component={SignUp} />
-      <Stack.Screen name="Login" component={Login} />
+      <Stack.Screen name="Login" component={LoginWrapper} />
       <Stack.Screen name="Main" component={BottomTabs} />
     </Stack.Navigator>
   );

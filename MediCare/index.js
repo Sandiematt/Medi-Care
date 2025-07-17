@@ -1,6 +1,9 @@
 /**
  * @format
  */
+// Import polyfills first
+import './global';
+
 import 'react-native-gesture-handler'; // Required for React Navigation
 
 import { AppRegistry } from 'react-native';
